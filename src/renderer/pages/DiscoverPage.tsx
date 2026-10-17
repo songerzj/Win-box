@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { client } from '../api/client';
 import { openSearchWindow } from '../lib/searchWin';
-import { useTheme } from '../lib/theme';
+import { useSkinLayout } from '../lib/theme';
 import HScrollRow from '../components/HScrollRow';
 // ★ 2026-10-16（用户要求「四套皮肤绝对大改」）：首屏聚光卡（四皮肤共用结构，材质由各皮肤 CSS 决定）
 import DiscoverSpotlight from '../components/DiscoverSpotlight';
@@ -67,11 +67,11 @@ function ItemCard({ it, poster, onError, onOpen, playBadge, dbPlay, dbYear }: { 
 }
 
 export default function DiscoverPage() {
-  // 发现页直接展示分类与榜单；Netflix / Apple 保留横向内容行，豆风使用海报网格。
-  const theme = useTheme();
-  const nf = theme === 'netflix';
-  const ap = theme === 'apple';
-  const db = theme === 'douban';
+  // 发现页直接展示分类与榜单；「内容行 / 宽内容行 / 海报墙」由皮肤的 layout 结构枚举（discoverStyle）决定。
+  const discoverStyle = useSkinLayout().discoverStyle;
+  const nf = discoverStyle === 'shelf';
+  const ap = discoverStyle === 'shelfWide';
+  const db = discoverStyle === 'wall';
   const [sections, setSections] = useState<DiscoverSection[] | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);

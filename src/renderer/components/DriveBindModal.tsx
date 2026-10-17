@@ -101,7 +101,7 @@ export default function DriveBindModal({ siteName, initialProvider, reason, onCl
     >
       <div
         className="card modal-in"
-        style={{ width: 520, maxWidth: '92vw', padding: 18, background: 'var(--bg)', boxShadow: '0 18px 60px rgba(0,0,0,.5)' }}
+        style={{ width: 520, maxWidth: '92vw', padding: 18, background: 'var(--surface-2)', boxShadow: '0 18px 60px rgba(0,0,0,.5)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="row" style={{ marginBottom: 10 }}>

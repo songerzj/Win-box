@@ -7,9 +7,9 @@ import { sourceAvailability } from '../../engine/vod/sourceAvailability';
 import { EXT_TEMPLATES, validateExtJson } from '../../engine/config/extHelper';
 import { sourceKindInfo } from '../../engine/config/sourceKind';
 import type { AuditItem, SourceDebugReport } from '../../shared/types';
-import { applyTheme, currentTheme } from '../lib/theme';
+import { applyTheme, currentTheme, loadSkinRegistry, THEMES_EVENT } from '../lib/theme';
 import { getShowDiscover, setShowDiscover, getMotionPref, setMotionPref, getNavMode, setNavMode, getWaterfall, setWaterfall, type MotionPref, type NavMode } from '../lib/uiPrefs';
-import { THEME_LABELS, type Theme } from '../lib/themeTokens';
+import { allSkins, type Theme } from '../lib/themeTokens';
 import { DEFAULT_META_SETTINGS, type MetaSettings } from '../../shared/meta';
 import { UI_SCALE_OPTIONS, type UiScaleState } from '../../shared/uiScale';
 import { DEFAULT_PLAYER_SETTINGS, type PlayerSettings, type MpvStatus } from '../../shared/player';
@@ -85,6 +85,14 @@ export default function ConfigPage() {
   const [lastOk, setLastOk] = useState('');
   // 外观主题
   const [theme, setTheme] = useState<Theme>(() => currentTheme());
+  /** ★ 2026-10-18（用户要求「统一皮肤标准」）：可切换的皮肤 = 注册表里的**全部皮肤**（内置 + 已装插件），
+   *   展示名来自插件 manifest；注册表在启动时异步载入（THEMES_EVENT 到达即刷新）。 */
+  const [skins, setSkins] = useState(() => allSkins());
+  useEffect(() => {
+    const sync = (): void => setSkins(allSkins());
+    window.addEventListener(THEMES_EVENT, sync);
+    return () => window.removeEventListener(THEMES_EVENT, sync);
+  }, []);
   /** ★ 2026-09-30（用户要求）：是否展示「发现」页（默认展示；关掉后导航与默认落地页相应变化） */
   const [showDiscover, setShowDiscoverState] = useState<boolean>(() => getShowDiscover());
   /** ★ 2026-10-08（用户要求）：详情页是否单独窗口展示（默认关；切换即时生效，见 lib/detailWin.ts） */
@@ -155,12 +163,16 @@ export default function ConfigPage() {
   const loadPlugins = async () => {
     try {
       setPluginItems(await client.pluginList());
+      // ★ 2026-10-18：插件增删改后刷新皮肤注册表（插件皮肤 = `contributes.theme`，见 docs/design/皮肤与主题规范.md）
+      void loadSkinRegistry();
     } catch (e) {
       setPluginMsg({ text: `读取插件列表失败：${(e as Error).message}`, kind: 'err' });
     }
   };
+  /** 插件增删改的统一收尾：更新列表 + 刷新皮肤注册表（新装的皮肤立即出现在「外观主题」里） */
   const applyPluginResult = (r: { items?: PluginView[]; reason?: string }, okText: string) => {
     if (r.items) setPluginItems(r.items);
+    void loadSkinRegistry();
     setPluginMsg(r.reason ? { text: r.reason, kind: 'err' } : { text: okText, kind: 'ok' });
   };
   const installPlugin = async () => {
@@ -1092,7 +1104,7 @@ export default function ConfigPage() {
             className={'cfg-tab' + (tab === t.id ? ' active' : '')}
             onClick={() => selectTab(t.id)}
             style={{
-              background: tab === t.id ? 'var(--bg-elev2)' : 'transparent',
+              background: tab === t.id ? 'var(--surface-3)' : 'transparent',
               border: tab === t.id ? '1px solid var(--accent)' : '1px solid transparent',
               color: tab === t.id ? 'var(--text)' : 'var(--text-dim)',
               borderBottomLeftRadius: 0,
@@ -1202,7 +1214,7 @@ export default function ConfigPage() {
                     onClick={() => !isEditing && chooseSource(s.key)}
                     style={{
                       cursor: isEditing ? 'default' : 'pointer',
-                      background: isActive && !isEditing ? 'var(--bg-elev2)' : undefined,
+                      background: isActive && !isEditing ? 'var(--surface-3)' : undefined,
                       outline: isActive && !isEditing ? '1px solid var(--accent)' : undefined,
                     }}
                   >
@@ -1213,7 +1225,7 @@ export default function ConfigPage() {
                       {isActive ? '●' : '○'}
                     </td>
                     {isEditing && draft ? (
-                      <td colSpan={5} style={{ padding: 10, borderBottom: '1px solid var(--border)', background: 'var(--bg-elev2)' }}>
+                      <td colSpan={5} style={{ padding: 10, borderBottom: '1px solid var(--border)', background: 'var(--surface-3)' }}>
                         {/* 形态说明：告诉用户这个源到底怎么跑 */}
                         <div className="banner" style={{ borderLeftColor: 'var(--accent)', marginBottom: 10, fontSize: 12 }}>
                           <b>{kindInfo.label}</b>
@@ -1406,7 +1418,7 @@ export default function ConfigPage() {
                     <tr
                       key={i}
                       onClick={() => { if (!editing && !liveDeleteBusy) void client.cfgSetActiveLive(i).then(refresh).catch((e) => setErr((e as Error).message)); }}
-                      style={{ cursor: editing ? 'default' : 'pointer', background: isActive && !editing ? 'var(--bg-elev2)' : undefined }}
+                      style={{ cursor: editing ? 'default' : 'pointer', background: isActive && !editing ? 'var(--surface-3)' : undefined }}
                     >
                       <td style={{ padding: 6, borderBottom: '1px solid var(--border)', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" className="sel-box" aria-label={`选择线路 ${l.name || `线路${i + 1}`}`} checked={livePick.has(i)} disabled={liveDeleteBusy} onChange={() => toggleLivePick(i)} />
@@ -1861,16 +1873,16 @@ export default function ConfigPage() {
           <span className="muted" style={{ fontWeight: 600 }}>外观主题</span>
         </div>
         <div className="theme-switcher" role="radiogroup" aria-label="外观主题">
-          {(Object.entries(THEME_LABELS) as [Theme, string][]).map(([t, label]) => (
+          {skins.map((s) => (
             <button
-              key={t}
+              key={s.id}
               type="button"
               role="radio"
-              aria-checked={theme === t}
-              className={`tag ${theme === t ? 'active' : ''}`}
-              onClick={() => { setTheme(t); applyTheme(t); }}
+              aria-checked={theme === s.id}
+              className={`tag ${theme === s.id ? 'active' : ''}`}
+              onClick={() => { setTheme(s.id); applyTheme(s.id); }}
             >
-              {label}{theme === t ? ' ✓' : ''}
+              {s.label}{theme === s.id ? ' ✓' : ''}
             </button>
           ))}
         </div>
@@ -2412,7 +2424,7 @@ export default function ConfigPage() {
           style={{
             width: 'min(460px, calc(100% - 40px))', padding: 0,
             border: '1px solid var(--border)', borderRadius: 12,
-            background: 'var(--bg-elev2)', color: 'var(--text)',
+            background: 'var(--surface-3)', color: 'var(--text)',
             boxShadow: '0 12px 40px rgba(0,0,0,.35)',
           }}
         >
@@ -2458,7 +2470,7 @@ export default function ConfigPage() {
           style={{
             width: 'min(460px, calc(100% - 40px))', padding: 0,
             border: '1px solid var(--border)', borderRadius: 12,
-            background: 'var(--bg-elev2)', color: 'var(--text)',
+            background: 'var(--surface-3)', color: 'var(--text)',
             boxShadow: '0 12px 40px rgba(0,0,0,.35)',
           }}
         >
