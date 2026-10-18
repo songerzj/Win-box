@@ -7,6 +7,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { client } from '../api/client';
+// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+import PluginSlot from '../components/PluginSlot';
 import { useCovers } from '../lib/useCovers';
 import { openDetailRoute } from '../lib/detailWin';
 import { restoreHistorySource } from '../lib/historySource';
@@ -150,6 +152,9 @@ export default function FavoritesPage() {
         )}
       </div>
 
+      {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+      <PluginSlot slot="favorites" />
+
       {/* 撤销条：单条移除后出现，可无损还原（含原收藏时间与备注） */}
       {lastDeleted && (
         <div className="hist-undo" role="status">
@@ -222,7 +227,7 @@ export default function FavoritesPage() {
                               ) : (
                                 <div
                                   style={{
-                                    aspectRatio: '2/3', width: '100%', background: 'linear-gradient(160deg, var(--bg-elev2), var(--bg-elev))',
+                                    aspectRatio: '2/3', width: '100%', background: 'linear-gradient(160deg, var(--surface-3), var(--surface-2))',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 11,
                                   }}
                                 >

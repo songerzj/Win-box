@@ -540,8 +540,10 @@ JAVA_HOME="C:/Program Files/Java/jdk-17" npx vitest run tests/jvmSpawnArgs.spec.
 只有 **2 处冲突**，但两处都是「老朋友」：
 
 1. **`src/renderer/components/VideoPlayer.tsx` —— 同一套手法，第三次（§7.4-1 / §7.5-1 的复现）**：
-   上游该文件仍是 **100% CRLF**、本仓纯 LF ⇒ 整文件冲突。做法一字不变 =
+   上游该文件历史上是 CRLF、本仓纯 LF ⇒ 整文件冲突。做法一字不变 =
    **取上游内容 → 整文件转 LF → 重新贴回本仓补丁**。
+   ⚠ **本轮（1.22.0）勘误**：上游在 1.21.9 就把该文件转成了纯 LF（见 §7.7-1 的 `cat-file` 实测），
+   所以「CRLF 导致全文冲突」从 1.21.9 起不再成立；保留本节原文只为记录当时的判断。
    ⚠️ **补丁处数会随上游重构而变化**：1.21.8 时上游裸用 `mpvInfo?.available` 是 **7 行**，
    1.21.9 把 `toggleFull` 重构成窗口级全屏后降到 **5 行**。**动手前必须先 `grep -c` 对处数**
    （本次 5 行 = 2 处 `!!mpvInfo?.available` + 3 处裸用）。贴完应为 **7 处 `mpvUsable`**
@@ -589,3 +591,82 @@ JAVA_HOME="C:/Program Files/Java/jdk-17" npx vitest run tests/jvmSpawnArgs.spec.
   那 1 failed 仍是 §7.5 记录的 `pluginContract.spec.ts` 上游缺陷）
 - 实机冒烟：主进程 `ui-scale: 偏好=auto 工作区=2560x1392 → 125%（已应用 1 个窗口）`，
   外观页出现「界面缩放」档位，renderer 零 error。
+
+### 7.7 合并 1.22.0（主题令牌化 / 插件 v2 / MPV 内核专属 UI / 内存优化）时的取舍
+
+92 文件 / +16272 −3797，**6 处冲突**（本轮最多）。按处理成本排序：
+
+1. **`VideoPlayer.tsx` —— 第四次复现同一手法（§7.4-1 / §7.5-1 / §7.6-1），但补丁形状变了**。
+   本仓仍按「上游内容 + 本仓 `mpvUsable` 补丁」合成。
+   ★★ **勘误（本轮实测，推翻 §7.4/§7.5/§7.6 的说法）**：「上游该文件 100% CRLF」**只在 1.21.8 及更早成立**。
+   `git cat-file blob <rev>:src/renderer/components/VideoPlayer.tsx` 实测 CRLF 数：
+   `fa34237`(1.21.8) = **3422** → `f0675ee`(1.21.9) = **0** → `6ac50a6`(1.22.0) = **0**。
+   即上游在 1.21.9 就把该文件转成纯 LF 了。⇒ **1.22.0 的全文冲突不是行尾造成的，而是内容近乎重写**
+   （`+708 / −93`，插件内核 + 能力面 + 引擎选择都在这一个文件里）。
+   ⇒ 「取上游 → 转 LF」这步现在**仍可照做（幂等，无副作用）**，但**别再把 CRLF 当成冲突原因写进结论**。
+   ★★ **本次的关键变化：上游把 `resolveKernel` 的第 3 参从布尔改成了对象**
+   `resolveKernel(kernelPref, url, { mpvAvailable, engines: usableEngines })`，
+   并且内核列表项也改成 `...(mpvInfo?.available ? [mpv 项] : [])` 的条件渲染。
+   ⇒ **不能机械照抄上轮的新旧字符串**，必须按「处数 + 语义」逐处改写：
+   - 裸 `mpvInfo?.available` 仍是 **6 处**（上轮 5 处），但其中 2 处要分别写成
+     `mpvUsable`（内核列表项）与 `mpvAvailable: mpvUsable`（`resolveKernel` 调用）；
+   - 贴完 `mpvUsable` 总数 = **7**（定义 1 + 使用 6），裸 `mpvInfo?.available` **只剩定义内 1 处**。
+   - ⚠️ **写注释时别把 `mpvInfo?.available` 这四个字写进注释**，否则 `grep -c` 校验会多出 1 处
+     （本轮踩过：注释里写「不要再裸用 `mpvInfo?.available`」→ 计数变 2）。
+2. **`src/renderer/styles/netflix.css` —— 上游把 638 行结构样式搬进 global.css 令牌层**。
+   上游新方案：皮肤文件只声明**令牌 + layout**，结构样式按宿主属性 `data-shell`
+   （`topbar` / `dualbar` / `sidebar` / `pillbar`）在 `global.css` 里统一实现。
+   本仓在 netflix.css 上唯一的本地改动是**字体栈加 `"PingFang SC"`**（macOS 中文字体，
+   见 §7.4）—— 该行已不存在 ⇒ **等价迁移**到
+   `global.css` 的 `:root[data-shell='topbar'] { --font-ui: ... }`（netflix = 单行顶栏 = topbar）。
+   ★ 迁移后 topbar 与 dualbar / sidebar 的字体栈口径一致（后两者上游本来就带 PingFang SC）。
+3. **`src/main/player/mpvCore.ts` —— 上游内联 `--wid` / `--input-ipc-server`，本仓必须留平台门控**。
+   上游 1.22.0 顺手给 demuxer 缓存封顶（内存优化 A3）：
+   `--demuxer-max-bytes=64MiB` + `--demuxer-max-back-bytes=16MiB`，插在
+   `--msg-level=all=error` 之后、`--wid` 之前。
+   本仓同一区域用的是 `...mpvWidArgs(o.wid, p, o.env)` / `...mpvIpcArgs(o.pipe, p)`
+   （macOS 上 `embeddable=false` 时**不传 `--wid`**，退化为独立窗口而不是启动失败）。
+   ⇒ 裁定 = **两个缓存参数保留 + 两个 spread 保留**；**绝不能回退成内联 `` `--wid=${o.wid}` ``**。
+4. **`src/engine/spider/JarSpiderBridge.ts` —— 两侧并存**。本地是 macOS Python 适配
+   （`pyExeCandidates` / `pyExePath` / `pySitePackages` / `pyEnvExtra` / `wheelVariant`，316 行本地增量），
+   上游新增 `armPoolShrink()`（播放期收缩常驻池）。
+   ★ 上游顺带把 `pyRuntimeReady` 的 doc 注释改成「**嵌入式** Python 运行时是否已落盘」——
+   注释是上游新版，函数体保留本仓的 `pySitePackages` / `pyExeReady` 版本（代码零丢失）。
+5. **`src/main/index.ts` —— import 区冲突，取上游（超集）**：只是给 `./util/paths`
+   多解构一个 `distDir`（插件沙箱 worker 路径用）。`import { IPC }` 那行本仓与上游**已一致**。
+6. **`tests/mpvCore.spec.ts` —— import 区两侧并存**（本地 `mpvVideoArgs` / `mpvWidArgs` / `withPlatform`
+   + 上游 `mpvSubtitleTracks` / `mpvVideoParams` / `mpvDisplayStandard` / `normalizeSpdif` / `spdifLabel` / `SPDIF_OPTIONS`）。
+
+#### ★★ 本轮新教训：本仓的「win32 零回归」快照测试，每次上游加参数都会红
+
+`tests/mpvCore.spec.ts` 里那条 `buildMpvArgs 与改动前逐项逐序完全相同` 是**本仓自写**的红线断言
+（防平台化重构改变 win32 输出），但它把参数数组**逐个字面量钉死** ——
+上游只要新增一个参数就必失败（本轮红在新增的两个 demuxer 缓存参数）。
+**这不是源码 bug，也不是断言写错**：红线是「本仓的平台化重构不改 win32 输出」，
+不是「上游永远不许加功能」。⇒ 处理方式 = **把上游新增项按实现顺序补进期望数组**并注明来源，
+**不要删掉这条断言**（它防的是另一类事故：有人调换 d3d11 三参顺序 / 把 `--hwdec` 挪到 `--vo` 之后）。
+
+#### 平台维度（本次上游新增行）
+
+按老规矩扫 `join(';')` / 写死 `.exe` / `process.platform` / `'darwin'` / `'win32'` / `APPDATA`：
+**真实命中 0**，但有 3 处**看了才知道无害**的命中，记下来免得下次重复排查：
+
+- `src/renderer/lib/theme.ts` 的 `.join(';')` = **CSS 内联声明拼接**，与 classpath 无关。
+- `src/main/util/memProbe.ts` = **Windows 专属**实现（`wmic process ... /format:list`，缺失时回落
+  PowerShell `Get-CimInstance Win32_Process`），且 `HELPER_NAMES` 写死 `wmic.exe/powershell.exe/...`。
+  ★ 但 `sampleMemory()` 是 **永不抛**设计（每步 `withDeadline` 4s/6s + `try/catch`）⇒ macOS 上
+  `wmic`/`powershell` 都不存在 ⇒ `children=[]`，只记 Electron 自身内存，**不会崩、也不会卡**。
+  代价：macOS 上日志里 `children=0MB(0)`，**别据此判断「没有子进程」**（是采不到，不是没有）。
+- 新的插件播放引擎链（`PlayerEngineController.ts` / `engineLines.ts`）**平台中立**：
+  `spawn(exe, args, { windowsHide: true })`（`windowsHide` 在 darwin 是 no-op）、`proc.kill()` 跨平台。
+
+#### 验证基线（1.22.0 合并后）
+
+- `node scripts/build-main.mjs` ✅；`npx tsc --noEmit` **0 error**
+- 全量测试：**193 文件 / 2524 用例 → 2514 passed / 5 skipped / 5 failed**
+  （比 1.21.9 基线 +12 文件 = 上游新增的 12 个插件/danmaku 测试文件）
+- ★ **5 条失败全部是 §7.5 记录的 `.trae/` 上游缺陷，且从 1 条涨到 5 条**：
+  上游 `6260157` 把 skill 与规范加进主仓、`87d4b58` 又 revert 掉，但
+  `pluginContract.spec.ts` 里读 `../../.trae/skills/winbox-plugin/assets/*` 的用例留了下来
+  （而且新增了 4 条）。上游 `.gitignore` 忽略 `.trae/` ⇒ **任何纯净克隆必挂 5 条**。
+  本仓裁定仍**不改**（改就引入永久分叉）⇒ **后续合并看到这 5 条失败属正常，不要去找回归**。

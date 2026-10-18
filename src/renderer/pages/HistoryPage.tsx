@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recentWatch, clearUiMemory, deleteWatch, restoreWatch, loadUiMemory, loadLatestWatch, watchedEpisodeOf, latestEpisodeOf, type WatchHistory } from '../lib/uiMemory';
 import { client } from '../api/client';
+// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+import PluginSlot from '../components/PluginSlot';
 import { useCovers } from '../lib/useCovers';
 // ★ 2026-09-30（用户要求）：显式绑定第三方播放器时，从历史直接由它续播（起播位置作为启动参数）
 import { playVodExternal } from '../lib/externalPlay';
@@ -250,6 +252,8 @@ export default function HistoryPage() {
           </button>
         )}
       </div>
+      {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+      <PluginSlot slot="history" />
       {/* 撤销条：单条移除后出现，可无损还原（含原进度与时间） */}
       {lastDeleted && (
         <div className="hist-undo" role="status">
@@ -305,7 +309,7 @@ export default function HistoryPage() {
                       ) : (
                         <div
                           style={{
-                            aspectRatio: '2/3', width: '100%', background: 'linear-gradient(160deg, var(--bg-elev2), var(--bg-elev))',
+                            aspectRatio: '2/3', width: '100%', background: 'linear-gradient(160deg, var(--surface-3), var(--surface-2))',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 11,
                           }}
                         >

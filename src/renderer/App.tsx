@@ -9,6 +9,8 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { cacheGroupOf, cacheKeyOf, cacheLimitOf, isCacheableRoute, PageActiveContext, pickEvictions } from './lib/keepAlive';
+// ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口打开期间释放主窗口里不可见图片的已解码位图（零重载）
+import { setImageFreezeActive } from './lib/freezeImages';
 import ConfigPage from './pages/ConfigPage';
 import HomePage from './pages/HomePage';
 import DiscoverPage from './pages/DiscoverPage';
@@ -34,8 +36,11 @@ import { useShowDiscover } from './lib/uiPrefs';
 // 详情打开方式统一入口 + 固定窗口身份判定。
 import { isDetailWindow, openDetailRoute } from './lib/detailWin';
 import { isSearchWindow, bindSearchNav } from './lib/searchWin';
-import { useTheme } from './lib/theme';
+import { useSkinLayout, useTheme } from './lib/theme';
 import { client } from './api/client';
+// ★ 2026-10-18 插件快捷键（contributes.keymap）：app 作用域分发（动作复用 ui.command 词表）
+import { usePluginKeymaps } from './lib/pluginKeymaps';
+import { runPluginCommand } from './lib/pluginCommands';
 import type { Episode } from '../shared/types';
 
 /**
@@ -237,6 +242,12 @@ function AppShell() {
    *  两个经典主题（经典深/浅）与 sidebar 版式已删除。 */
   const theme = useTheme();
   /**
+   * ★ 2026-10-18（用户要求「统一皮肤标准」）：外壳形态改读皮肤注册表里的 **layout 结构枚举**（`shell`），
+   *   不再按皮肤 id 分支 —— 插件皮肤声明同一枚举即可复用整套外壳。
+   *   topbar = 单行顶栏 / dualbar = 双行头 / sidebar = 玻璃侧边栏 / pillbar = 胶囊导航 + 浮动圆钮。
+   */
+  const shell = useSkinLayout().shell ?? 'topbar';
+  /**
    * ★ 2026-10-08（用户要求「照参考图做一套外观，允许大改 UI 布局」）：第四套皮肤**豆风**
    *   （Material You × 豆瓣）= 又一个**独立外壳**（见下方 douban 分支）：
    *   顶部白色工具栏（深蓝品牌胶囊 + 页面标题 + 搜索/换源 + 窗口控制）
@@ -244,14 +255,14 @@ function AppShell() {
    *   ＋ 右下角浮动圆钮组（发现 / 历史 / 配置）。
    *   页面内部由 douban.css 统一转浅色（淡紫底 + 白卡 + 靛蓝主色 + 琥珀橙点缀）。
    */
-  const douban = theme === 'douban';
+  const douban = shell === 'pillbar';
   /**
    * ★ 2026-09-29（用户要求「完全改布局」）：Apple 皮肤 = **独立外壳**，不复用经典/Netflix 骨架：
    *   全宽 Liquid Glass 工具栏（左置交通灯 + 返回箭头 + 页面标题 + 右侧搜索/换源）
    *   ＋ 玻璃侧边栏（分组：媒体 / 其他，SF 风格线性图标，选中项实心蓝）
    *   ＋ 内容区（Apple TV 式精选轮播 + 内容栏，见 DiscoverPage / apple.css）。
    */
-  const apple = theme === 'apple';
+  const apple = shell === 'sidebar';
   /**
    * ★ 2026-10-16（用户要求「四套皮肤各有特色、绝对大改」）：**哔哔专属外壳**。
    *   此前「哔哔与 netflix 共用 `.nf-nav` 单行顶栏」正是四套皮肤长得像的根源之一。
@@ -259,7 +270,7 @@ function AppShell() {
    *   下行为**分类 tab 条**（选中项蓝色胶囊 + 弹跳）——
    *   与 netflix 的「满幅渐变浮层」、大果的「侧边栏」、大豆的「胶囊导航条」形态互不相同。
    */
-  const bilibili = theme === 'bilibili';
+  const bilibili = shell === 'dualbar';
   /**
    * ★ 2026-09-30（用户要求）：配置页可关掉「发现」页（默认展示）。
    *   关掉后：导航里不出现「发现」；默认落地页从 `/` 改为 `/home`（源主页）。
@@ -326,6 +337,10 @@ function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
+
+  // ★ 2026-10-18 插件快捷键（`contributes.keymap`，scope=app）：命中即交给宿主受控动作词表执行
+  //   （插件不跑代码；键位在校验期已保证含 Ctrl/Alt/Meta，与宿主裸键不重叠）
+  usePluginKeymaps('app', (km) => { void runPluginCommand(km); });
 
   // 初始化加载历史记录
   useEffect(() => {
@@ -426,6 +441,17 @@ function AppShell() {
     return () => window.removeEventListener('focus', onFocus);
   }, [isPlayerWin]);
 
+  /**
+   * ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口打开期间，把**本窗口里不可见**的已解码图片释放掉
+   *   （只清 `img.src`、原值备份、React 树与数据原地保留，零重载）；播放器关闭即全部挂回。
+   *   动因：主窗口图片墙的已解码位图 ≈130~200MB 记在 **GPU 进程**（见 docs/design/内存优化_专项立项.md §2.9）。
+   *   玩家窗口自身不接（主进程广播时已排除；这里再兜一道，避免它冻自己的封面）。
+   */
+  useEffect(() => {
+    if (isPlayerWin) return;
+    return client.playerOnWindowState((open) => setImageFreezeActive(open));
+  }, [isPlayerWin]);
+
   // 首次同意后主窗口进入说明页；记录标记，下次启动不再弹出或跳转。
   const agreeDisclaim = () => {
     try {
@@ -449,7 +475,7 @@ function AppShell() {
         className="card modal-in"
         style={{
           width: 520, maxWidth: '92vw', maxHeight: '80vh', overflow: 'auto', padding: 22,
-          background: 'var(--bg)', boxShadow: '0 18px 60px rgba(0,0,0,.5)',
+          background: 'var(--surface-2)', boxShadow: '0 18px 60px rgba(0,0,0,.5)',
         }}
       >
         <h3 style={{ margin: '0 0 6px' }}>Win-Box 使用声明</h3>
@@ -766,8 +792,10 @@ function AppShell() {
     );
   }
 
+  /** 内置皮肤沿用「皮肤名」类名；插件皮肤 id 含 `:`（不作类名），样式一律由 `data-theme` 驱动 */
+  const themeClass = theme.includes(':') ? '' : ` ${theme}`;
   return (
-    <div className={`app nf ${theme}`.trim()}>
+    <div className={`app nf${themeClass}`}>
       <AppAmbient />
       {disclaim && DisclaimerModal}
       <main className="main">

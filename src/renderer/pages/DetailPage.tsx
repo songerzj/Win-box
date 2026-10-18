@@ -3,6 +3,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { detailRouteParams } from '../../shared/detailWin';
 import { client } from '../api/client';
+// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+import PluginSlot from '../components/PluginSlot';
 import { openSearchWindow } from '../lib/searchWin';
 import BackButton from '../components/BackButton';
 import { isDetailWindow } from '../lib/detailWin';
@@ -17,7 +19,7 @@ import { EP_PAGE_SIZE, epPageRanges, epPageSlice } from '../lib/epPager';
 import { makeStaleGuard } from '../lib/staleGuard';
 import { detailIsEmpty, configCenterHintOf } from '../../engine/config/sourceKind';
 import DriveBindModal from '../components/DriveBindModal';
-import { useTheme } from '../lib/theme';
+import { useSkinLayout } from '../lib/theme';
 // ★ 2026-10-17（用户要求）：收藏 —— 本片加入/移出收藏（列表页在 pages/FavoritesPage.tsx）
 import { FAVORITES_EVENT, addFavorite, findFavorite, removeFavorite } from '../lib/favorites';
 
@@ -33,13 +35,13 @@ export default function DetailPage({
   const nav = useNavigate();
   /** ★ 2026-10-08（用户要求「详情页独立窗口」）：本页是否运行在独立详情窗口里（hash 带 dw=1）→ 返回=关窗 */
   const isDetailWin = isDetailWindow();
-  /** ★ 2026-09-24：Netflix 皮肤下详情页用「大图背景 + 大标题 + 白色播放键」的影院式排版
-   *  ★ 2026-09-29：Apple 皮肤用同源剧照背景，但排版走 Apple TV 影片页观感（玻璃信息卡 + 蓝色胶囊播放键） */
-  const nf = useTheme() === 'netflix';
-  const ap = useTheme() === 'apple';
-  /** ★ 2026-10-08（豆风）：豆瓣式影片页 —— 左侧大海报 + 右侧信息区（简介/演职员/操作），
-   *   下方「播放源 / 选集 / 类型 / 演员 / 相关推荐」都走浅色 M3 卡片（见 douban.css 的 .db-detail 组）。 */
-  const db = useTheme() === 'douban';
+  /** ★ 2026-10-18（用户要求「统一皮肤标准」）：详情排版改读皮肤的 **layout 结构枚举**
+   *   （`detailStyle`）—— `cinema` = 影院大图 / `glass` = 玻璃信息卡 / `poster` = 左海报右信息；
+   *   不再按皮肤 id 分支，插件皮肤声明同一枚举即可复用整套排版。 */
+  const detailStyle = useSkinLayout().detailStyle;
+  const nf = detailStyle === 'cinema';
+  const ap = detailStyle === 'glass';
+  const db = detailStyle === 'poster';
   // 从列表页经 URL query 携带的封面（fty 等源 detail 接口偶发不返回 vod_pic，用作兜底）
   const fromListPic = searchParams.get('pic') || '';
   /** ★ 2026-09-24：列表页带过来的片名 —— 「立播」等源详情接口不返回 vod_name，用它兜底 */
@@ -376,6 +378,8 @@ export default function DetailPage({
         </div>
       )}
       <div className={`content${nf ? ' nf-detail-wrap' : ap ? ' ap-detail-wrap' : db ? ' db-detail' : ''}`} ref={contentRef}>
+        {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+        <PluginSlot slot="detail" />
         {loading ? (
           <div className="empty"><span className="spinner" aria-hidden="true" />加载中…</div>
         ) : err ? (
@@ -396,14 +400,14 @@ export default function DetailPage({
                 <img
                   src={cover}
                   className={db ? 'db-hero-poster' : undefined}
-                  style={db ? undefined : { width: 120, aspectRatio: '2/3', objectFit: 'cover', borderRadius: 8, background: 'var(--bg-elev2)' }}
+                  style={db ? undefined : { width: 120, aspectRatio: '2/3', objectFit: 'cover', borderRadius: 8, background: 'var(--surface-3)' }}
                   onError={coverErr}
                 />
               ) : (
                 <div
                   className={db ? 'db-hero-poster db-hero-nocover' : undefined}
                   style={{
-                    width: db ? undefined : 120, aspectRatio: '2/3', borderRadius: db ? undefined : 8, background: 'var(--bg-elev2)', flex: 'none',
+                    width: db ? undefined : 120, aspectRatio: '2/3', borderRadius: db ? undefined : 8, background: 'var(--surface-3)', flex: 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: 11,
                   }}
                 >暂无封面</div>
