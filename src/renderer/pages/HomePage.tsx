@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { client } from '../api/client';
+// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+import PluginSlot from '../components/PluginSlot';
 import type { SourceBean, VodItem, SearchAllReport, AggVodItem, FilterGroup } from '../../shared/types';
 import { sourceAvailability } from '../../engine/vod/sourceAvailability';
 import { isDoubanLikeSource } from '../../engine/config/sourceKind';
@@ -1200,6 +1202,8 @@ export default function HomePage({ onOpenDetail }: { onOpenDetail: (key: string,
       </div>
       )}
       <div className="content" ref={contentRef}>
+        {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+        <PluginSlot slot="home" />
         {isSearchWindow() && folder && <button style={{ marginBottom: 12 }} onClick={exitFolder}>← 返回搜索结果</button>}
         {err && <div className="err" style={{ marginBottom: 10 }}>{err}</div>}
         {!err && fallback && !aggMode && (

@@ -13,7 +13,9 @@ import { allSkins, type Theme } from '../lib/themeTokens';
 import { DEFAULT_META_SETTINGS, type MetaSettings } from '../../shared/meta';
 import { UI_SCALE_OPTIONS, type UiScaleState } from '../../shared/uiScale';
 import { DEFAULT_PLAYER_SETTINGS, type PlayerSettings, type MpvStatus } from '../../shared/player';
-import type { PluginView } from '../../shared/plugin';
+import type { PlayerEngineView, PluginView, PluginInspectResult, UiCommandView, KeymapView, SettingsPanelView, SettingsFieldView } from '../../shared/plugin';
+import { PERMISSION_LABELS } from '../../shared/plugin';
+import { commandsFor, runPluginCommand } from '../lib/pluginCommands';
 import type { DavServer } from '../../shared/webdav';
 
 type TabId = 'sources' | 'health' | 'profiles' | 'account' | 'storage' | 'appearance' | 'play' | 'plugins' | 'shortcut' | 'network' | 'backup';
@@ -160,14 +162,38 @@ export default function ConfigPage() {
   const [pluginItems, setPluginItems] = useState<PluginView[]>([]);
   const [pluginMsg, setPluginMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
   const [pluginBusy, setPluginBusy] = useState(false);
+  /** ★ 2026-10-18（R10）L4 安装**权限确认**弹层（干跑结果；`kind:"code"` 才弹） */
+  const [pluginConfirm, setPluginConfirm] = useState<PluginInspectResult | null>(null);
+  /** ★ 2026-10-18 插件受限动作按钮（`contributes.ui.command`，placement=config） */
+  const [pluginCmds, setPluginCmds] = useState<UiCommandView[]>([]);
+  /** ★ 2026-10-18 插件快捷键只读一览（`contributes.keymap`；不分作用域，全部列出） */
+  const [pluginKeys, setPluginKeys] = useState<KeymapView[]>([]);
+  /** ★ 2026-10-18 插件设置面板（`contributes.settings.panel`；配置页每插件卡片内渲染表单） */
+  const [pluginPanels, setPluginPanels] = useState<SettingsPanelView[]>([]);
+  /** ★ text / number 字段的**草稿值**（按 `pluginId|panelId|fieldKey` 存；失焦才提交，避免每次按键都写盘） */
+  const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const loadPlugins = async () => {
     try {
       setPluginItems(await client.pluginList());
       // ★ 2026-10-18：插件增删改后刷新皮肤注册表（插件皮肤 = `contributes.theme`，见 docs/design/皮肤与主题规范.md）
       void loadSkinRegistry();
+      // ★ 2026-10-18：同一次刷新里把「插件命令」也拉回来（停用 / 卸载后按钮应随之消失）
+      setPluginCmds(commandsFor(await client.pluginCommands().catch(() => []), 'config'));
+      // ★ 2026-10-18：插件快捷键同样随插件增删改刷新（只读一览，作用于主窗口 / 播放器）
+      setPluginKeys(await client.pluginKeymaps().catch(() => []));
+      // ★ 2026-10-18：插件设置面板（含各字段**有效值** = 存值合法则用存值、否则回落 default）
+      setPluginPanels(await client.pluginSettings().catch(() => []));
     } catch (e) {
       setPluginMsg({ text: `读取插件列表失败：${(e as Error).message}`, kind: 'err' });
     }
+  };
+  /**
+   * ★ 2026-10-18：执行一条插件命令。★ 插件**不跑代码** —— 动作由宿主受控词表执行
+   * （见 `lib/pluginCommands.ts`），这里只负责把结果落到页面提示。
+   */
+  const runCmd = async (c: UiCommandView) => {
+    const r = await runPluginCommand(c);
+    setPluginMsg({ text: r.message, kind: r.ok ? 'ok' : 'err' });
   };
   /** 插件增删改的统一收尾：更新列表 + 刷新皮肤注册表（新装的皮肤立即出现在「外观主题」里） */
   const applyPluginResult = (r: { items?: PluginView[]; reason?: string }, okText: string) => {
@@ -175,12 +201,106 @@ export default function ConfigPage() {
     void loadSkinRegistry();
     setPluginMsg(r.reason ? { text: r.reason, kind: 'err' } : { text: okText, kind: 'ok' });
   };
+  /**
+   * ★ 2026-10-18：写一个插件设置字段值。★ 插件**不跑代码** —— 值由**宿主代持久化**并按该字段的
+   * 类型 / 约束校验（不合法 → 明确失败）；成功时用回带的最新面板列表收敛显示。
+   */
+  const saveSetting = async (id: string, panelId: string, key: string, value: unknown): Promise<void> => {
+    try {
+      const r = await client.pluginSettingSet({ id, panelId, key, value });
+      if (r.panels) setPluginPanels(r.panels);
+      if (!r.ok && r.reason) setPluginMsg({ text: r.reason, kind: 'err' });
+    } catch (e) {
+      setPluginMsg({ text: `保存失败：${(e as Error).message}`, kind: 'err' });
+    }
+  };
+  /**
+   * ★ 2026-10-18 插件设置字段控件（**受限词汇表**的 4 类；不注入任何插件自带 UI）：
+   *   toggle / select 立即提交；text / number 用草稿值 + 失焦（或回车）提交，避免逐键写盘。
+   */
+  const renderSettingField = (pluginId: string, panel: SettingsPanelView, f: SettingsFieldView) => {
+    const dk = `${pluginId}|${panel.id}|${f.key}`;
+    const clearDraft = (): void => {
+      setSettingDrafts((d) => {
+        if (!(dk in d)) return d;
+        const n = { ...d };
+        delete n[dk];
+        return n;
+      });
+    };
+    const commit = (value: unknown): void => {
+      void saveSetting(pluginId, panel.id, f.key, value).then(clearDraft);
+    };
+    if (f.type === 'toggle') {
+      return <input type="checkbox" checked={f.value === true} disabled={pluginBusy} onChange={(e) => commit(e.target.checked)} />;
+    }
+    if (f.type === 'select') {
+      return (
+        <select value={String(f.value)} disabled={pluginBusy} onChange={(e) => commit(e.target.value)}>
+          {(f.options ?? []).map((o) => (
+            <option key={o.value} value={o.value}>{o.label || o.value}</option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <input
+        type={f.type === 'number' ? 'number' : 'text'}
+        value={settingDrafts[dk] ?? String(f.value)}
+        disabled={pluginBusy}
+        min={f.min}
+        max={f.max}
+        step={f.step}
+        maxLength={f.maxLength}
+        placeholder={f.placeholder}
+        style={{ width: f.type === 'number' ? 140 : 240 }}
+        onChange={(e) => setSettingDrafts((d) => ({ ...d, [dk]: e.target.value }))}
+        onBlur={(e) => {
+          // ★ 直接读 **DOM 当前值**（不依赖「草稿 state 是否已重渲染」——同步派发 input+blur 时闭包里的草稿会是旧值）
+          const v = e.target.value;
+          if (v === String(f.value)) { clearDraft(); return; } // 没改就不重复写盘
+          commit(f.type === 'number' ? Number(v) : v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        }}
+      />
+    );
+  };
+  /**
+   * ★ 2026-10-18（R10）安装**两段式**：
+   *   ① `pluginInspect()` 干跑（弹文件框 + 解包校验，**不落盘**）→ 取权限清单；
+   *   ② `kind:"code"` → 弹**权限确认**（列出 `permissions` + `permissionNotes`，确认才装）；
+   *      `kind:"asset"` → 无权限，直接装。
+   */
   const installPlugin = async () => {
     setPluginBusy(true);
     try {
-      const r = await client.pluginInstall();
+      const ins = await client.pluginInspect();
+      if (ins.canceled) return;
+      if (!ins.ok) {
+        setPluginMsg({ text: `安装失败：${ins.reason || ins.reasonCode || '插件包不合法'}`, kind: 'err' });
+        return;
+      }
+      if (ins.kind === 'code') {
+        setPluginConfirm(ins); // 交弹层确认（用户点「确认安装」再走 installConfirmed）
+        return;
+      }
+      await installConfirmed(ins);
+    } catch (e) {
+      setPluginMsg({ text: `安装失败：${(e as Error).message}`, kind: 'err' });
+    } finally {
+      setPluginBusy(false);
+    }
+  };
+  /** 第 ② 段：按干跑选定的文件落盘 */
+  const installConfirmed = async (ins: PluginInspectResult) => {
+    setPluginBusy(true);
+    try {
+      const r = await client.pluginInstall({ path: ins.path });
       if (r.canceled) return;
       applyPluginResult(r, '安装成功（运行库就绪前该插件保持「未就位」）');
+      setPluginConfirm(null);
     } catch (e) {
       setPluginMsg({ text: `安装失败：${(e as Error).message}`, kind: 'err' });
     } finally {
@@ -320,6 +440,59 @@ export default function ConfigPage() {
       setMpvMsg({ text: `保存失败：${(e as Error).message}`, kind: 'err' });
     }
   };
+  /**
+   * ★ 2026-10-18（R11）**插件播放内核**（`contributes.player.engine`）：
+   *   插件只给「引擎描述符」，**由宿主托管进程**（启动 / 通信 / 退出都在主进程）；渲染层只管
+   *   「列出来 + 开关 + 本机路径」。★ 默认关；**首次开启二次确认**（D4 口径：开启 = 将执行插件提供的本机程序）。
+   */
+  const [pluginEngines, setPluginEngines] = useState<PlayerEngineView[]>([]);
+  const [enginePathDraft, setEnginePathDraft] = useState<Record<string, string>>({});
+  const [engineMsg, setEngineMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
+  const loadEngines = async () => {
+    try {
+      const list = await client.engineList();
+      setPluginEngines(list.filter((e) => e.pluginId !== 'builtin')); // 内置 2 由上面 MPV 卡片负责
+    } catch {
+      setPluginEngines([]);
+    }
+  };
+  useEffect(() => {
+    void loadEngines();
+  }, []);
+  const toggleEngine = async (e: PlayerEngineView, on: boolean) => {
+    if (on && !playPrefs.engineEnabled[e.id]) {
+      // ★ 首次开启 = 明确告知「将执行插件提供的本机程序」并二次确认
+      const where = e.path ? `（${e.path}）` : '';
+      const ok = window.confirm(
+        `该内核为插件提供的本机程序${where}，将由宿主代为启动并与它通信（宿主托管，退出时一并结束）。\n确定启用？`,
+      );
+      if (!ok) return;
+    }
+    try {
+      const r = await client.engineSetEnabled({ id: e.id, enabled: on });
+      setPlayPrefs(await client.playerPrefsGet().catch(() => playPrefs));
+      await loadEngines();
+      setEngineMsg({ text: r.ok ? (on ? `已启用：${e.label}` : `已关闭：${e.label}`) : r.reason || '操作失败', kind: r.ok ? 'ok' : 'err' });
+    } catch (err) {
+      setEngineMsg({ text: `操作失败：${(err as Error).message}`, kind: 'err' });
+    }
+  };
+  const saveEnginePath = async (e: PlayerEngineView) => {
+    const p = (enginePathDraft[e.id] ?? playPrefs.enginePaths[e.id] ?? '').trim();
+    try {
+      await client.playerPrefsSet({ enginePaths: { ...playPrefs.enginePaths, [e.id]: p } });
+      setPlayPrefs(await client.playerPrefsGet());
+      setEnginePathDraft((d) => {
+        const next = { ...d };
+        delete next[e.id];
+        return next;
+      });
+      await loadEngines();
+      setEngineMsg({ text: p ? `已保存路径：${e.label}` : `已清空路径：${e.label}`, kind: 'ok' });
+    } catch (err) {
+      setEngineMsg({ text: `保存失败：${(err as Error).message}`, kind: 'err' });
+    }
+  };
 
   // ---- 老板键设置（全局快捷键隐藏/恢复）----
   const [bossKey, setBossKey] = useState<BossKeySettings | null>(null);
@@ -411,6 +584,8 @@ export default function ConfigPage() {
   /** ★ 2026-10-16（用户要求）：直播线路多选删除（对齐「我的源列表」的多选范式） */
   const [livePick, setLivePick] = useState<Set<number>>(new Set());
   const [liveDeleteBusy, setLiveDeleteBusy] = useState(false);
+  /** ★ 2026-10-18 导出直播线路（拉分组 → 按模板渲染 → 保存）进行中 */
+  const [liveExportBusy, setLiveExportBusy] = useState(false);
   const sourceProfileRef = useRef<string | null>(null);
   const selectAllSourcesRef = useRef<HTMLInputElement>(null);
   const selectAllLivesRef = useRef<HTMLInputElement>(null);
@@ -651,6 +826,28 @@ export default function ConfigPage() {
       if (next.has(index)) next.delete(index); else next.add(index);
       return next;
     });
+  }
+
+  /**
+   * ★ 2026-10-18：导出某条直播线路（宿主取该线路分组 → 按模板渲染 → 保存对话框写文件）。
+   * ★ 只做**输出侧格式化**（不解析、不发请求）；模板 = 内置 2 个 + 插件 `contributes.live.template`。
+   */
+  async function exportLiveLine(index: number) {
+    if (liveExportBusy) return;
+    setLiveExportBusy(true);
+    setErr('');
+    try {
+      const { groups, liveName } = await client.loadLive(index);
+      const tpls = await client.liveTemplates();
+      const tpl = tpls[0];
+      if (!tpl) { setErr('无可用导出模板'); return; }
+      const r = await client.liveExport({ templateId: tpl.id, groups, defaultName: `${liveName || 'live'}.${tpl.ext}` });
+      setLastOk(r.saved ? `已导出到：${r.path}` : '已取消导出');
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setLiveExportBusy(false);
+    }
   }
 
   /** ★ 2026-10-16（用户要求）：多选删除直播线路（对齐「我的源列表」的批量删除）。 */
@@ -1085,6 +1282,8 @@ export default function ConfigPage() {
     if (tab === 'health') client.dataDir().then(setDataDir).catch(() => undefined);
     // ★ 2026-10-16：切到「插件/组件」时刷新插件列表
     if (tab === 'plugins') void loadPlugins();
+    // ★ 2026-10-18：切到「快捷键」时拉插件快捷键一览（`contributes.keymap`；只读、不跑插件代码）
+    if (tab === 'shortcut') client.pluginKeymaps().then((l) => setPluginKeys(l)).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
@@ -1449,6 +1648,8 @@ export default function ConfigPage() {
                         ) : (
                           <>
                             <button className="linkbtn" title="重命名该直播线路" onClick={() => { setLiveEditIdx(i); setLiveEditName(l.name || `线路${i + 1}`); }}>改名</button>
+                            {/* ★ 2026-10-18：把该线路的频道导出为 TXT / M3U（模板 = 内置 + 插件） */}
+                            <button className="linkbtn" disabled={liveExportBusy} title="把该线路的频道导出为文件" onClick={() => void exportLiveLine(i)}>导出</button>
                             <button className="linkbtn danger" disabled={liveDeleteBusy} title="删除该直播线路" onClick={() => void delLive(i, l.name)}>删除</button>
                           </>
                         )}
@@ -2140,6 +2341,52 @@ export default function ConfigPage() {
               {mpvMsg.text}
             </span>
           )}
+          {/* ★ 2026-10-18（R11）**插件播放内核**（`contributes.player.engine`）：插件只给「引擎描述符」，
+              **由宿主托管进程**（插件永不拉进程 —— `spawn` 是规范 §6.2 永久禁止项）。
+              ★ 默认关；开启 = 「将执行插件提供的本机程序」→ **首次开启二次确认**。 */}
+          {pluginEngines.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <span style={{ fontWeight: 600 }}>插件播放内核</span>
+              <span className="muted" style={{ fontSize: 11 }}>
+                由插件声明、**宿主代为托管**的第三/第四内核（默认关闭）：宿主负责启动 / 通信 / 退出，插件本身不碰进程。
+                开启后可在播放器控制条的内核列表里选用。
+              </span>
+              {pluginEngines.map((e) => {
+                const on = playPrefs.engineEnabled[e.id] === true;
+                return (
+                  <div key={e.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0' }}>
+                    <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={on} onChange={(ev) => void toggleEngine(e, ev.target.checked)} />
+                        <span>{e.label}</span>
+                      </label>
+                      <span className="muted" style={{ fontSize: 11 }}>{e.id} · 来自 {e.pluginName}</span>
+                      <span className={e.ready ? 'status' : 'err'} style={{ margin: 0, fontSize: 11, wordBreak: 'break-all' }}>
+                        {e.ready ? `就绪${e.path ? `：${e.path}` : ''}` : e.note || '未就绪'}
+                      </span>
+                    </div>
+                    {/* 仅 `local-path` 来源的引擎给路径输入框（对位 mpvPath：留空 = 未就绪，需用户指定） */}
+                    {e.source === 'local-path' && (
+                      <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                        <input
+                          placeholder="本机程序路径（如 D:\\my-engine\\engine.exe）…"
+                          value={enginePathDraft[e.id] ?? playPrefs.enginePaths[e.id] ?? ''}
+                          style={{ flex: 1 }}
+                          onChange={(ev) => setEnginePathDraft((d) => ({ ...d, [e.id]: ev.target.value }))}
+                        />
+                        <button className="primary" onClick={() => void saveEnginePath(e)}>保存</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {engineMsg && (
+                <span className={engineMsg.kind === 'err' ? 'err' : 'status'} style={{ margin: 0, wordBreak: 'break-all' }}>
+                  {engineMsg.text}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
       </>
@@ -2168,6 +2415,25 @@ export default function ConfigPage() {
               {pluginMsg.text}
             </span>
           )}
+          {/* ★ 2026-10-18 插件受限动作按钮（`contributes.ui.command`）：插件只声明「按钮 + 动作词表」，
+              由宿主渲染层执行（不注入任何插件自带 UI；无命令时不显示）。 */}
+          {pluginCmds.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <div className="muted" style={{ fontWeight: 600, marginBottom: 6 }}>插件命令</div>
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                {pluginCmds.map((c) => (
+                  <button
+                    key={c.id}
+                    title={c.title || `来自插件：${c.pluginName}`}
+                    disabled={pluginBusy}
+                    onClick={() => void runCmd(c)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {pluginItems.length === 0 ? (
@@ -2192,6 +2458,32 @@ export default function ConfigPage() {
                   {p.ready ? (p.enabled ? '已启用' : '已停用') : '未就位（载荷缺失）'}
                 </span>
               </div>
+              {/* ★ 2026-10-18（R10）L4 沙箱（`kind:"code"`）：权限徽标 + 运行态 */}
+              {p.kind === 'code' && (
+                <div className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="muted" style={{ fontSize: 11 }}>权限：</span>
+                  {p.permissions.length ? (
+                    p.permissions.map((x) => (
+                      <span key={x} className="tag" title={(PERMISSION_LABELS as Record<string, string>)[x] || x}>{x}</span>
+                    ))
+                  ) : (
+                    <span className="muted" style={{ fontSize: 11 }}>—</span>
+                  )}
+                  <span
+                    className={p.sandbox?.error ? 'err' : 'status'}
+                    style={{ margin: 0, fontSize: 11 }}
+                    title={p.sandbox?.error || 'L4 沙箱（独立 worker）运行态'}
+                  >
+                    {p.sandbox?.error
+                      ? `沙箱启动失败：${p.sandbox.error}`
+                      : p.sandbox?.running
+                        ? '沙箱运行中'
+                        : p.enabled && p.ready
+                          ? '沙箱未运行'
+                          : '沙箱未启动'}
+                  </span>
+                </div>
+              )}
               <div className="row" style={{ gap: 8 }}>
                 {/* 启停：与第三方统一（停用保留磁盘、不参与宿主装配） */}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
@@ -2212,9 +2504,63 @@ export default function ConfigPage() {
                   卸载
                 </button>
               </div>
+              {/* ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）：宿主按**受限词汇表**渲染表单，
+                  值由宿主**代持久化**（插件不跑代码、不注入任何 UI；未声明面板的插件不显示）。 */}
+              {pluginPanels.filter((x) => x.pluginId === p.id).map((panel) => (
+                <div
+                  key={panel.id}
+                  style={{
+                    marginTop: 6, paddingTop: 8, borderTop: '1px solid var(--border-soft, rgba(255,255,255,.08))',
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                  }}
+                >
+                  <span className="muted" style={{ fontWeight: 600 }} title={panel.title || undefined}>{panel.label}</span>
+                  {panel.fields.map((f) => (
+                    <div key={f.key} className="row" style={{ alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, flex: 'none', minWidth: 120 }} title={f.hint || undefined}>{f.label}</span>
+                      {renderSettingField(p.id, panel, f)}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         ))
+      )}
+      {/* ★ 2026-10-18（R10）L4 安装权限确认弹层（仅 `kind:"code"`；确认后才落盘） */}
+      {pluginConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          onClick={() => { if (!pluginBusy) setPluginConfirm(null); }}
+        >
+          <div
+            className="card"
+            style={{ width: 520, maxWidth: '92vw', maxHeight: '80vh', overflow: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontWeight: 600, fontSize: 15 }}>安装插件「{pluginConfirm.name}」</div>
+            <div className="muted" style={{ fontSize: 12 }}>
+              {pluginConfirm.id} · v{pluginConfirm.version} · <b>L4 沙箱代码插件</b>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(pluginConfirm.permissions ?? []).map((x) => (
+                <div key={x} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span style={{ fontWeight: 600, fontSize: 12 }}>{x}</span>
+                  <span className="muted" style={{ fontSize: 11 }}>
+                    {pluginConfirm.permissionNotes?.[x] || (PERMISSION_LABELS as Record<string, string>)[x] || ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="muted" style={{ fontSize: 11 }}>
+              代码将在独立沙箱中运行；未授权的 API 不会被提供。
+            </div>
+            <div className="row" style={{ gap: 8, justifyContent: 'flex-end' }}>
+              <button disabled={pluginBusy} onClick={() => setPluginConfirm(null)}>取消</button>
+              <button className="primary" disabled={pluginBusy} onClick={() => void installConfirmed(pluginConfirm)}>确认安装</button>
+            </div>
+          </div>
+        </div>
       )}
       </>
       )}
@@ -2279,6 +2625,25 @@ export default function ConfigPage() {
           <div className="empty"><span className="spinner" aria-hidden="true" />加载中…</div>
         )}
       </div>
+
+      {/* ★ 2026-10-18 插件快捷键（`contributes.keymap`）：**只读一览**（插件不跑代码；动作由宿主词表执行）
+          —— 与「宿主键位」同一处（配置页快捷键 tab）；无插件快捷键时不显示。 */}
+      {pluginKeys.length > 0 && (
+        <div className="card" id="cfg-plugin-keymap" style={{ padding: 12, marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8 }}>插件快捷键</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {pluginKeys.map((k) => (
+              <div className="row" key={k.id} style={{ alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, minWidth: 120 }}>{k.key}</span>
+                <span>{k.label}</span>
+                <span className="muted" style={{ fontSize: 11 }}>
+                  生效于{k.scope.map((s) => (s === 'player' ? '播放器' : '主窗口')).join(' / ')} · 来自 {k.pluginName}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       </>
       )}

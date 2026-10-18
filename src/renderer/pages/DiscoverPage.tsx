@@ -6,6 +6,8 @@
 // 交互：点任意影片 → 走 `#/search?agg=<片名>` 用「源」做一次全源搜索（没源时提示去导入）。
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { client } from '../api/client';
+// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+import PluginSlot from '../components/PluginSlot';
 import { openSearchWindow } from '../lib/searchWin';
 import { useSkinLayout } from '../lib/theme';
 import HScrollRow from '../components/HScrollRow';
@@ -291,6 +293,8 @@ export default function DiscoverPage() {
   return (
     <>
       <div className="content">
+        {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+        <PluginSlot slot="discover" />
         {/* ---- ★ 2026-10-16 首屏聚光卡：只在「推荐榜」首页视图出现（选了分类就不再抢画面）----
              数据 = 第一个榜单的前 12 部（候选池，供 hero 挑「有横版剧照」的片子轮播）；
              四皮肤共用同一份结构，材质/配色由各自 CSS 决定。 ---- */}
