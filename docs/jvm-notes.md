@@ -613,6 +613,12 @@ JAVA_HOME="C:/Program Files/Java/jdk-17" npx vitest run tests/jvmSpawnArgs.spec.
    - 贴完 `mpvUsable` 总数 = **7**（定义 1 + 使用 6），裸 `mpvInfo?.available` **只剩定义内 1 处**。
    - ⚠️ **写注释时别把 `mpvInfo?.available` 这四个字写进注释**，否则 `grep -c` 校验会多出 1 处
      （本轮踩过：注释里写「不要再裸用 `mpvInfo?.available`」→ 计数变 2）。
+   - 🔢 **验收口径（本轮实测，别再靠肉眼数）**：`diff -U0 上游基线 工作区`
+     应为 **7 个 hunk**（定义块 + 内核列表项 + `resolveKernel` 调用 + `mpvAvailRef` +
+     `{allowMpv && ...}` + `<button className={...}>` + 末尾 `mpvUsable && (`）；
+     若用**默认 3 行上下文**（`diff -u`）则只剩 **6 个** —— 因为第 5、6 处相距 5 行，
+     上下文重叠后被并成一个 hunk。⇒ **报数时先说明用的是哪种上下文**，否则 6/7 会互相「纠错」。
+     ⚠️ 另：`diff -u -U0` **不要混写**（`-u` 的默认上下文会掩盖 `-U0`），要么 `diff -U0`，要么 `git diff --no-index -U0`。
 2. **`src/renderer/styles/netflix.css` —— 上游把 638 行结构样式搬进 global.css 令牌层**。
    上游新方案：皮肤文件只声明**令牌 + layout**，结构样式按宿主属性 `data-shell`
    （`topbar` / `dualbar` / `sidebar` / `pillbar`）在 `global.css` 里统一实现。
