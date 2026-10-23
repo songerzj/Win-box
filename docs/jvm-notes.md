@@ -676,3 +676,83 @@ JAVA_HOME="C:/Program Files/Java/jdk-17" npx vitest run tests/jvmSpawnArgs.spec.
   `pluginContract.spec.ts` 里读 `../../.trae/skills/winbox-plugin/assets/*` 的用例留了下来
   （而且新增了 4 条）。上游 `.gitignore` 忽略 `.trae/` ⇒ **任何纯净克隆必挂 5 条**。
   本仓裁定仍**不改**（改就引入永久分叉）⇒ **后续合并看到这 5 条失败属正常，不要去找回归**。
+
+---
+
+### 7.8 合并 1.22.1（豆瓣扩展标签 / 虚拟滚动 / 网盘绑定面板 / 窗口状态）时的取舍
+
+#### 这次上游干了件前所未有的事：**把 main 的历史整体重写了**
+
+- `6ac50a6`（1.22.0）**不再是祖先**；本地 main 与上游 main **没有共同祖先**
+  （`git rev-list --left-right --count main...upstream/main` = `128 3`，`git merge-base` 输出为空）。
+- 直接 `git merge` 会被 git 拒绝（unrelated histories）；加 `--allow-unrelated-histories`
+  等于把两棵树整棵对撞 → 几百个 add/add 冲突，**不要这么干**。
+- **正确做法：用「上次合并过的上游快照」当 3-way base。** 本仓 `8dd64cb` 合过 `6ac50a6`，
+  所以 `6ac50a6` 在**我们自己的历史**里（`git merge-base --is-ancestor 6ac50a6 main` = YES）：
+
+  ```bash
+  git replace --graft d78ece4 6ac50a6                      # 只改「父指针」用于算 base，不动树
+  git merge-tree --write-tree --name-only main d78ece4     # 先无副作用预测冲突（本轮 23 个，完全命中）
+  git merge d78ece4 --no-ff
+  git replace -d d78ece4                                   # 合并提交已记录真实父，之后可删
+  ```
+
+  合并提交的父 = `(本仓 HEAD, d78ece4)`。**删掉 graft 后 `git merge-base main upstream/main`
+  自动就是 `d78ece4`** ⇒ 下次上游若还有提交，合并恢复正常。
+- ⚠ `git replace` 是**本地 ref**（`.git/refs/replace/`），不会被 push；但它是「对上游对象的谎」，
+  合并完就删，别留着让 `git log` 撒谎。
+
+#### 差异主体是**注释清理**，不是代码重写
+
+457 文件 / `+6421 −4805` 看着像大重构，实际主体是上游把注释里的
+`★ 2026-xx-xx（用户要求）：` 一类前缀**全删了**（连带自己写的和与我们相邻的行）。
+判据：`-w` 与 `--ignore-cr-at-eol` 都不减少行数 ⇒ 不是换行/空白，是**逐行文本替换**。
+⇒ 冲突解决口径：**注释文案采纳上游写法、代码取本仓实现**（下次冲突面最小）。
+
+#### 23 个冲突的裁定
+
+| 文件 | 取法 |
+| --- | --- |
+| `VideoPlayer.tsx` | 本仓 `mpvUsable` **7 处**（定义 1 + 使用 6）；★ 上游仍是 **6 处**裸用 `available` ⇒ **待替换处数 = 6**，动前先 `grep -c` |
+| `MpvController.ts` | **两侧合成**（本轮唯一一处真合成） |
+| `JarSpiderBridge.ts`（10 处） | 全取本仓 |
+| `Aria2Sidecar.ts` | 取本仓（保留平台闸） |
+| `ViewGroup.java` | 取本仓（显式声明 `LayoutParams`） |
+| `SpiderHost.ts`（3 处） | 取本仓（cookie 通道注释 + `resetSpidersForConfigReload`） |
+| `driveCookieFiles.ts` | 删掉上游**又一次**新增的重复 `WEX_PREF_KEYS` 导出（§7.1 同款复发） |
+| `main/index.ts`（3 处） | 取本仓（软重启 / 依赖探测 / macOS 应用菜单）；构建标记升到 `20261023.1` |
+| `paths.ts` | 取本仓 `javaCandidates`（base 里没有，是我们新增的） |
+| `ipc/index.ts`、`client.ts`、`DetailPage.tsx`、`ipc-channels.ts`、`ConfigPage.tsx`、`global.css` | 本仓功能保留，注释采纳上游 |
+| `README.md` | 取本仓（macOS / 发布附件 / 目录结构等 fork 专属章节），另把上游新增的 `pnpm run dist` 补进命令块 |
+
+**`MpvController.ts` 为什么必须合成**：上游新增了 CA 包告警 +
+`SSL_CERT_FILE=<resources>/mpv/cacert.pem` 注入（他们自编译的 FFmpeg 走 OpenSSL 且没有可用 CA 路径，
+缺了它**所有 https 源都播不了**，日志特征 `[e][ffmpeg] tls: error:0A000086`），
+而本仓的 `spawnOptions()` 平台化必须保留（darwin 不能带 `windowsHide`）。故：
+
+```ts
+const proc = spawn(st.path, args, {
+  ...spawnOptions(),                    // ← 本仓：平台门控
+  stdio: ['ignore', 'pipe', 'pipe'],
+  ...(existsSync(CA_BUNDLE) ? { env: { ...process.env, SSL_CERT_FILE: CA_BUNDLE } } : {}),  // ← 上游
+});
+```
+
+⇒ **不要把 `windowsHide: true` 直接写回来**，也别把 CA 注入删掉。
+
+#### 验证基线（1.22.1 合并后）
+
+- `node scripts/build-main.mjs` ✅；`npx tsc --noEmit` **0 error**
+- 全量测试：**194 文件 / 2586 用例 → 2581 passed / 5 skipped / 0 failed**
+- ★★ **§7.7 记的那 5 条 `.trae/` 失败已消失** —— 上游 1.22.1 把 `pluginContract.spec.ts`
+  里读未入库目录的用例改掉了。⇒ **以后不应再看到这 5 条**；若又出现，说明是**新**回归，别再归因给上游。
+- 零丢失：本仓新增行 **12,755 行**，多重集覆盖失败仅 **5 行**，全部为有意改写
+  （上游注释统一 ×3、构建标记升版 ×1、MpvController 合成 ×1）
+- 行尾：456 个改动文件里只有 `src/renderer/lib/playTarget.ts` 含 CRLF（17 行），
+  但用 `git cat-file blob <rev>:<path>` 实证 `6ac50a6` 起它就是**整文件 CRLF** ⇒ 不是本仓污染
+
+#### 上游已声明停更
+
+1.22.1 的 README 明写「由于 Electron 高占用的原因，本项目将不会继续更新，新项目将更换框架」
+（指向作者的 Kniephos）。⇒ **本仓后续大概率没有上游可合并**；转为自维护后，
+壳家族 cookie 通道那类适配（§7.1）只能自己跟。
