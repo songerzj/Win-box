@@ -132,6 +132,10 @@ pnpm run dist             # 打包安装版
 
 运行时依赖（**不入库**，按需自行准备）：JDK / JRE、`stubs.jar` 桥、嵌入式 CPython、shell-shim、unidbg 运行时等。
 
+MPV 内核另需 `resources/mpv/cacert.pem`（Mozilla CA 根证书，**PEM** 格式）：自编译的 FFmpeg 走 OpenSSL
+且没有可用 CA 路径，缺了它 **https 源会全部播不了**（启动日志里 mpv 会 warn「未找到随包 CA 包」）。
+官方 mpv 构建若走系统证书库，则不需要这个文件。
+
 ## macOS 版本
 
 macOS 适配已合入主分支，与 Windows 共用同一份源码与同一个 Release（tag = `release<版本号>`）。

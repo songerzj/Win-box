@@ -756,3 +756,18 @@ const proc = spawn(st.path, args, {
 1.22.1 的 README 明写「由于 Electron 高占用的原因，本项目将不会继续更新，新项目将更换框架」
 （指向作者的 Kniephos）。⇒ **本仓后续大概率没有上游可合并**；转为自维护后，
 壳家族 cookie 通道那类适配（§7.1）只能自己跟。
+
+#### ⚠ 遗留：`resources/mpv/cacert.pem` 目前**没有任何环节产出**（1.22.1 合并后暴露）
+
+上游这版新增的 CA 注入（见上）读 `join(resourcesDir(), 'mpv', 'cacert.pem')`，但：
+
+- `resources/mpv/` 被 `.gitignore` 整条排除（该目录放 `mpv.exe`，约 100MB，不入库）；
+- `build-main.mjs` / `build-release.mjs` / `make-incremental.mjs` / `export-jvm-assets.mjs` **都不生成它**；
+- 仓库里只有 `resources/jvm/jre/lib/security/cacerts`（JKS 二进制，ffmpeg 不认）。
+
+后果：**出厂包里 CA 注入是静默失效的** —— 只有 mpv 启动时一条 `warn`，而症状（https 源全播不了）
+会被误认为「源挂了」。⇒ 要么让用户自备 PEM（README「运行时依赖」已写明），
+要么在打包脚本里落一份 Mozilla CA bundle（注意别引入网络依赖到 `dist` 主链路）。
+
+注：本仓**不随包分发 mpv**（用户自备），所以影响面 = 「装了自编译/OpenSSL 版内核的用户」；
+官方 mpv 构建走系统证书库，不读这个变量。
