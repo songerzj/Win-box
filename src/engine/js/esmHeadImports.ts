@@ -1,5 +1,5 @@
 // src/engine/js/esmHeadImports.ts
-// ★ 2026-09-29：ESM **头部 import 块**的「剥壳 + 注册表装配」纯函数（对位 CatClawVideo
+// ESM **头部 import 块**的「剥壳 + 注册表装配」纯函数（对位 CatClawVideo
 //   `JsModuleAssembler.ParseImports / StripHeadImports`，改写成 TS）。
 //
 // 为什么不能像普通模块那样把 import 转成 `require("…")`（JsSandbox 的通用管线）：

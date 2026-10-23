@@ -1,6 +1,6 @@
 // tests/pluginLiveTemplate.spec.ts — 插件直播输出模板适配层（L2 声明式**输出**）：
 //   把宿主**已解析**的 `LiveGroup[]` 按「每行格式串」格式化输出 TXT / M3U。
-//   ★ 本类型**不发请求、不取数、不解析**（与前四个 provider 形态根本不同）。
+//   本类型**不发请求、不取数、不解析**（与前四个 provider 形态根本不同）。
 // 覆盖：内置 txt / m3u 渲染 / 自定义模板 / 多线路展开 / 跳过空分组与空 urls / 行连接符与末尾补行 /
 //   占位符原值替换（中文不编码）/ **自洽性**（内置 txt 产物能被既有 TxtSubscribe 解析回频道）。
 import { describe, it, expect } from 'vitest';
@@ -118,7 +118,7 @@ describe('插件直播输出模板 — 自定义模板', () => {
   });
 });
 
-describe('插件直播输出模板 — 与既有解析器自洽（★ 只读调用，不改解析器）', () => {
+describe('插件直播输出模板 — 与既有解析器自洽（只读调用，不改解析器）', () => {
   it('builtin:txt 的产物能被 TxtSubscribe 解析回分组与频道', () => {
     const out = tpl('builtin:txt').render(GROUPS, { liveName: 'x' });
     const groups = toLiveGroups(parseToJsonArray(out));

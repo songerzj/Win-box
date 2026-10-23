@@ -6,7 +6,7 @@ import android.content.SharedPreferences;
 /**
  * PreferenceManager stub —— 安卓偏好设置管理入口。
  *
- * 蜘蛛（如 fty 的 merge.HE / ProxyOrigin.getan）常用
+ * 蜘蛛（如 某第三方源的 merge.HE / ProxyOrigin.getan）常用
  * {@code PreferenceManager.getDefaultSharedPreferences(ctx).getString(...)}
  * 读写持久化配置。缺少本类会直接 {@code ClassNotFoundException}，
  * 导致 playerContent 等调用整体失败。

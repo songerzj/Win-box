@@ -1,94 +1,26 @@
 // src/renderer/components/DriveBindModal.tsx
-// ★ 2026-09-26（用户要求）：**源内网盘绑定** —— 打开网盘类源（如 fty「🗂我的云盘┃配置」、
-//   玩偶/立播/抠搜/YpanSo 等 ext 带 `Cloud-drive` 的转存源）时，直接在源主页完成 cookie 配置，
-//   不用再进「配置 → 账号与凭据」，也不用去点源里那个「配置」源。
-//
-// 写盘事实（与 jar 侧对齐，见 docs/design/源内绑定_设计方案.md 与 driveExt.ts）：
-//   · 夸克/UC → 应用凭据（DriveStore，DPAPI 加密）+ fty 约定配置文件
-//     `<userData>/tvfan/Cloud-drive.txt` 的 `quarkCookie`/`ucCookie`
-//     （Cloud_quark/Cloud_uc 在 init 时读它；不含 `pus` 的 cookie 会被蜘蛛置空）；
-//   · 其余网盘（百度/阿里/115/哔哩）→ 应用凭据 + 注入蜘蛛 ext（ext.baidu/ali/bili…）。
-//   保存后主进程会丢弃常驻蜘蛛进程 → 下次请求按新 cookie 重新 init（否则仍用旧 cookie）。
-import { useEffect, useMemo, useState } from 'react';
-import { client } from '../api/client';
-import { checkDriveCookie } from '../../shared/driveCookie';
+// 播放时自动弹出的网盘绑定窗口（解析到网盘专用链接但未绑定时）—— 主体复用 DriveBindPanel；
+//   软件内的常驻配置入口在「配置 → 凭据 → 网盘绑定」（同一个面板）。
 import { driveProviderLabel } from '../../shared/driveProvider';
-import DriveLogin from './DriveLogin';
-import UcTvBind from './UcTvBind';
-
-/** 可绑定网盘（key = DriveStore provider 键；与 fty 绑定页的「夸克/百度/阿里/哔哩」菜单口径一致） */
-const PROVIDERS: ReadonlyArray<{ key: string; label: string }> = [
-  { key: 'quark', label: '夸克网盘' },
-  { key: 'uc', label: 'UC 网盘' },
-  { key: 'baidu', label: '百度网盘' },
-  { key: 'ali', label: '阿里云盘' },
-  { key: '115', label: '115 网盘' },
-  { key: 'bili', label: '哔哩哔哩' },
-];
+import DriveBindPanel from './DriveBindPanel';
 
 interface Props {
   /** 当前源名（文案用） */
   siteName: string;
   /**
-   * ★ 2026-09-29：**预选网盘**（解析到某网盘专用链接、但未绑定时自动弹窗时传入）——
+   * **预选网盘**（解析到某网盘专用链接、但未绑定时自动弹窗时传入）——
    *   直接把用户要绑的那家选中，省掉"自己找是哪一家"。
    */
   initialProvider?: string;
   /** 自动弹窗场景的一句上下文（如「该资源来自」），显示在标题下方 */
   reason?: string;
   onClose: () => void;
-  /** 保存成功后通知外层（刷新源主页，让新 cookie 立刻生效） */
+  /** 保存成功后通知外层（刷新源主页 / 重新解析当前集） */
   onSaved: () => void;
 }
 
 export default function DriveBindModal({ siteName, initialProvider, reason, onClose, onSaved }: Props) {
-  const [tokens, setTokens] = useState<Record<string, string>>({});
   const initProv = (initialProvider || '').trim().toLowerCase();
-  const [provider, setProvider] = useState(PROVIDERS.some((p) => p.key === initProv) ? initProv : 'quark');
-  const [cookie, setCookie] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  const refresh = () => {
-    void client.driveGet().then(setTokens).catch(() => undefined);
-  };
-  useEffect(refresh, []);
-
-  const check = useMemo(() => checkDriveCookie(provider, cookie), [provider, cookie]);
-  const bound = !!tokens[provider];
-
-  async function save(): Promise<void> {
-    const ck = cookie.trim();
-    if (!ck) { setMsg('请先粘贴 Cookie'); return; }
-    setBusy(true);
-    setMsg('');
-    try {
-      await client.driveSet(provider, ck); // 主进程：写凭据 + Cloud-drive 配置 + 重置蜘蛛进程
-      setCookie('');
-      refresh();
-      setMsg(`✓ 已保存「${driveProviderLabel(provider)}」Cookie。回到本源重新进一次即可生效（蜘蛛进程已重置）。`);
-      onSaved();
-    } catch (e) {
-      setMsg(`保存失败：${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function unbind(): Promise<void> {
-    setBusy(true);
-    setMsg('');
-    try {
-      await client.driveRemove(provider);
-      refresh();
-      setMsg(`已解绑「${driveProviderLabel(provider)}」`);
-      onSaved();
-    } catch (e) {
-      setMsg(`解绑失败：${(e as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <div
@@ -116,60 +48,7 @@ export default function DriveBindModal({ siteName, initialProvider, reason, onCl
           {reason ? <div style={{ marginTop: 4 }}>{reason}</div> : null}
         </div>
 
-        <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-          {PROVIDERS.map((p) => (
-            <button
-              key={p.key}
-              className={`tag ${provider === p.key ? 'active' : ''}`}
-              onClick={() => { setProvider(p.key); setMsg(''); }}
-            >
-              {p.label}{tokens[p.key] ? ' ✓' : ''}
-            </button>
-          ))}
-        </div>
-
-        <div className="row" style={{ gap: 8, alignItems: 'center', marginBottom: 6 }}>
-          <span className="muted" style={{ fontSize: 12 }}>
-            {bound ? `当前已绑定（${driveProviderLabel(provider)}，凭据长度 ${tokens[provider].length}）` : '当前未绑定'}
-          </span>
-          {bound && (
-            <button className="linkbtn" style={{ marginLeft: 'auto' }} disabled={busy} onClick={() => void unbind()}>
-              解绑
-            </button>
-          )}
-        </div>
-
-        <textarea
-          value={cookie}
-          onChange={(e) => setCookie(e.target.value)}
-          placeholder={`粘贴「${driveProviderLabel(provider)}」的完整 Cookie（形如 __pus=…; __puus=…）\n获取：浏览器打开网盘网页并登录 → F12 → Network → 任意请求 → 复制 Request Headers 里的完整 cookie`}
-          style={{ width: '100%', height: 110, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
-        />
-
-        {!!cookie.trim() && !check.ok && (
-          <div className="banner" style={{ borderLeftColor: 'var(--warn)', marginTop: 8, fontSize: 12, lineHeight: 1.7 }}>
-            ⚠ {check.message}
-          </div>
-        )}
-
-        <div className="row" style={{ gap: 10, marginTop: 12, alignItems: 'center' }}>
-          <button className="primary" disabled={busy || !cookie.trim()} onClick={() => void save()}>
-            {busy ? '保存中…' : '保存绑定'}
-          </button>
-          <span className="muted" style={{ fontSize: 11 }}>不知道去哪拿 Cookie？用下面的「扫码登录」自动抓取完整 Cookie</span>
-        </div>
-
-        {/* ★ 2026-09-26：扫码/网页登录（原配置页网盘绑定卡的能力，已搬到源内） */}
-        <DriveLogin
-          provider={provider}
-          onBound={() => { refresh(); onSaved(); }}
-        />
-
-        {/* ★ 2026-10-14：UC 专属 —— non-VIP（NORMAL）的「UC原画」走 TV Token 而非 cookie，
-            只绑 cookie 时 jar 报「非高会需要配置 UC TV Token，请到配置中心扫码获取」 */}
-        {provider === 'uc' && <UcTvBind cookieBound={bound} onBound={() => { refresh(); onSaved(); }} />}
-
-        {msg && <div className="muted" style={{ fontSize: 12, marginTop: 8, lineHeight: 1.7 }}>{msg}</div>}
+        <DriveBindPanel initialProvider={initialProvider} onSaved={onSaved} />
       </div>
     </div>
   );

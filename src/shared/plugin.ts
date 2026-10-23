@@ -2,7 +2,7 @@
 // 插件契约（渲染层 / 主进程 / 校验器 / AI skill 共用；**零依赖、不含 electron**）。
 // 事实源：docs/design/插件制作规范.md（字段与白名单）；本文件是它的**机器可读口径**。
 //
-// ★ 两个正交维度（别混）：
+// 两个正交维度（别混）：
 //   - `contributes` = 插件贡献了什么（L1~L4 都要写）；
 //   - `permissions` = 砂箱代码能调用哪些宿主 API —— **只有 L4（kind:"code"）才有**；
 //     L1~L3（kind:"asset"）`permissions` 必须为空。
@@ -28,7 +28,7 @@ export const CONTRIBUTES: Record<string, { kinds: PluginKind[]; level: PluginLev
   'player.engine': { kinds: ['code'], level: 'L2' },
   'ui.slot': { kinds: ['asset'], level: 'L3' },
   'ui.command': { kinds: ['asset', 'code'], level: 'L3' },
-  // ★ 2026-10-18（R10）：`settings.panel` 允许 `code` —— §5.11 明确「值的读取面留给 L4」，
+  // （R10）：`settings.panel` 允许 `code` —— 明确「值的读取面留给 L4」，
   //   即 code 插件声明自己的设置面板、再经 `winbox.settings` 读；面板内容本身是**声明式 UI**，与 kind 无关。
   'settings.panel': { kinds: ['asset', 'code'], level: 'L3' },
   keymap: { kinds: ['asset'], level: 'L3' },
@@ -36,7 +36,7 @@ export const CONTRIBUTES: Record<string, { kinds: PluginKind[]; level: PluginLev
 
 /**
  * permissions 白名单（**只属 L4 / kind=code**）。
- * ★ 2026-10-18（R10）：改为 `as const` 元组 —— 供 `PermissionId` 字面量类型 + 沙箱侧挂载表共用。
+ * （R10）：改为 `as const` 元组 —— 供 `PermissionId` 字面量类型 + 沙箱侧挂载表共用。
  */
 export const PERMISSIONS = [
   'net', 'net.download', 'kv', 'settings', 'fs.plugin', 'log',
@@ -73,9 +73,9 @@ export const FORBIDDEN_PERMISSIONS: readonly string[] = [
 /** 禁用的 contributes（红线） */
 export const FORBIDDEN_CONTRIBUTES: readonly string[] = ['code.spider', 'main.hook', 'drive.provider'];
 
-// ---------- ★ 皮肤令牌契约（`contributes.theme`）----------
+// ---------- 皮肤令牌契约（`contributes.theme`）----------
 // 唯一权威：`docs/design/皮肤与主题规范.md` §2（令牌词表）/ §3（layout）/ §5（校验）。
-// ★ 内置 4 套皮肤与插件皮肤**共用本表**；v1 **不允许任何 CSS** —— 皮肤 = 令牌字典 + layout 声明。
+// 内置 4 套皮肤与插件皮肤**共用本表**；v1 **不允许任何 CSS** —— 皮肤 = 令牌字典 + layout 声明。
 
 export type ThemeTokenKind = 'color' | 'length' | 'time' | 'easing' | 'shadow';
 export interface ThemeTokenSpec {
@@ -219,7 +219,7 @@ function tokenValueError(v: unknown, spec: ThemeTokenSpec): string | undefined {
       ? undefined : '缓动函数仅允许 cubic-bezier(a, b, c, d)';
   }
   // shadow：受限语法 —— 仅允许 [inset] + 2~4 个长度（`0` 或 `<n>px`）+ 可选颜色，逗号分层
-  // ★ 分层必须**按括号深度**切分：`rgba(0,0,0,.35)` 里的逗号不是层分隔符
+  // 分层必须**按括号深度**切分：`rgba(0,0,0,.35)` 里的逗号不是层分隔符
   const LEN = `(?:0|${NUM}px)`;
   const layers: string[] = [];
   {
@@ -276,7 +276,7 @@ function layoutError(L: unknown): string | undefined {
 
 /**
  * 校验 `contributes.theme`（纯函数）。
- * ★ v1：只允许「令牌字典 + layout 声明」，出现样式表字段即拒（THEME_STYLE_NOT_ALLOWED）。
+ * v1：只允许「令牌字典 + layout 声明」，出现样式表字段即拒（THEME_STYLE_NOT_ALLOWED）。
  */
 export function validateThemeContribute(c: unknown): ValidateResult {
   if (!c || typeof c !== 'object' || Array.isArray(c)) {
@@ -314,11 +314,11 @@ export function validateThemeContribute(c: unknown): ValidateResult {
   return { ok: true };
 }
 
-// ---------- ★ 字幕源契约（`contributes.subtitle.provider`）----------
+// ---------- 字幕源契约（`contributes.subtitle.provider`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5（L2 声明式 provider）。
-// ★ L2 = **纯声明式**：宿主按插件的「受限 URL 模板 + JSON 路径映射」**代发请求并取数**，
+// L2 = **纯声明式**：宿主按插件的「受限 URL 模板 + JSON 路径映射」**代发请求并取数**，
 //   **不执行插件的代码** → `kind:"asset"` 且 `permissions` 恒空。
-// ★ v1 仅 GET（无 POST / 无鉴权）：需要 POST / 需要 token / 需要自己算 → 用 `kind:"code"`（L4）。
+// v1 仅 GET（无 POST / 无鉴权）：需要 POST / 需要 token / 需要自己算 → 用 `kind:"code"`（L4）。
 
 /** 受限请求描述（地址模板 + 额外请求头） */
 export interface SubHttpSpec {
@@ -399,7 +399,7 @@ function headersError(h: unknown, ph: readonly string[]): string | undefined {
 
 /**
  * 校验 `contributes.subtitle.provider`（纯函数）。
- * ★ 只做**声明式**约束：URL 协议 / 占位符白名单 / JSON 路径语法 / 字段白名单。
+ * 只做**声明式**约束：URL 协议 / 占位符白名单 / JSON 路径语法 / 字段白名单。
  */
 export function validateSubtitleProviderContribute(c: unknown): ValidateResult {
   if (!c || typeof c !== 'object' || Array.isArray(c)) {
@@ -476,9 +476,9 @@ export function jsonPathGet(root: unknown, path: string): unknown {
   return cur;
 }
 
-// ---------- ★ 元数据源契约（`contributes.meta.provider`）----------
+// ---------- 元数据源契约（`contributes.meta.provider`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.5。与字幕源同为 **L2 声明式**（宿主代发请求，插件不跑代码）。
-// ★ 命中口径 = 宿主现有 `MetaHit`：标题 / 年份 / 海报 / 简介 / 类型（+ 可选横图）。
+// 命中口径 = 宿主现有 `MetaHit`：标题 / 年份 / 海报 / 简介 / 类型（+ 可选横图）。
 //   v1 **不含评分**（宿主 UI 尚未展示评分）→ 声明 `rating` 字段会被拒。
 
 /** `contributes` 里 `type:"meta.provider"` 的结构（L2 声明式元数据源） */
@@ -514,7 +514,7 @@ export const META_MAP_FIELDS: readonly string[] = ['title', 'year', 'poster', 'b
 
 /**
  * 校验 `contributes.meta.provider`（纯函数）。
- * ★ 只做**声明式**约束；v1 与字幕源同边界（仅 GET / 仅 JSON / 无鉴权）。
+ * 只做**声明式**约束；v1 与字幕源同边界（仅 GET / 仅 JSON / 无鉴权）。
  */
 export function validateMetaProviderContribute(c: unknown): ValidateResult {
   if (!c || typeof c !== 'object' || Array.isArray(c)) {
@@ -564,10 +564,10 @@ export function validateMetaProviderContribute(c: unknown): ValidateResult {
   return { ok: true };
 }
 
-// ---------- ★ 发现页数据源契约（`contributes.discover.source`）----------
+// ---------- 发现页数据源契约（`contributes.discover.source`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.6。与前两者同为 **L2 声明式**（宿主代发请求，插件不跑代码）。
-// ★ 定位 = **增补**：宿主把插件分区**追加**到发现页现有榜单之后（内置分区先占 id；同 id 的插件分区被忽略）。
-// ★ v1 的 `map` **不含 `doubanId`** —— 该字段会让宿主去取「豆瓣剧照」，插件源并非豆瓣，映射过来会错配图源。
+// 定位 = **增补**：宿主把插件分区**追加**到发现页现有榜单之后（内置分区先占 id；同 id 的插件分区被忽略）。
+// v1 的 `map` **不含 `doubanId`** —— 该字段会让宿主去取「豆瓣剧照」，插件源并非豆瓣，映射过来会错配图源。
 
 /** 发现页的一个**分区**（榜单分组）声明 */
 export interface DiscoverSectionContribute {
@@ -686,12 +686,12 @@ function sectionError(s: unknown, seen: Set<string>): ValidateResult {
   return { ok: true };
 }
 
-// ---------- ★ 弹幕源契约（`contributes.danmaku.source`）----------
+// ---------- 弹幕源契约（`contributes.danmaku.source`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.7。**L2 声明式**（宿主代发请求，插件不跑代码）。
-// ★ 弹幕是**三步链路**（宿主既有做法，见 main/danmaku/logvarProvider.ts）：
+// 弹幕是**三步链路**（宿主既有做法，见 main/danmaku/logvarProvider.ts）：
 //   ① 搜索番剧（关键词）→ ② 取该番剧的剧集列表 → ③ 按剧集 id 拉**弹幕 XML**（B 站格式）。
 //   三步各一段受限模板；弹幕数据由宿主的引擎解析器消费（插件不产出解析结果）。
-// ★ v1 的弹幕数据**只收 XML 文本**（B 站格式）。源若只给 JSON 弹幕 → 用 `kind:"code"`（L4）。
+// v1 的弹幕数据**只收 XML 文本**（B 站格式）。源若只给 JSON 弹幕 → 用 `kind:"code"`（L4）。
 
 /** 弹幕「搜索番剧」段 */
 export interface DanmakuSearchSpec extends SubHttpSpec {
@@ -802,12 +802,12 @@ function danmakuStepError(t: Record<string, unknown>, step: 'search' | 'episodes
   return undefined;
 }
 
-// ---------- ★ 直播输出模板契约（`contributes.live.template`）----------
+// ---------- 直播输出模板契约（`contributes.live.template`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.8。**L2 声明式**，但与前四者**形态不同**：
-//   ★ 本类型**不发网络请求、不取数** —— 它把宿主**已解析**的直播频道（`LiveGroup[]`）**格式化输出**成文本
+//   本类型**不发网络请求、不取数** —— 它把宿主**已解析**的直播频道（`LiveGroup[]`）**格式化输出**成文本
 //     （TXT / M3U），供外部播放器 / 其它设备使用。插件只给「每行格式串」，宿主负责取数与写盘。
-//   ★ 绝**不解析**任何直播订阅格式（红线③：不触碰 TxtSubscribe / LiveConfigParser —— 那是引擎解析行为）。
-//   ★ 同理 `kind:"asset"`、`permissions` 恒空、不得有 `main`。
+//   绝**不解析**任何直播订阅格式（红线③：不触碰 TxtSubscribe / LiveConfigParser —— 那是引擎解析行为）。
+//   同理 `kind:"asset"`、`permissions` 恒空、不得有 `main`。
 
 /** 输出行模板（仅格式化宿主**已解析**的直播频道；不取数、不解析、不发请求） */
 export interface LiveTemplateContribute {
@@ -858,7 +858,7 @@ function templatePlaceholderError(s: string, where: string): string | undefined 
 
 /**
  * 行模板校验（换行 / 空行 / 占位符 / 必含项）。
- * ★ 原因码按**成因**分：占位符越界 → `LIVE_TEMPLATE_INVALID`；结构性（空/空行/换行/缺 `{url}`）→ `opts.lineCode`。
+ * 原因码按**成因**分：占位符越界 → `LIVE_TEMPLATE_INVALID`；结构性（空/空行/换行/缺 `{url}`）→ `opts.lineCode`。
  * @param opts.allowNewline 是否允许 `\n`（频道行允许，分组行与文件头不允许）
  * @param opts.requireUrl 是否必须含 `{url}`（频道行必须）
  * @param opts.lineCode 结构性问题的原因码（频道行 = `BAD_LIVE_TEMPLATE_LINE`；分组行 / 文件头 = `LIVE_TEMPLATE_INVALID`）
@@ -926,11 +926,11 @@ export function validateLiveTemplateContribute(c: unknown): ValidateResult {
   return { ok: true };
 }
 
-// ---------- ★ 受限动作按钮契约（`contributes.ui.command`）----------
+// ---------- 受限动作按钮契约（`contributes.ui.command`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.9。**L2 声明式**（`kind:"asset"`、`permissions` 恒空、无 `main`）。
-//   ★ 插件**不跑代码** —— 按钮只映射到宿主**预定义的动作词表**（`open-url` / `navigate` / `export-live` / `set-theme`），
+//   插件**不跑代码** —— 按钮只映射到宿主**预定义的动作词表**（`open-url` / `navigate` / `export-live` / `set-theme`），
 //     由**渲染层**按受控逻辑执行（既不是主进程取数，也不是引擎行为）。
-//   ★ 红线②：**不做任意 React 组件注入** —— 只往宿主既有 UI 表面追加宿主样式的按钮。
+//   红线②：**不做任意 React 组件注入** —— 只往宿主既有 UI 表面追加宿主样式的按钮。
 
 /** 命令挂载点（宿主既有 UI 表面） */
 export type UiCommandPlacement = 'config' | 'player';
@@ -994,7 +994,7 @@ const UI_TEMPLATE_RE = /^[a-z0-9][a-z0-9:.-]{2,60}$/;
 const UI_THEME_RE = /^(?:plugin:)?[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 
 /**
- * ★ 动作参数校验（`ui.command` §5.9 与 `keymap` §5.10 **共用**）——
+ * 动作参数校验（`ui.command` 与 `keymap` **共用**）——
  *   动作是宿主**预定义能力**，按钮 / 快捷键只是两种触发方式，参数口径必须一致。
  *   `where` = 报错前缀（`ui.command` / `keymap`）；`code` = 两处各自的原因码。
  */
@@ -1007,7 +1007,7 @@ function actionParamError(
   if (!UI_COMMAND_ACTIONS.includes(action)) {
     return { ok: false, reasonCode: code.invalid, reason: `${where}.action 须为 ${UI_COMMAND_ACTIONS.join(' | ')}` };
   }
-  // ★ 各动作只允许自己的专属字段（写错 = 作者以为能做，实际不做 ⇒ 拒装）
+  // 各动作只允许自己的专属字段（写错 = 作者以为能做，实际不做 ⇒ 拒装）
   const allowed = UI_COMMAND_ACTION_FIELDS[action];
   for (const k of ['url', 'to', 'section', 'template', 'theme']) {
     if (t[k] != null && !allowed.includes(k)) {
@@ -1085,13 +1085,13 @@ export function validateUiCommandContribute(c: unknown): ValidateResult {
   return { ok: true };
 }
 
-// ---------- ★ 追加快捷键契约（`contributes.keymap`）----------
+// ---------- 追加快捷键契约（`contributes.keymap`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.10。**L3 声明式**（`kind:"asset"`、`permissions` 恒空、无 `main`）。
-//   ★ 与 `ui.command` 用**同一套动作词表** —— 键盘只是另一种**触发方式**（按钮 / 快捷键），
+//   与 `ui.command` 用**同一套动作词表** —— 键盘只是另一种**触发方式**（按钮 / 快捷键），
 //     动作的实际执行仍由**渲染层** `lib/pluginCommands.ts` 完成（主进程只校验 + 装配）。
-//   ★ 「不与宿主冲突」的硬护栏：键位**必须含 Ctrl / Alt / Meta 至少一个**（Shift 单独不算）；
+//   「不与宿主冲突」的硬护栏：键位**必须含 Ctrl / Alt / Meta 至少一个**（Shift 单独不算）；
 //     主键**仅允许 A~Z / 0~9 / F1~F24** —— 不含方向键 / Backspace / Esc 等宿主已占用的键。
-//   ★ 红线②：不注入任何插件自带 UI，只在宿主既有表面（配置页「快捷键」一览 + 播放器键位面板）展示。
+//   红线②：不注入任何插件自带 UI，只在宿主既有表面（配置页「快捷键」一览 + 播放器键位面板）展示。
 
 /** 快捷键作用域：`app` = 主窗口（App.tsx 全局）/ `player` = 播放器窗口（VideoPlayer） */
 export type KeymapScope = 'app' | 'player';
@@ -1209,12 +1209,12 @@ export function keymapContributeOf(contributes: Contribute[] | undefined): Keyma
   return c ? (c as unknown as KeymapContribute) : undefined;
 }
 
-// ---------- ★ 插件设置面板契约（`contributes.settings.panel`）----------
+// ---------- 插件设置面板契约（`contributes.settings.panel`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.11。**L3 声明式 UI**（`kind:"asset"`、`permissions` 恒空、无 `main`）。
-//   ★ 插件**不跑代码** —— 只声明「一组受限字段」（label / type / default），宿主把它渲染成**宿主样式的表单**，
+//   插件**不跑代码** —— 只声明「一组受限字段」（label / type / default），宿主把它渲染成**宿主样式的表单**，
 //     并**代插件持久化**字段值（按插件 id 分桶存 `<userData>/plugin-settings.json`）；**读取面留给 L4**
 //     （`kind:"code"` 的沙箱代码经 `settings` 权限读 `winbox.settings`）—— 与 R1~R7「asset 先实装、code 形待 L4」同口径。
-//   ★ 红线②：不做任意 React 组件注入 —— 仅 4 类**受限字段**，不含任意 HTML / 富文本 / 自定义组件。
+//   红线②：不做任意 React 组件注入 —— 仅 4 类**受限字段**，不含任意 HTML / 富文本 / 自定义组件。
 
 /** 受限字段词表（4 类；**插件只能选**，不能自己写控件） */
 export type SettingsFieldType = 'toggle' | 'select' | 'text' | 'number';
@@ -1458,11 +1458,11 @@ export function settingsPanelContributeOf(contributes: Contribute[] | undefined)
   return c ? (c as unknown as SettingsPanelContribute) : undefined;
 }
 
-// ---------- ★ 受限 UI 槽位契约（`contributes.ui.slot`）----------
+// ---------- 受限 UI 槽位契约（`contributes.ui.slot`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §5.12。**L3 声明式 UI**（`kind:"asset"`、`permissions` 恒空、无 `main`）。
-//   ★ 插件**不跑代码、不注入任何 UI**（红线②：不做任意 React 组件注入）—— 只声明一棵**受限组件树**
+//   插件**不跑代码、不注入任何 UI**（红线②：不做任意 React 组件注入）—— 只声明一棵**受限组件树**
 //     （6 类组件），宿主把它渲染进**宿主既有页面的槽位**里（自己的样式、自己的交互）。
-//   ★ `link` 组件**复用 §5.9 的动作词表**（与 `ui.command`/`keymap` 同一套），由渲染层同一执行器执行。
+// `link` 组件**复用同一套动作词表**（与 `ui.command`/`keymap` 同一套），由渲染层同一执行器执行。
 
 /** 宿主开放的槽位（页面语义名；渲染层据此把内容追加到对应页面） */
 export type UiSlotId = 'discover' | 'home' | 'detail' | 'live' | 'history' | 'favorites';
@@ -1598,7 +1598,7 @@ function uiSlotItemError(it: unknown, i: number): ValidateResult {
     }
     return { ok: true };
   }
-  // link：label 必填 + 动作参数（★ **复用** §5.9 的共用校验，口径只有一处）
+  // link：label 必填 + 动作参数（**复用**同一套共用校验，口径只有一处）
   if (typeof t.label !== 'string' || !t.label.trim() || t.label.trim().length > 40 || /[\r\n]/.test(t.label)) {
     return { ok: false, reasonCode: 'UI_SLOT_INVALID', reason: `${where}.label 必填（1~40 字，不含换行，link）` };
   }
@@ -1654,15 +1654,15 @@ export function uiSlotContributeOf(contributes: Contribute[] | undefined): UiSlo
   return c ? (c as unknown as UiSlotContribute) : undefined;
 }
 
-// ---------- ★ 第三方播放内核契约（`contributes.player.engine`）----------
+// ---------- 第三方播放内核契约（`contributes.player.engine`）----------
 // 唯一权威：`docs/design/插件制作规范.md` §6.3。**L2 / kind:"code"**。
-//   ★ 形态（D1 已拍板）：**宿主托管** —— 插件只给「引擎描述符」（协议 / 二进制来源 / 参数模板），
+//   形态（D1）：**宿主托管** —— 插件只给「引擎描述符」（协议 / 二进制来源 / 参数模板），
 //     **永不拉进程**（`spawn` / `child_process` 是 §6.2 **永久禁止项**）；宿主负责
 //     spawn + `--wid` 嵌入 + 协议通信 + 状态推送。插件侧只见「描述符」，不见进程。
-//   ★ v1 协议族 = 两个（D2 已拍板）：`mpv-ipc`（逐字复用宿主既有 mpv 全链路：`--input-ipc-server`
+//   v1 协议族 = 两个（D2）：`mpv-ipc`（逐字复用宿主既有 mpv 全链路：`--input-ipc-server`
 //     JSON IPC）＋ **通用 `json-lines`**（宿主定死线格式：stdin/stdout 一行一个 JSON 对象）。
-//   ★ 二进制来源（D3 已拍板）：插件包内 `files/…` **随包自带**（主）或**用户本机路径覆盖**（次）。
-//   ★ 授权（D4 已拍板）：**默认关** + 配置页单独开关 + 首次开启二次确认（安装期另有 R10 权限弹层）。
+//   二进制来源（D3）：插件包内 `files/…` **随包自带**（主）或**用户本机路径覆盖**（次）。
+//   授权（D4）：**默认关** + 配置页单独开关 + 首次开启二次确认（安装期另有 R10 权限弹层）。
 
 /** 引擎协议族（v1 = mpv 系 JSON IPC + 通用 JSON 行） */
 export type PlayerEngineProtocol = 'mpv-ipc' | 'json-lines';
@@ -1677,7 +1677,7 @@ export const PLAYER_ENGINE_CAPABILITIES: readonly PlayerEngineCapability[] = ['s
 /**
  * 参数占位符白名单（宿主展开；见 `main/player/engineLines.expandEngineArgs`）：
  *   `{wid}`=窗口句柄 / `{pipe}`=IPC 管道名 / `{url}`=播放地址 / 余（`{start}` `{volume}` `{fit}` `{rate}`）为可选。
- * ★ exe 路径**不在 args 里** —— 由 `binary` 决定，宿主拼命令行。
+ * exe 路径**不在 args 里** —— 由 `binary` 决定，宿主拼命令行。
  */
 export const PLAYER_ENGINE_PLACEHOLDERS: readonly string[] = ['wid', 'pipe', 'url', 'start', 'volume', 'fit', 'rate'];
 
@@ -1728,7 +1728,7 @@ function engineArgTextError(s: unknown, i: number): string | undefined {
 
 /**
  * 校验 `contributes.player.engine`（纯函数）。
- * ★ 只做**结构性**约束：占位符白名单 / 按协议的必需与禁止 / binary 形态 / capabilities 枚举与去重。
+ * 只做**结构性**约束：占位符白名单 / 按协议的必需与禁止 / binary 形态 / capabilities 枚举与去重。
  *   结构性（空、换行、缺必需占位符、占位符越界）→ `BAD_ENGINE_ARGS`；其余 → `PLAYER_ENGINE_INVALID`。
  */
 export function validatePlayerEngineContribute(c: unknown): ValidateResult {
@@ -1829,7 +1829,7 @@ export interface DepEntry {
   version: string; size: number; files: string[];
 }
 export const DEP_ALLOWLIST: Record<string, DepEntry> = {
-  // ★ 以下 sha256/url/size 已于 2026-10-16 **真实下载后固化**（走加速池；取证见 MEMORY §C72「M1 收尾」）。
+  // 以下 sha256/url/size 已于**真实下载后固化**（走加速池）。
   'anime4k-shaders': {
     id: 'anime4k-shaders',
     url: 'https://github.com/bloc97/Anime4K/releases/download/v4.0.1/Anime4K_v4.0.zip',
@@ -1843,7 +1843,7 @@ export const DEP_ALLOWLIST: Record<string, DepEntry> = {
     ],
   },
   'ravu-lite-shaders': {
-    // ★ 上游 master 无 tag（用 raw 路径；靠 sha256 兜住漂移——不符即失败，不静默降级）
+    // 上游 master 无 tag（用 raw 路径；靠 sha256 兜住漂移——不符即失败，不静默降级）
     id: 'ravu-lite-shaders',
     url: 'https://raw.githubusercontent.com/bjin/mpv-prescalers/master/ravu-lite-r4.hook',
     sha256: '46905b8a09a41867b351431ae1cb828e371ae1b64c4abe247e3f4acdc22c9704',
@@ -1952,7 +1952,7 @@ export function validatePluginManifest(m: unknown): ValidateResult {
   for (const perm of perms) {
     if (!(PERMISSIONS as readonly string[]).includes(perm)) return { ok: false, reasonCode: 'UNKNOWN_PERMISSION', reason: `未在白名单的权限：${perm}` };
   }
-  // ★ 2026-10-18（R10）：`permissionNotes`（可选）—— 若写则**键必须 ⊆ 已声明权限**、值 1~200 字且不含换行。
+  // （R10）：`permissionNotes`（可选）—— 若写则**键必须 ⊆ 已声明权限**、值 1~200 字且不含换行。
   //   缺说明**不拒装**（安装确认弹窗用 PERMISSION_LABELS 兜底）。
   if (p.permissionNotes != null) {
     const notes = p.permissionNotes;
@@ -1976,58 +1976,58 @@ export function validatePluginManifest(m: unknown): ValidateResult {
     const def = CONTRIBUTES[c.type];
     if (!def) return { ok: false, reasonCode: 'UNKNOWN_CONTRIBUTE', reason: `未在白名单的 contributes：${c.type}` };
     if (!def.kinds.includes(p.kind)) return { ok: false, reasonCode: 'UNKNOWN_CONTRIBUTE_KIND', reason: `${c.type} 不支持 kind=${p.kind}` };
-    // ★ `theme` 的内容也要校验（词表外的令牌名 / 值类型 / 夹带样式表 —— 见 皮肤与主题规范 §5）
+    // `theme` 的内容也要校验（词表外的令牌名 / 值类型 / 夹带样式表 —— 见 皮肤与主题规范）
     if (c.type === 'theme') {
       const tr = validateThemeContribute(c);
       if (!tr.ok) return tr;
     }
-    // ★ `subtitle.provider` 的**声明式**内容校验（仅 asset；code 形在 L4 轮再定契约）
+    // `subtitle.provider` 的**声明式**内容校验（仅 asset；code 形在 L4 轮再定契约）
     if (c.type === 'subtitle.provider' && p.kind === 'asset') {
       const sr = validateSubtitleProviderContribute(c);
       if (!sr.ok) return sr;
     }
-    // ★ `meta.provider` 同上（仅 asset）
+    // `meta.provider` 同上（仅 asset）
     if (c.type === 'meta.provider' && p.kind === 'asset') {
       const mr = validateMetaProviderContribute(c);
       if (!mr.ok) return mr;
     }
-    // ★ `discover.source` 同上（仅 asset）
+    // `discover.source` 同上（仅 asset）
     if (c.type === 'discover.source' && p.kind === 'asset') {
       const dr = validateDiscoverSourceContribute(c);
       if (!dr.ok) return dr;
     }
-    // ★ `danmaku.source` 同上（仅 asset）
+    // `danmaku.source` 同上（仅 asset）
     if (c.type === 'danmaku.source' && p.kind === 'asset') {
       const kr = validateDanmakuSourceContribute(c);
       if (!kr.ok) return kr;
     }
-    // ★ `live.template` 同上（仅 asset）—— 它**不发请求**，只做输出侧格式化
+    // `live.template` 同上（仅 asset）—— 它**不发请求**，只做输出侧格式化
     if (c.type === 'live.template' && p.kind === 'asset') {
       const lr = validateLiveTemplateContribute(c);
       if (!lr.ok) return lr;
     }
-    // ★ `ui.command` 同上（仅 asset）—— 受限动作按钮，动作词表 / 挂载点白名单
+    // `ui.command` 同上（仅 asset）—— 受限动作按钮，动作词表 / 挂载点白名单
     if (c.type === 'ui.command' && p.kind === 'asset') {
       const ur = validateUiCommandContribute(c);
       if (!ur.ok) return ur;
     }
-    // ★ `keymap` 同上（仅 asset）—— 追加快捷键，动作复用 `ui.command` 词表
+    // `keymap` 同上（仅 asset）—— 追加快捷键，动作复用 `ui.command` 词表
     if (c.type === 'keymap' && p.kind === 'asset') {
       const kr = validateKeymapContribute(c);
       if (!kr.ok) return kr;
     }
-    // ★ `settings.panel` 同上 —— 面板是**声明式 UI**（与 kind 无关）⇒ **asset / code 都校验内容**
+    // `settings.panel` 同上 —— 面板是**声明式 UI**（与 kind 无关）⇒ **asset / code 都校验内容**
     //   （§5.11：code 插件也可声明面板，再经 `winbox.settings` 读）
     if (c.type === 'settings.panel') {
       const sr = validateSettingsPanelContribute(c);
       if (!sr.ok) return sr;
     }
-    // ★ `ui.slot` 同上（仅 asset）—— 受限 UI 槽位（6 类受限组件）
+    // `ui.slot` 同上（仅 asset）—— 受限 UI 槽位（6 类受限组件）
     if (c.type === 'ui.slot' && p.kind === 'asset') {
       const ur = validateUiSlotContribute(c);
       if (!ur.ok) return ur;
     }
-    // ★ 第三方播放内核（`player.engine`）恒为 `kind:"code"`（CONTRIBUTES 已冻结为 ['code']）⇒ 内容校验**不分 kind**
+    // 第三方播放内核（`player.engine`）恒为 `kind:"code"`（CONTRIBUTES 已冻结为 ['code']）⇒ 内容校验**不分 kind**
     if (c.type === 'player.engine') {
       const er = validatePlayerEngineContribute(c);
       if (!er.ok) return er;
@@ -2120,9 +2120,9 @@ export function uiCommandContributeOf(contributes: Contribute[] | undefined): Ui
   return c ? (c as unknown as UiCommandContribute) : undefined;
 }
 
-// ---------- ★ 渲染层/管理器可见的**视图模型**（主进程组装，preload 与 client 共用类型） ----------
+// ---------- 渲染层/管理器可见的**视图模型**（主进程组装，preload 与 client 共用类型） ----------
 
-/** 插件沙箱（`kind:"code"`）运行态；asset 插件恒 undefined（★ R10） */
+/** 插件沙箱（`kind:"code"`）运行态；asset 插件恒 undefined（R10） */
 export interface PluginSandboxView {
   /** 沙箱 worker 是否存活 */
   running: boolean;
@@ -2130,7 +2130,7 @@ export interface PluginSandboxView {
   error?: string;
 }
 
-/** ★ R10：安装前**干跑**（`plugin:inspect`）结果 —— 供渲染层弹「权限确认」 */
+/** R10：安装前**干跑**（`plugin:inspect`）结果 —— 供渲染层弹「权限确认」 */
 export interface PluginInspectResult {
   ok: boolean;
   /** 用户取消了文件选择（不装） */
@@ -2154,11 +2154,11 @@ export interface PluginView {
   version: string;
   source: 'builtin' | 'user';
   level: PluginLevel;
-  /** ★ R10：能力形态（code 插件在沙箱里跑，配置页据此显示权限徽标） */
+  /** R10：能力形态（code 插件在沙箱里跑，配置页据此显示权限徽标） */
   kind: PluginKind;
-  /** ★ R10：已声明权限（`kind:"code"` 非空；asset 恒空） */
+  /** R10：已声明权限（`kind:"code"` 非空；asset 恒空） */
   permissions: string[];
-  /** ★ R10：`kind:"code"` 的沙箱运行态（asset 插件 → undefined） */
+  /** R10：`kind:"code"` 的沙箱运行态（asset 插件 → undefined） */
   sandbox?: PluginSandboxView;
   /** 是否启用（停用保留磁盘，只不参与宿主装配） */
   enabled: boolean;
@@ -2260,7 +2260,7 @@ export interface SettingsPanelView {
   fields: SettingsFieldView[];
 }
 
-/** 受限组件视图（与贡献项同形；★ 只搬运白名单字段） */
+/** 受限组件视图（与贡献项同形；只搬运白名单字段） */
 export interface UiSlotItemView {
   type: UiSlotItemType;
   text?: string;
@@ -2288,7 +2288,7 @@ export interface UiSlotView {
 }
 
 /**
- * ★ 第三方播放内核视图（渲染层内核列表消费；见 §6.3）。
+ * 第三方播放内核视图（渲染层内核列表消费）。
  * `id` = **渲染层内核值** `engine:<contributeId>` —— 与 `Kernel` / `KernelPref` 的扩展口径一致。
  */
 export interface PlayerEngineView {

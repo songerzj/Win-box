@@ -17,7 +17,7 @@ export const IPC = {
   APP_RESTART: 'app:restart',
   THEME_SET: 'theme:set',
   /**
-   * ★ 2026-09-30（用户要求）：数据目录信息（安装目录/data；含老用户迁移结果/回退原因）。
+   * 数据目录信息（安装目录/data；含老用户迁移结果/回退原因）。
    * 用于配置页展示与排障（「为什么还在 C 盘」这类问题看这条）。
    */
   SYSTEM_DATA_DIR: 'system:dataDir',
@@ -33,7 +33,7 @@ export const IPC = {
   SUBTITLE_SET: 'subtitle:set',
   SUBTITLE_SEARCH: 'subtitle:search',
   SUBTITLE_FETCH: 'subtitle:fetch',
-  /** ★ 2026-09-28：各字幕源的开关/可用状态（配置页渲染） */
+  /** 各字幕源的开关/可用状态（配置页渲染） */
   SUBTITLE_PROVIDERS: 'subtitle:providers',
   // 弹幕（外部接口）
   DANMAKU_GET: 'danmaku:get',
@@ -43,23 +43,33 @@ export const IPC = {
   DANMAKU_FETCH: 'danmaku:fetch',
   // TMDB 元数据补全（缺封面/缺简介兜底；凭据内置密文，仅查询通道）
   META_SEARCH: 'meta:search',
-  // ★ 详情页增强（演职员/类型/相关推荐）与发现页榜单（无源默认主页）
+  // 详情页增强（演职员/类型/相关推荐）与发现页榜单（无源默认主页）
   META_EXTRA: 'meta:extra',
+  /**
+   * 详情页「相关推荐 / 豆瓣影评」tab 区块 —— **豆瓣**口径
+   * （不依赖用户 TMDB 凭据）：subject_suggest 取 id → rexxar recommendations / reviews / intro。
+   */
+  META_DOUBAN_EXTRA: 'meta:doubanExtra',
+  /**
+   * 点影评行 → 独立小窗口看**全文**
+   * （`GET rexxar/api/v2/review/{id}?for_mobile=1`，**按需拉取**，不随列表预取）。
+   */
+  META_DOUBAN_REVIEW: 'meta:doubanReview',
   META_DISCOVER: 'meta:discover',
   META_MOVIE_HOT: 'meta:movieHot',
   META_DISCOVER_IMAGES: 'meta:discoverImages',
-  // ★ 发现页「分类」浏览（TMDB 类型清单 + 按类型翻页）
+  // 发现页「分类」浏览（TMDB 类型清单 + 按类型翻页）
   META_GENRES: 'meta:genres',
   META_GENRE_PAGE: 'meta:genrePage',
-  /** ★ 2026-10-15（级联分类）：发现页「分类浏览」（豆瓣 recommend；start 偏移分页） */
+  /** （级联分类）：发现页「分类浏览」（豆瓣 recommend；start 偏移分页） */
   META_DISCOVER_QUERY: 'meta:discoverQuery',
-  /** ★ 2026-10-15（级联分类）：级联词表（豆瓣自带的类型/地区 + 排序；两页共用） */
+  /** （级联分类）：级联词表（豆瓣自带的类型/地区 + 排序；两页共用） */
   META_EXPLORE_VOCAB: 'meta:exploreVocab',
-  // ★ 2026-09-24 元数据来源配置（TMDB 自填 Key/代理/镜像 + 来源策略）与搜索联想
+  // 元数据来源配置（TMDB 自填 Key/代理/镜像 + 来源策略）与搜索联想
   META_GET_SETTINGS: 'meta:getSettings',
   META_SET_SETTINGS: 'meta:setSettings',
   META_SUGGEST: 'meta:suggest',
-  /** ★ 发现页 Hero 轮播用的剧照/海报（TMDB images） */
+  /** 发现页 Hero 轮播用的剧照/海报（TMDB images） */
   META_IMAGES: 'meta:images',
   DRIVE_GET: 'drive:get',
   DRIVE_SET: 'drive:set',
@@ -67,7 +77,7 @@ export const IPC = {
   DRIVE_QR_CREATE: 'drive:qrCreate',
   DRIVE_QR_POLL: 'drive:qrPoll',
   DRIVE_WEB_LOGIN: 'drive:webLogin',
-  // ★ 2026-10-14 UC TV Token（非会员 UC 原画）：桌面端复刻 jar 的扫码授权流
+  // UC TV Token（非会员 UC 原画）：桌面端复刻 jar 的扫码授权流
   DRIVE_UC_TV_STATUS: 'drive:ucTvStatus',
   DRIVE_UC_TV_QR_CREATE: 'drive:ucTvQrCreate',
   DRIVE_UC_TV_QR_POLL: 'drive:ucTvQrPoll',
@@ -85,33 +95,33 @@ export const IPC = {
   CFG_SET_ACTIVE_SOURCE: 'cfg:setActiveSource',
   CFG_SET_ACTIVE_LIVE: 'cfg:setActiveLive',
   CFG_IMPORT_URL: 'cfg:importUrl',
-  // ★ 2026-09-27（用户要求）：本地 .json 订阅文件导入（文件选择器；档案名默认取原始文件名）
+  // 本地 .json 订阅文件导入（文件选择器；档案名默认取原始文件名）
   CFG_IMPORT_JSON_LOCAL: 'cfg:importJsonLocal',
   CFG_IMPORT_PY_LOCAL: 'cfg:importPyLocal',
   /**
-   * ★ 2026-09-29（用户要求）：导入**本地包**（影视壳/影视仓 目录包：影视.json + py/js/jar/html/xbpq）。
+   * 导入**本地包**（目录包：影视.json + py/js/jar/html/xbpq）。
    * 选目录 → 登记包根 → 相对引用展开（/pkg 路由 + py 就地 file://）→ 走正常订阅导入。
    */
   CFG_IMPORT_PACKAGE: 'cfg:importPackage',
   /**
-   * ★ 2026-09-30（用户要求）：导入**本地 TXT / M3U 直播源**（配置页按钮）。
+   * 导入**本地 TXT / M3U 直播源**（配置页按钮）。
    * 选文件 → 校验形态 → 落 <userData>/local-live/<文件名> → 追加/更新 lives 线路（/file 路由供直播页加载）。
    */
   CFG_IMPORT_LIVE_LOCAL: 'cfg:importLiveLocal',
-  /** ★ 2026-10-14（用户要求）：删除某条直播线路（导入的 TXT/M3U 直播源可在配置页删除） */
+  /** 删除某条直播线路（导入的 TXT/M3U 直播源可在配置页删除） */
   CFG_DELETE_LIVE: 'cfg:deleteLive',
-  /** ★ 2026-10-16（用户要求）：批量删除直播线路（配置页「直播线路」多选删除） */
+  /** 批量删除直播线路（配置页「直播线路」多选删除） */
   CFG_DELETE_LIVES: 'cfg:deleteLives',
-  /** ★ 2026-10-14（用户要求）：重命名某条直播线路（导入后允许编辑名称） */
+  /** 重命名某条直播线路（导入后允许编辑名称） */
   CFG_UPDATE_LIVE: 'cfg:updateLive',
   CFG_PROFILE_SAVE: 'cfg:profileSave',
   CFG_PROFILE_ACTIVATE: 'cfg:profileActivate',
   /**
-   * ★ 2026-09-30（用户要求）：换源弹层的「左订阅 / 右源」视图 —— 每份档案的源 key/name 清单。
+   * 换源弹层的「左订阅 / 右源」视图 —— 每份档案的源 key/name 清单。
    */
   CFG_PROFILE_SITES: 'cfg:profileSites',
   /**
-   * ★ 2026-09-30（用户要求）：一步完成「切换档案 + 选中该档案下的某个源」（换源弹层跨订阅选择）。
+   * 一步完成「切换档案 + 选中该档案下的某个源」（换源弹层跨订阅选择）。
    * 单次 apply（避免两次内容变更触发两轮宿主重活）。
    */
   CFG_SWITCH_PROFILE_SOURCE: 'cfg:switchProfileSource',
@@ -120,7 +130,7 @@ export const IPC = {
   CFG_PROFILES: 'cfg:profiles',
   CACHE_CLEAR: 'cache:clear',
   /**
-   * ★ 2026-09-27：已学到的「该源需要网盘绑定」源 key 列表（源主页据此显示绑定入口）。
+   * 已学到的「该源需要网盘绑定」源 key 列表（源主页据此显示绑定入口）。
    * 学习发生在主进程 play()（蜘蛛真实产出网盘直链）→ 不依赖蜘蛛类名清单，任何订阅都能覆盖。
    */
   DRIVE_BIND_KEYS: 'drive:bindKeys',
@@ -134,21 +144,21 @@ export const IPC = {
   VOD_AUDIT: 'vod:audit',
   CFG_MERGE_EXPORT: 'cfg:mergeExport',
   CFG_EXPORT_SAVE: 'cfg:exportSave',
-  /** ★ 2026-09-29 设置备份：导出全部设置与凭据（+ 渲染层 localStorage）到单个 JSON 文件 */
+  /** 设置备份：导出全部设置与凭据（+ 渲染层 localStorage）到单个 JSON 文件 */
   BACKUP_EXPORT: 'backup:export',
-  /** ★ 2026-09-29 设置备份：从 JSON 文件还原（主进程各 store + 返回给渲染层写回的 localStorage） */
+  /** 设置备份：从 JSON 文件还原（主进程各 store + 返回给渲染层写回的 localStorage） */
   BACKUP_IMPORT: 'backup:import',
-  // ★ 2026-09-29 WebDAV 存储（只读）：服务器管理 + 目录浏览；播放走 /play?dav=<id> 取流
+  // WebDAV 存储（只读）：服务器管理 + 目录浏览；播放走 /play?dav=<id> 取流
   DAV_LIST: 'dav:list',
   DAV_SET: 'dav:set',
   DAV_REMOVE: 'dav:remove',
   DAV_BROWSE: 'dav:browse',
   /** WebDAV 文件用本机外部播放器接力（mkv/HEVC 等 Chromium 播不了的形态） */
   DAV_OPEN_EXTERNAL: 'dav:openExternal',
-  // ★ 2026-09-29 DLNA 投屏（SSDP 发现 + AVTransport 三动作）
+  // DLNA 投屏（SSDP 发现 + AVTransport 三动作）
   DLNA_DISCOVER: 'dlna:discover',
   DLNA_CAST: 'dlna:cast',
-  // ★ 播放网盘资源未绑定 cookie → 从任意窗口请求主窗口跳到「点播页」（源内有「网盘绑定」入口）
+  // 播放网盘资源未绑定 cookie → 从任意窗口请求主窗口跳到「点播页」（源内有「网盘绑定」入口）
   UI_GOTO_DRIVE_BIND: 'ui:gotoDriveBind',
   /**
    * ★ 2026-10-12（macOS 适配 P1-1）：主进程 → 渲染层，Cmd+,（macOS「设置…」）跳配置页。
@@ -161,11 +171,11 @@ export const IPC = {
   WIN_MAXIMIZE: 'win:maximize',
   WIN_CLOSE: 'win:close',
   WIN_IS_MAXIMIZED: 'win:isMaximized',
-  /** ★ 2026-09-30（用户要求「播放器加置顶按钮」）：按**发起窗口**设置/查询「始终置顶」 */
+  /** 按**发起窗口**设置/查询「始终置顶」 */
   WIN_SET_ALWAYS_ON_TOP: 'win:setAlwaysOnTop',
   WIN_IS_ALWAYS_ON_TOP: 'win:isAlwaysOnTop',
   /**
-   * ★ 2026-10-08（用户要求「设置-外观加开关：控制视频详情页是否单独窗口展示」）：
+   * 
    * 在独立窗口打开详情页（同款窗口复用：已开则聚焦 + `WIN_NAVIGATE` 通知其换路由）。
    * 窗口 hash 带 `dw=1` 标记（渲染层据此只写历史/进度、返回键改为关窗）。
    */
@@ -175,30 +185,30 @@ export const IPC = {
   WIN_REPORT_ERROR: 'win:reportError',
   /** 主进程 → 渲染层：让已打开的详情窗口切换路由（`/detail/:key/:id?…&dw=1`） */
   WIN_NAVIGATE: 'win:navigate',
-  /** ★ 2026-09-30（用户要求「软件关闭后，所有的墓碑机制都应该脱钩」）：主进程**本次启动**的唯一标识
+  /** 主进程**本次启动**的唯一标识
    *  （每次启动重新生成）—— 渲染层据此判定「新一次启动」并丢掉页面状态类记忆（见 uiMemory）。 */
   SYSTEM_SESSION_ID: 'system:sessionId',
   VOD_PLAY: 'vod:play',
   VOD_DEBUG: 'vod:debug',
   LIVE_LOAD: 'live:load',
   LIVE_GROUPS: 'live:groups',
-  /** ★ 2026-09-29 EPG 节目单：按线路取各频道「当前 / 下一档」（XMLTV 拉取+缓存+匹配在主进程） */
+  /** EPG 节目单：按线路取各频道「当前 / 下一档」（XMLTV 拉取+缓存+匹配在主进程） */
   LIVE_EPG: 'live:epg',
-  /** ★ 2026-10-18 直播输出模板（内置 2 个 + 插件 `contributes.live.template`；见 SpiderHost.liveTemplates） */
+  /** 直播输出模板（内置 2 个 + 插件 `contributes.live.template`；见 SpiderHost.liveTemplates） */
   LIVE_TEMPLATES: 'live:templates',
-  /** ★ 2026-10-18 按模板渲染导出文本（**纯本地无副作用**：不取数、不发请求、不弹框） */
+  /** 按模板渲染导出文本（**纯本地无副作用**：不取数、不发请求、不弹框） */
   LIVE_RENDER: 'live:render',
-  /** ★ 2026-10-18 导出直播线路：按模板渲染（纯本地）→ 保存对话框 → 写新文件 */
+  /** 导出直播线路：按模板渲染（纯本地）→ 保存对话框 → 写新文件 */
   LIVE_EXPORT: 'live:export',
   // 独立播放器窗口
   PLAYER_OPEN: 'player:open',
   PLAYER_SWITCH_EP: 'player:switchEp',
   PLAYER_GET_INIT: 'player:getInit',
-  /** ★ 2026-09-30：播放器窗口渲染层订阅就绪 → 主进程重发缓存的最新 init
+  /** 播放器窗口渲染层订阅就绪 → 主进程重发缓存的最新 init
    *  （修「新窗口首推与 React 挂载竞态」：`did-finish-load` 发出的 init 可能早于订阅，直接丢） */
   PLAYER_READY: 'player:ready',
   PLAYER_IS_OPEN: 'player:isOpen',
-  /** ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口开/关 → 广播给其余窗口。
+  /** （B3「冻结/解冻」）：播放器窗口开/关 → 广播给其余窗口。
    *  主窗口据此把**隐藏页**里已解码的图片位图释放掉（只清 `img.src`、React 树原地保留，零重载）。 */
   PLAYER_WINDOW_STATE: 'player:windowState',
   PLAYER_SET_MINI: 'player:setMini',
@@ -207,32 +217,32 @@ export const IPC = {
   PLAYER_IS_FULLSCREEN: 'player:isFullscreen',
   /** 全屏元素（HTML5）也需要锁定无边框窗口的系统边缘缩放命中区 */
   PLAYER_SET_RESIZABLE: 'player:setResizable',
-  /** ★ 2026-10-18（R10）主进程 → 播放器窗口：L4 插件 `winbox.player.*` 的转发事件
+  /** （R10）主进程 → 播放器窗口：L4 插件 `winbox.player.*` 的转发事件
    *  （`{op: PlayerOp, value?}`；插件不碰内核，由渲染层转 `mpv:cmd` / 换集） */
   PLAYER_CTL: 'player:ctl',
   // 老板键（全局快捷键隐藏/恢复）
   BOSS_GET: 'boss:get',
   BOSS_SET: 'boss:set',
   /**
-   * ★ 2026-10-16（用户报「播放时画面突然消失、软件只剩声音」）：渲染层 → 主进程的播放诊断上报
+   * 渲染层 → 主进程的播放诊断上报
    * （fire-and-forget，`send`/`on`）。主进程落盘为 `media:*` 日志并在 `child-process-gone type=GPU`
    * 那条里带出「崩溃前最后在放什么」；见 main/util/mediaDiag.ts 与 index.ts。
    */
   MEDIA_STATE: 'media:state',
   // 夸克落盘文件清理（渲染层播放页/播放器页卸载时触发）
   QUARK_CLEANUP: 'quark:cleanup',
-  // ★ 网络代理设置（DNS 污染 / SNI 阻断站点用；配置页可填）
+  // 网络代理设置（DNS 污染 / SNI 阻断站点用；配置页可填）
   PROXY_GET: 'proxy:get',
   PROXY_SET: 'proxy:set',
-  // ★ 播放相关本地偏好（当前：m3u8 去广告开关 / 超分档位；本地中继 /play 即时生效）
+  // 播放相关本地偏好（当前：m3u8 去广告开关 / 超分档位；本地中继 /play 即时生效）
   PLAYER_PREFS_GET: 'player:prefsGet',
   PLAYER_PREFS_SET: 'player:prefsSet',
-  // ★ 2026-10-16 插件系统（M1）：登记 / 安装 / 卸载 / 启停 / 超分状态与着色器链
+  // 插件系统（M1）：登记 / 安装 / 卸载 / 启停 / 超分状态与着色器链
   /** 已登记插件列表（user 目录 + builtin 随包 zip；见 main/plugin/PluginHost.list） */
   PLUGIN_LIST: 'plugin:list',
   /** 安装 `.winbox`（`{path}` = 干跑选定后的文件；缺省则弹文件选择框） */
   PLUGIN_INSTALL: 'plugin:install',
-  /** ★ 2026-10-18（R10）安装前**干跑**：弹文件框 + 解包校验但**不落盘**，返回权限清单供确认 */
+  /** （R10）安装前**干跑**：弹文件框 + 解包校验但**不落盘**，返回权限清单供确认 */
   PLUGIN_INSPECT: 'plugin:inspect',
   /** 卸载（删 `<id>.winbox/`；builtin 下次启动会重新物化） */
   PLUGIN_UNINSTALL: 'plugin:uninstall',
@@ -240,21 +250,21 @@ export const IPC = {
   PLUGIN_SET_ENABLED: 'plugin:setEnabled',
   /** 超分状态（是否可用 / 可选档位 / 实际生效档位）—— 播放器按钮据此显示与高亮 */
   PLUGIN_SR: 'plugin:sr',
-  /** ★ 皮肤（contributes.theme）列表：已启用 + 就位的插件皮肤 */
+  /** 皮肤（contributes.theme）列表：已启用 + 就位的插件皮肤 */
   PLUGIN_THEMES: 'plugin:themes',
-  /** ★ 2026-10-18 受限动作按钮（contributes.ui.command）列表：配置页 / 播放器据此渲染（动作由渲染层执行） */
+  /** 受限动作按钮（contributes.ui.command）列表：配置页 / 播放器据此渲染（动作由渲染层执行） */
   PLUGIN_COMMANDS: 'plugin:commands',
-  /** ★ 2026-10-18 追加快捷键（contributes.keymap）列表：配置页一览 / 播放器键位面板 + 渲染层分发 */
+  /** 追加快捷键（contributes.keymap）列表：配置页一览 / 播放器键位面板 + 渲染层分发 */
   PLUGIN_KEYMAPS: 'plugin:keymaps',
-  /** ★ 2026-10-18 插件设置面板（contributes.settings.panel）列表：配置页每插件卡片内渲染表单 */
+  /** 插件设置面板（contributes.settings.panel）列表：配置页每插件卡片内渲染表单 */
   PLUGIN_SETTINGS: 'plugin:settings',
-  /** ★ 2026-10-18 写一个设置字段值（渲染层表单 onChange → 宿主代持久化 + 值校验） */
+  /** 写一个设置字段值（渲染层表单 onChange → 宿主代持久化 + 值校验） */
   PLUGIN_SETTINGS_SET: 'plugin:settings:set',
-  /** ★ 2026-10-18 受限 UI 槽位（contributes.ui.slot）列表：渲染层按页面语义名落槽渲染 */
+  /** 受限 UI 槽位（contributes.ui.slot）列表：渲染层按页面语义名落槽渲染 */
   PLUGIN_SLOTS: 'plugin:slots',
-  /** ★ 2026-09-29 磁力（BT）：探测本机已安装的外部播放器（MKV/HEVC 接力用；只探测不启动） */
+  /** 磁力（BT）：探测本机已安装的外部播放器（MKV/HEVC 接力用；只探测不启动） */
   BT_DETECT_PLAYERS: 'bt:detectPlayers',
-  // ★ 2026-10-08 MPV 高兼容播放内核（独立播放器窗口内嵌 --wid + JSON IPC；见 main/player/MpvController）
+  // MPV 高兼容播放内核（独立播放器窗口内嵌 --wid + JSON IPC；见 main/player/MpvController）
   /** 探活 + 路径解析（配置覆盖 → 随包内置 resources/mpv → 本机常见安装位置） */
   MPV_STATUS: 'mpv:status',
   /** 启动一次 mpv 会话（换集/换源即重启；参数见 MpvStartOptions） */
@@ -265,14 +275,14 @@ export const IPC = {
   MPV_STOP: 'mpv:stop',
   /** 主进程 → 渲染层：内核状态推送（时间/时长/暂停/缓冲/直播/尺寸/缓存速度；见 MpvStateEvent） */
   MPV_STATE: 'mpv:state',
-  // ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
+  // （R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
   /** 引擎列表（内置 2 + 插件 N；未就绪项带 `note`）→ `PlayerEngineView[]` */
   ENGINE_LIST: 'engine:list',
   /** 按 id 查单个引擎状态（就绪 / 路径 / 原因）→ `{ id, ready, path, note }` */
   ENGINE_STATUS: 'engine:status',
   /** 写启用开关（`playerSettings.engineEnabled`；默认关，首次开启由渲染层二次确认） */
   ENGINE_ENABLE: 'engine:enable',
-  /** 拉起一次引擎会话（★ 先过**启用闸门**：未启用 → 明确拒绝）→ `{ session }` */
+  /** 拉起一次引擎会话（先过**启用闸门**：未启用 → 明确拒绝）→ `{ session }` */
   ENGINE_START: 'engine:start',
   /** 引擎控制命令（play/pause/seek/volume/rate/fit…；按协议分派） */
   ENGINE_CMD: 'engine:cmd',
@@ -280,7 +290,7 @@ export const IPC = {
   ENGINE_STOP: 'engine:stop',
   /** 主进程 → 渲染层：引擎状态推送（与 `MPV_STATE` 同形 `{session, state}`；节流 200ms） */
   ENGINE_STATE: 'engine:state',
-  /** ★ 2026-09-30（用户要求「点播也应该支持绑定外部播放器，和磁力区分开」）：
+  /** 
    *  点播外部播放器（探测 / 用当前播放地址拉起）—— 绑定值 `vodExternalPlayer` 与磁力分开 */
   VOD_DETECT_PLAYERS: 'vod:detectPlayers',
   VOD_OPEN_EXTERNAL: 'vod:openExternal',
@@ -290,20 +300,20 @@ export const IPC = {
    *   入参 `{ key, url? }`：key 用于解析该源 JVM 的真实可用地址；url 为蜘蛛自报地址（兜底）。
    */
   VOD_CONFIG_CENTER: 'vod:configCenter',
-  // ★ 2026-09-29 启动强制更新：查 GitHub 最新 Release / 代理加速下载 Setup / 拉起安装程序
+  // 启动更新：查 GitHub 最新 Release / 代理加速下载 Setup / 拉起安装程序
   UPDATE_CHECK: 'update:check',
   UPDATE_DOWNLOAD: 'update:download',
   UPDATE_INSTALL: 'update:install',
   /** 主进程 → 渲染层：下载进度（bytes / 百分比 / 速度） */
   UPDATE_PROGRESS: 'update:progress',
   /**
-   * ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：
+   * 
    * 界面缩放偏好 —— 读当前状态（偏好 + 推导倍率 + 依据的工作区）/ 改档位（主进程立即套用并重排窗口）。
    */
   UI_GET_SCALE: 'ui:getScale',
   UI_SET_SCALE: 'ui:setScale',
   /**
-   * ★ 2026-09-29（用户要求）本地包「网页源」：在独立窗口打开 homePage html（fm 桥，见 WebHomeWindow）。
+   * 本地包「网页源」：在独立窗口打开 homePage html（fm 桥，见 WebHomeWindow）。
    * 下面三条 `fm:*` 是**网页窗口 preload → 主进程**的桥通道（渲染层不直接调用）。
    */
   WEBHOME_OPEN: 'webhome:open',

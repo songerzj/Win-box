@@ -19,7 +19,7 @@ export interface SubtitleCandidate {
   /** 命中的检索关键词（合并时标注，UI 可显示） */
   hitKeyword?: string;
   /**
-   * ★ 2026-09-28：命中的**字幕源 id**（`assrt` / `subtitlecat` …）。
+   * 命中的**字幕源 id**（`assrt` / `subtitlecat` …）。
    * 渲染层把候选原样回传给 `subtitleFetch`，主进程据此路由到对应 Provider，
    * 因此它是「多源」能正确分发下载的唯一凭据（缺省按 assrt 处理，兼容旧候选）。
    */
@@ -27,7 +27,7 @@ export interface SubtitleCandidate {
 }
 
 /**
- * ★ 2026-09-24 字幕下载结果：从「纯文本」升级为「文本 + 真实文件名 + 解压信息」。
+ * 字幕下载结果：从「纯文本」升级为「文本 + 真实文件名 + 解压信息」。
  * 为什么必须带 fileName：压缩包里的字幕文件名才是**权威扩展名**，渲染层此前用
  * `candidate.subname`（视频文件名，如 xxx.mkv）判别格式 → ASS 文本被 SRT 解析器解析成 0 cue。
  */
@@ -48,7 +48,7 @@ export interface SubtitleSettings {
   /** assrt token（用户自填） */
   assrtToken?: string;
   /**
-   * ★ 2026-09-28：各字幕源的开关（provider id → 是否启用）。
+   * 各字幕源的开关（provider id → 是否启用）。
    * 缺省视为启用；`assrt` 即使启用、没 token 也会被跳过（见各 Provider 的 available()）。
    */
   providers?: Record<string, boolean>;
@@ -62,7 +62,7 @@ export interface SubtitleSettings {
   bottom: number;
 }
 
-/** ★ 2026-09-28：多源检索报告（命中 + 每个源的状态，供 UI 说明"为什么没字幕"） */
+/** 多源检索报告（命中 + 每个源的状态，供 UI 说明"为什么没字幕"） */
 export interface SubtitleSearchReport {
   candidates: SubtitleCandidate[];
   providers: Array<{
@@ -78,7 +78,7 @@ export interface SubtitleSearchReport {
   }>;
 }
 
-/** ★ 2026-09-28：单个字幕源的开关/可用状态（配置页渲染 + 空结果原因说明） */
+/** 单个字幕源的开关/可用状态（配置页渲染 + 空结果原因说明） */
 export interface SubtitleProviderView {
   id: string;
   name: string;

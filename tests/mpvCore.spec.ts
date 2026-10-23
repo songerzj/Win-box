@@ -1,5 +1,5 @@
 // tests/mpvCore.spec.ts
-// ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容播放内核的纯逻辑回归 ——
+// MPV 高兼容播放内核的纯逻辑回归 ——
 //   启动参数 / JSON IPC 行协议 / 状态归一 / 画面比例与字幕换算 / mpv.exe 路径解析链。
 import { describe, it, expect } from 'vitest';
 import {
@@ -182,7 +182,7 @@ describe('mpvCore · JSON IPC 协议', () => {
     expect(mpvCommandLines({ type: 'fit', value: 'r43' }).join('')).toContain('"video-aspect-override","4:3"');
     expect(mpvCommandLines({ type: 'sub-font', value: 30 })[0]).toContain('"sub-font-size",60');
     expect(mpvCommandLines({ type: 'sub-pos', value: 88 })[0]).toContain('"sub-pos",88');
-    // ★ 2026-10-17：切音轨 → set_property aid；非法/非正 id 不发明 API
+    // 切音轨 → set_property aid；非法/非正 id 不发明 API
     expect(mpvCommandLines({ type: 'aid', value: 2 })[0]).toContain('"set_property","aid",2');
     expect(mpvCommandLines({ type: 'aid', value: 0 })).toEqual([]);
     expect(mpvCommandLines({ type: 'aid', value: Number.NaN })).toEqual([]);
@@ -456,7 +456,7 @@ describe('mpvCore · 音轨设置（track-list / aid）', () => {
   });
 });
 
-// ---------- ★ 2026-10-17（阶段2）：MPV 内核能力面 ----------
+// ---------- （阶段2）：MPV 内核能力面 ----------
 // 键名/单位全部取自该内核实测 dump（.tmp/yaozhi-poc/mpv-props.cjs）：
 //   · track-list 的 language/title 在 metadata 里，顶层没有；
 //   · video-params 的 hdr-vivid 是本内核自定义键；
@@ -558,7 +558,7 @@ describe('mpvCore · 能力面（阶段2）', () => {
   });
 
   it('控制命令：切字幕轨（**必须传字符串**，数字会被 mpv 拒；-1 → "no"）；直通（空串合法）', () => {
-    // ★ 实测：`set_property sid -1`（数字）→ mpv 回 `unsupported format for accessing property`（静默失败）
+    // 实测：`set_property sid -1`（数字）→ mpv 回 `unsupported format for accessing property`（静默失败）
     expect(mpvCommandLines({ type: 'sid', value: 3 })[0]).toContain('"set_property","sid","3"');
     expect(mpvCommandLines({ type: 'sid', value: -1 })[0]).toContain('"set_property","sid","no"');
     expect(mpvCommandLines({ type: 'sid', value: 0 })).toEqual([]);
@@ -567,7 +567,7 @@ describe('mpvCore · 能力面（阶段2）', () => {
     expect(mpvCommandLines({ type: 'audio-spdif', value: 'ac3,dts' })[0]).toContain('"audio-spdif","ac3,dts"');
   });
 
-  it('★ 阶段3b：音频直通档位归一 —— 只认白名单，非法值回落「关闭」', () => {
+  it('阶段3b：音频直通档位归一 —— 只认白名单，非法值回落「关闭」', () => {
     for (const o of SPDIF_OPTIONS) {
       expect(normalizeSpdif(o.value)).toBe(o.value);
       expect(spdifLabel(o.value)).toBe(o.label);

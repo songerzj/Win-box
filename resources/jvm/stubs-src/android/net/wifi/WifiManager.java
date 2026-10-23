@@ -9,7 +9,7 @@ import java.util.Enumeration;
 import java.util.List;
 
 /**
- * WifiManager stub —— ★ 2026-09-27 新补（真机取证：wex 仓多只源共用的 device 指纹助手
+ * WifiManager stub —— 新补（实测：某第三方源仓多只源共用的 device 指纹助手
  *   `merge/.../oOoO0OoO0oOo0oOo.oOoOoOoOoOoOoO0o(Context)` 会
  *   `context.getSystemService(WIFI_SERVICE)` → `WifiManager.getConnectionInfo().getIpAddress()`；
  *   缺这个类时整源 `ClassNotFoundException: android.net.wifi.WifiManager`）。

@@ -1,9 +1,9 @@
 // src/renderer/lib/pluginKeymaps.ts
 // 插件快捷键的**渲染层分发器**（唯一的键盘匹配 + 触发实现处）。
 //
-// ★ 与 `lib/pluginCommands.ts` 是**同一条链路**：键盘只是另一种**触发方式**，
+// 与 `lib/pluginCommands.ts` 是**同一条链路**：键盘只是另一种**触发方式**，
 //   命中后仍交给 `runPluginCommand`（宿主受控动作词表）执行；插件**不跑代码**。
-// ★ 「不与宿主冲突」：键位在校验期已强制含 Ctrl / Alt / Meta 且主键仅限字母 / 数字 / F 键，
+// 「不与宿主冲突」：键位在校验期已强制含 Ctrl / Alt / Meta 且主键仅限字母 / 数字 / F 键，
 //   故与宿主裸键（空格 / 方向键 / Esc / Backspace）**天然不重叠**；这里再补一条「输入框中不触发」。
 // 事实源：docs/design/插件制作规范.md §5.10；机器契约见 src/shared/plugin.ts。
 

@@ -1,5 +1,5 @@
 // tests/importProfileName.spec.ts
-// ★ 2026-09-27（用户要求）：导入订阅时可自填**订阅名** —— 填了就用它命名档案，
+// 导入订阅时可自填**订阅名** —— 填了就用它命名档案，
 //   留空才退回既有自动命名「新订阅 xx」（新增订阅仍会把旧档案改名「旧订阅 xx」）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,7 +51,7 @@ function activeName(host: SpiderHost): string {
   return host.cfgProfiles().find((p) => p.id === id)?.name ?? '';
 }
 
-describe('导入订阅的档案命名（★ 用户自填名优先）', () => {
+describe('导入订阅的档案命名（用户自填名优先）', () => {
   it('首次导入 + 自填名 → 档案直接用自填名（不再是「新订阅 xx」）', async () => {
     const host = new SpiderHost();
     await host.importConfig({ json: cfg('a'), name: '我的影视仓' });
@@ -91,7 +91,7 @@ describe('导入订阅的档案命名（★ 用户自填名优先）', () => {
   });
 });
 
-describe('nameFromLocalFile — 本地文件导入的默认命名（★ 原始文件名）', () => {
+describe('nameFromLocalFile — 本地文件导入的默认命名（原始文件名）', () => {
   it('.json / .py 都取原始文件名（去扩展名）', () => {
     expect(nameFromLocalFile('D:\\订阅\\我的影视仓.json')).toBe('我的影视仓');
     expect(nameFromLocalFile('E:/spider/掘金.py')).toBe('掘金');

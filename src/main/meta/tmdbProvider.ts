@@ -21,7 +21,7 @@ const DEFAULT_IMAGE_BASE = 'https://image.tmdb.org/t/p/w342';
 const IMG_PROXY = `${LOCAL_PROXY_BASE}/img`;
 
 /**
- * ★ 2026-09-24：运行时可配置（宿主按用户设置注入）——
+ * 运行时可配置（宿主按用户设置注入）——
  *   userKey  ：用户自填 API Key（v3）或 v4 读访问令牌；空 = 禁用 TMDB
  *   apiBase  ：API 代理地址；空 = 内置默认
  *   imageBase：图片镜像地址；空 = 内置默认
@@ -48,7 +48,7 @@ export function tmdbImageBase(): string {
 }
 /**
  * 图床**根**（去掉尾部尺寸段）—— 用于需要换尺寸的场景（如 Hero 剧照用 w1280）。
- * ★ 2026-09-24 修复：`tmdbImageBase()` 默认已含 `/w342`，直接拼 `/w1280` 会得到
+ * 修复：`tmdbImageBase()` 默认已含 `/w342`，直接拼 `/w1280` 会得到
  *   `…/t/p/w342/w1280/x.jpg`（404）。这里剥掉尾部 `/w数字` 或 `/original` 再拼目标尺寸。
  */
 export function tmdbImageBaseRoot(): string {
@@ -108,7 +108,7 @@ export function parseTmdbSearch(json: unknown, type: 'movie' | 'tv', imageBase: 
     const year = /^(\d{4})/.exec(date)?.[1] ? Number(/^(\d{4})/.exec(date)![1]) : ('' as const);
     if (!title) continue;
     const id = Number(r.id);
-    // ★ backdrop_path 必为横版剧照：详情/发现页背景只允许横版图，用它兜底（绝不退回竖版封面）
+    // backdrop_path 必为横版剧照：详情/发现页背景只允许横版图，用它兜底（绝不退回竖版封面）
     const base = imageBase.replace(/\/+$/, '');
     const root = base.replace(/\/(?:w\d+|h\d+|original)$/i, '');
     const hit: MetaHit = {
@@ -117,7 +117,7 @@ export function parseTmdbSearch(json: unknown, type: 'movie' | 'tv', imageBase: 
       poster: posterPath ? `${base}${posterPath}` : '',
       overview,
       type,
-      // ★ 2026-09-24：带出 TMDB id —— 详情页「演职员/相关推荐」用它再查一次详情
+      // 带出 TMDB id —— 详情页「演职员/相关推荐」用它再查一次详情
       ...(Number.isFinite(id) && id > 0 ? { tmdbId: id } : {}),
       ...(backdropPath ? { backdrop: `${root}/w1280${backdropPath}` } : {}),
     };
@@ -155,8 +155,8 @@ function normTitle(s: string): string {
 }
 
 /**
- * ★ 2026-09-24：**TMDb 命中必须与查询片名「实质同名」**，否则视为误匹配。
- * 起因（实测）：立播「韩国制造 第二季」被 TMDb 匹配成《韩国制造的我》（2026 泰米尔语电影）——
+ * **TMDb 命中必须与查询片名「实质同名」**，否则视为误匹配。
+ * 起因（实测）：某影视壳类源的「韩国制造 第二季」被 TMDb 匹配成《韩国制造的我》（2026 泰米尔语电影）——
  * 用它补出来的封面/导演/演员全是错的（导演 Ra. Karthik、主演印度演员），比不补更糟。
  * 规则（净化季/集噪声后）：
  *   ① 完全相同 → 命中；
@@ -197,7 +197,7 @@ export function truncAtYear(s: string): string {
  *   ② 去掉**尾部噪声**：「第1季 / 第一季 / 更新至12集 / 全40集 / 41集 / 4K / 1080P / 国语 /
  *      国语版 / 美版 / 日语版 / 动漫合集 / 完结…」
  *      —— 源站把这类标记拼进片名很常见，直接查必然 miss（"封面总有几个补不上"的主因之一）；
- *      ★ 2026-09-23：噪声含**中文数字季号**（「权力的游戏第一季」「无耻之徒美版第一季」实测 miss）
+ * 噪声含**中文数字季号**（「权力的游戏第一季」「无耻之徒美版第一季」实测 miss）
  *      与「版本/语言/合集」后缀（「海贼王动漫合集日语」）；
  *   ③ 再去掉【…】(…)〔…〕括号标签（「斗罗大陆（4K）」「斗罗大陆【全集】」）；
  *   ④ 主标题：'·' / ':' 前的部分（「斗罗大陆Ⅱ绝世唐门·第一季」→「斗罗大陆Ⅱ绝世唐门」）；
@@ -252,7 +252,7 @@ async function getJson(url: string, bearer: string, headersTimeoutMs: number): P
       // v3 Key 场景不带 Authorization（鉴权已在 URL 的 api_key 参数上）
       ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
     };
-    // ★ 2026-09-25：出站链 —— 用户设了网络代理则优先走代理（TMDB 在部分网络只有代理可达），
+    // 出站链 —— 用户设了网络代理则优先走代理（TMDB 在部分网络只有代理可达），
     //   否则退回 DoH Agent（本机 DNS 对 api.themoviedb.org 被污染）。
     let lastErr = '';
     for (const dispatcher of dispatchChain(url, agent)) {
@@ -278,11 +278,11 @@ async function getJson(url: string, bearer: string, headersTimeoutMs: number): P
 
 /**
  * 校验 TMDB 图床图片真实可读（GET + Range bytes=0-255，经 DoH Agent）。
- * ★ 2026-09-19 修复：此前用 HEAD，部分 CDN/图床拒绝 HEAD（405/403）→ 好图被误判坏图、
+ * 修复：此前用 HEAD，部分 CDN/图床拒绝 HEAD（405/403）→ 好图被误判坏图、
  *   命中拿不到封面（「TMDB 没搞定」的现象之一）。GET+小 Range 更接近真实出图路径：
  *   - 响应 200/206 且 Content-Type 是 image/* 判为好图（假 poster 404 返回 text/html 不会误判）；
  *   - 只读首片断流，避免把整张图下完。
- * ★ 2026-09-18：此前未校验，把「URL 拿到了但图实际打不开」的封面也当成功
+ * 此前未校验，把「URL 拿到了但图实际打不开」的封面也当成功
  *   （渲染层直连 image.tmdb.org 被 DNS 污染 → 图裂且被误缓存）。坏图不命中、不缓存。
  */
 /** 图床主机白名单：生效的镜像主机（用户可填）+ 官方 image.tmdb.org */
@@ -302,10 +302,10 @@ function posterHostAllowed(url: string): boolean {
 }
 
 async function verifyPoster(url: string): Promise<boolean> {
-  // ★ 2026-09-24：图床白名单改为「生效的图床主机」（含用户填的镜像地址）+ 官方 tmdb 主机
+  // 图床白名单改为「生效的图床主机」（含用户填的镜像地址）+ 官方 tmdb 主机
   if (!posterHostAllowed(url)) return false;
   try {
-    // ★ 同 getJson：有代理走代理（图床同样可能被墙），否则 DoH
+    // 同 getJson：有代理走代理（图床同样可能被墙），否则 DoH
     for (const dispatcher of dispatchChain(url, agent)) {
       try {
         const r = await undiciRequest(url, {
@@ -343,13 +343,13 @@ async function verifyPoster(url: string): Promise<boolean> {
 /**
  * 按名称查询 TMDB（movie + tv 并行），返回最优 MetaHit 或 null。
  * - 内置凭据缺失 → 立即返回 null（不请求）；
- * - ★ 查询计划（2026-09-23 提升命中率，「封面总有几个补不上」的主要治因）：
+ * - 查询计划（提升命中率，「封面总有几个补不上」的主要治因）：
  *     ① 原名 + 年份（年份可能是源站 remarks 误判 → 单独一轮去年份重试）
  *     ② 原名不带年份
  *     ③ 净化名（去「第1季/更新至N集/4K…」等尾部噪声、括号标签、取主标题）逐轮退让
  *   轮数上限 MAX_QUERY_ROUNDS，避免个别查不到的名字把 API 打爆；
  * - 命中的封面必须经 verifyPoster 真实可读；坏图跳过该候选，找到下一个可用的；
- * - 命中写缓存（主键 + 本轮键，带 vv=校验时间，超 24h 自动重新校验）；全 miss 写短 TTL miss。
+ * - 命中写缓存（主键 + 本次键，带 vv=校验时间，超 24h 自动重新校验）；全 miss 写短 TTL miss。
  */
 export async function tmdbSearchTitle(
   store: MetaStore,
@@ -363,10 +363,10 @@ export async function tmdbSearchTitle(
   if (!cred || variants.length === 0) return null;
   const primaryKey = metaCacheKey(variants[0], year);
 
-  // ★ forceFresh：跳过缓存直接重查（2026-09-24 详情页增强用 —— 老缓存条目没有 tmdbId，
+  // forceFresh：跳过缓存直接重查（详情页增强用 —— 老缓存条目没有 tmdbId，
   //   需要一次「带 id」的新结果才能查演职员/推荐；结果照常写回缓存）
-  // ★ 缓存也要过同名校验：此前已缓存的「误匹配」（如 韩国制造 → 韩国制造的我）视为 miss 重查，
-  //   否则要等 7 天 TTL 才自愈（本轮修复 2026-09-24）
+  // 缓存也要过同名校验：此前已缓存的「误匹配」（如 韩国制造 → 韩国制造的我）视为 miss 重查，
+  // 否则要等 7 天 TTL 才自愈
   const usableHit = (h: MetaHit | null | undefined): h is MetaHit =>
     !!h && (titleMatches(variants[0], h.title) || titleMatches(name, h.title));
 
@@ -408,7 +408,7 @@ export async function tmdbSearchTitle(
     const at = authFor(tvUrl, cred);
     const [mv, tv] = await Promise.all([getJson(am.url, am.bearer, 12000), getJson(at.url, at.bearer, 12000)]);
 
-    // ★ 2026-09-19 修复：HTTP 非 200 的「服务端错误」（401/403/429/5xx/网络失败）**不写 miss 缓存**。
+    // 修复：HTTP 非 200 的「服务端错误」（401/403/429/5xx/网络失败）**不写 miss 缓存**。
     //   此前一律当"查询无结果"缓存 1 天 → 限流/凭据抖动会让整批资源封面白等一天（"大部分资源缺封面"的常见根因）。
     //   只有「至少一个请求 200 且解析出空结果」才是真 miss（可缓存）；错误类返回 null 但不落缓存，下次翻页自动重试。
     const candidates: MetaHit[] = [];
@@ -425,19 +425,19 @@ export async function tmdbSearchTitle(
         logger.w(`meta:TMDB ${resp === mv ? 'movie' : 'tv'} 失败 status=${resp.status} ${resp.text.slice(0, 200)}`);
       }
     }
-    // 错误类（非 200/404）出现 → 本轮不落缓存，返回 null 让调用方下次重试
+    // 错误类（非 200/404）出现 → 本次不落缓存，返回 null 让调用方下次重试
     if (mv.status !== 200 && tv.status !== 200 && (mv.status !== 404 || tv.status !== 404)) anyError = true;
 
     let hit: MetaHit | null = null;
     for (const cand of candidates.slice(0, 6)) {
-      // ★ 严格同名校验（见 titleMatches）：同名或仅差序号才算命中 —— 否则宁可 miss（不补错内容）
+      // 严格同名校验（见 titleMatches）：同名或仅差序号才算命中 —— 否则宁可 miss（不补错内容）
       if (!titleMatches(round.q, cand.title) && !titleMatches(name, cand.title)) continue;
       // 封面经本地 /img 中继出图（渲染层直连 image.tmdb.org 可能被污染）；先校验原始图真实可读
       if (await verifyPoster(cand.poster)) {
         hit = {
           ...cand,
           poster: `${IMG_PROXY}?u=${encodeURIComponent(cand.poster)}`,
-          // ★ 横版剧照同样走中继（详情页背景兜底用；缺了就不带该字段）
+          // 横版剧照同样走中继（详情页背景兜底用；缺了就不带该字段）
           ...(cand.backdrop ? { backdrop: `${IMG_PROXY}?u=${encodeURIComponent(cand.backdrop)}` } : {}),
         };
         break;
@@ -462,7 +462,7 @@ export async function tmdbSearchTitle(
   return null;
 }
 
-// ==================== 详情页增强：演职员 / 类型 / 相关推荐（★ 2026-09-24） ====================
+// ==================== 详情页增强：演职员 / 类型 / 相关推荐 ====================
 
 /** 演职员/推荐缓存 TTL（详情页反复进出不重复打 API） */
 const EXTRAS_TTL_MS = 24 * 3600 * 1000;
@@ -475,7 +475,7 @@ export interface TmdbExtrasRaw {
   genres: string[];
   cast: Array<{ name: string; character?: string }>;
   recommendations: Array<{ title: string; year: number | ''; posterPath: string; tmdbId?: number; mediaType: 'movie' | 'tv' }>;
-  /** ★ 2026-09-24：导演（电影取 crew[job=Director]；剧集再并入 created_by） */
+  /** 导演（电影取 crew[job=Director]；剧集再并入 created_by） */
   directors: string[];
 }
 
@@ -592,7 +592,7 @@ export async function tmdbExtras(
 }
 
 /**
- * ★ 2026-09-24：发现页 Hero「横版剧照轮播」用的图片集。
+ * 发现页 Hero「横版剧照轮播」用的图片集。
  *   - backdrops：`/movie|tv/{id}/images` 的横版剧照（w1280），按 vote_average 降序取前 N；
  *   - posters：同接口的竖版海报（w342），备用；
  *   - 全部包装为本地 /img 中继（渲染层直连图床可能被 DNS 污染 → 图裂）。
@@ -611,8 +611,8 @@ export function parseTmdbImages(json: unknown): { backdrops: string[]; posters: 
         /** 中文优先：有中文图时排前面（Hero 上的画面更贴合中文片名） */
         zh: r?.iso_639_1 === 'zh' ? 1 : 0,
       }))
-      // ★ 2026-09-25：backdrops 里混有**竖版**图（用户上传时标错类型）→ 只看宽度会把竖图选成
-      //   Hero/详情背景，铺满一个横向区域时被裁得只剩中间一条（用户报「竖版图被裁剪」）。
+      // backdrops 里混有**竖版**图（用户上传时标错类型）→ 只看宽度会把竖图选成
+      // Hero/详情背景，铺满一个横向区域时被裁得只剩中间一条。
       //   故横版用途（landscape）必须同时满足 宽/高 ≥ 1.3。
       .filter(
         (r) =>
@@ -656,7 +656,7 @@ export async function tmdbImages(
       return empty;
     }
     const raw = parseTmdbImages(JSON.parse(resp.text));
-    // ★ 用「图床根」拼目标尺寸：基址默认已含 /w342，必须剥掉再拼（否则 /w342/w1280/… 404）
+    // 用「图床根」拼目标尺寸：基址默认已含 /w342，必须剥掉再拼（否则 /w342/w1280/… 404）
     const root = tmdbImageBaseRoot();
     const wrap = (size: string, p: string): string => `${IMG_PROXY}?u=${encodeURIComponent(`${root}${size}${p}`)}`;
     const data: MetaImages = {
@@ -671,7 +671,7 @@ export async function tmdbImages(
   }
 }
 
-// ==================== 发现页（无源时的默认主页；★ 2026-09-24） ====================
+// ==================== 发现页（无源时的默认主页） ====================
 
 /** 发现页分区（TMDB 榜单；标题用中文，language=zh-CN 片名也走中文） */
 const DISCOVER_SECTIONS: Array<{ id: string; title: string; path: string; mediaType: 'movie' | 'tv' }> = [
@@ -685,7 +685,7 @@ const DISCOVER_SECTIONS: Array<{ id: string; title: string; path: string; mediaT
 const DISCOVER_TTL_MS = 6 * 3600 * 1000;
 let discoverCache: { t: number; data: DiscoverSection[] } | null = null;
 let discoverInflight: Promise<DiscoverSection[]> | null = null;
-/** ★ 2026-09-25：分区级「最后一次成功结果」——整表刷新失败时按分区顶替，避免发现页整页空 */
+/** 分区级「最后一次成功结果」——整表刷新失败时按分区顶替，避免发现页整页空 */
 const sectionCache = new Map<string, { t: number; data: DiscoverSection }>();
 
 /** TMDB 列表项 → 发现页条目（封面包装为本地 /img 中继，渲染层直连图床可能被 DNS 污染） */
@@ -696,7 +696,7 @@ export function toDiscoverItems(json: unknown, mediaType: 'movie' | 'tv'): Disco
     tmdbId: h.tmdbId,
     mediaType,
     poster: h.poster ? `${IMG_PROXY}?u=${encodeURIComponent(h.poster)}` : '',
-    // ★ 横版剧照（Hero 背景只用横版图，见 DiscoverPage）——同样走本地中继
+    // 横版剧照（Hero 背景只用横版图，见 DiscoverPage）——同样走本地中继
     ...(h.backdrop ? { backdrop: `${IMG_PROXY}?u=${encodeURIComponent(h.backdrop)}` } : {}),
   })).filter((it) => it.poster);
 }
@@ -706,8 +706,7 @@ export function toDiscoverItems(json: unknown, mediaType: 'movie' | 'tv'): Disco
  * - 无内置凭据 → 返回空数组（渲染层提示「未内置凭据」而不是报错）；
  * - 结果内存缓存 6h；`refresh=true` 绕过缓存重拉；并发调用共享同一 in-flight promise。
  *
- * ★ 2026-09-25（用户报「发现页经常加载不出来 / 搜索没有热搜」）：
- *   TMDB 对本机是跨境访问，偶发 `Body/Headers Timeout`（日志实录）→ 此前一次失败就整页空，
+ *   TMDB 对本机是跨境访问，偶发 `Body/Headers Timeout`（日志）→ 此前一次失败就整页空，
  *   而发现页与搜索面板热搜共用本函数。现加两道保险：
  *   ① **分区级重试**（同一分区最多 2 次）—— 跨境抖动一次不再直接丢分区；
  *   ② **分区级最后一次成功结果兜底**（`sectionCache`）—— 仍失败的分区用上次的榜单顶上，
@@ -756,7 +755,7 @@ export async function tmdbDiscover(logger: Logger, refresh = false): Promise<Dis
   return discoverInflight;
 }
 
-// ==================== 发现页「分类」浏览（★ 2026-09-24） ====================
+// ==================== 发现页「分类」浏览 ====================
 
 const GENRES_TTL_MS = 24 * 3600 * 1000;
 const GENRE_PAGE_TTL_MS = 6 * 3600 * 1000;
@@ -857,7 +856,7 @@ export async function tmdbGenrePage(
 }
 
 /**
- * ★ 2026-09-24：搜索面板「自动联想」——`/search/multi` 取前 N 条（电影/剧集）。
+ * 搜索面板「自动联想」——`/search/multi` 取前 N 条（电影/剧集）。
  * 轻量：不校验封面、不写缓存（输入即查）；无凭据/失败返回空数组。
  */
 export async function tmdbSuggest(logger: Logger, q: string, limit = 8): Promise<MetaSuggestion[]> {

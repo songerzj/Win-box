@@ -14,7 +14,7 @@ describe('normalizeTheme', () => {
     expect(normalizeTheme('douban')).toBe('douban');
   });
 
-  it('★ 2026-09-30：已删除的经典主题（dark / light）与非法/空 → 回退默认皮肤（网飝）', () => {
+  it('已删除的经典主题（dark / light）与非法/空 → 回退默认皮肤（网飝）', () => {
     expect(DEFAULT_THEME).toBe('netflix');
     expect(normalizeTheme('dark')).toBe('netflix');
     expect(normalizeTheme('light')).toBe('netflix');
@@ -25,7 +25,7 @@ describe('normalizeTheme', () => {
     expect(normalizeTheme(undefined)).toBe('netflix');
   });
 
-  it('★ 2026-10-09：四套皮肤展示名（网飝 / 哔哔 / 大果 / 大豆）', () => {
+  it('四套皮肤展示名（网飝 / 哔哔 / 大果 / 大豆）', () => {
     expect(Object.keys(THEME_LABELS).sort()).toEqual(['apple', 'bilibili', 'douban', 'netflix']);
     expect(THEME_LABELS.netflix).toContain('网飝');
     expect(THEME_LABELS.bilibili).toContain('哔哔');
@@ -34,7 +34,7 @@ describe('normalizeTheme', () => {
   });
 });
 
-// ★ 2026-10-18（用户要求「统一皮肤标准」）：组件不再按皮肤 id 分支，改读 layout 结构枚举 ——
+// 组件不再按皮肤 id 分支，改读 layout 结构枚举 ——
 //   因此注册表必须能把「内置皮肤的结构声明」与「插件皮肤的结构声明」按同一口径交出来。
 describe('皮肤注册表（内置 + 插件）', () => {
   const pluginSkin = (id: string, layout: ThemeSkinView['layout'] = {}): ThemeSkinView => ({

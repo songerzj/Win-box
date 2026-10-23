@@ -2,7 +2,7 @@
 //
 // 产物 = Node 端确定性生成的 `android/content/SharedPreferences$Mem` 替换类（见
 // src/engine/spider/prefsShim.ts）。它让桌面端的 SharedPreferences **可读**（`<沙箱>/shared_prefs/seed.txt`
-// 里的 `Wex_*` 键），从而修掉 wex 族「已绑定却报还没有配置 UC/百度 Cookie」。
+// 里的 `Wex_*` 键），从而修掉 某第三方源族「已绑定却报还没有配置 UC/百度 Cookie」。
 //
 // 为什么需要随构建现场产出：打包后 `resources/` 只读（asarUnpack），运行时无法落盘；且
 // `resources/jvm/**/*.jar` 不进仓库（.gitignore）。生成逻辑只有一份真相（prefsShim.ts），

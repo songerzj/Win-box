@@ -1,10 +1,10 @@
 // src/main/plugin/pluginDiscoverSource.ts
 // 插件发现页数据源适配层：把 `contributes.discover.source`（L2 **声明式**）适配为宿主「分区」提供者。
 //
-// ★ 与前两个 provider 同形态：宿主按 **URL 模板** 代发请求、按 **JSON 路径** 取数，**不执行插件的代码**。
-// ★ 定位 = **增补**：宿主把插件分区**追加**在发现页现有榜单之后；内置分区先占 id，同 id 的插件分区被忽略。
-// ★ 图片统一包成本地 `/img` 中继（与内置榜单同口径：渲染层直连图床可能被 DNS 污染）。
-// ★ 单分区失败**只跳过该分区**（不拖垮同插件其它分区，也不影响内置榜单）。
+// 与前两个 provider 同形态：宿主按 **URL 模板** 代发请求、按 **JSON 路径** 取数，**不执行插件的代码**。
+// 定位 = **增补**：宿主把插件分区**追加**在发现页现有榜单之后；内置分区先占 id，同 id 的插件分区被忽略。
+// 图片统一包成本地 `/img` 中继（与内置榜单同口径：渲染层直连图床可能被 DNS 污染）。
+// 单分区失败**只跳过该分区**（不拖垮同插件其它分区，也不影响内置榜单）。
 // 事实源：docs/design/插件制作规范.md §5.6；机器契约见 src/shared/plugin.ts。
 import { expandSubTemplate, jsonPathGet, type DiscoverSectionContribute, type DiscoverSourceContribute } from '../../shared/plugin';
 import { LOCAL_PROXY_BASE } from '../../shared/constants';

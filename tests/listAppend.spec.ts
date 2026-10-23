@@ -1,4 +1,4 @@
-// tests/listAppend.spec.ts — 瀑布模式「逐页追加去重」纯函数（★ 2026-09-30 新增）
+// tests/listAppend.spec.ts — 瀑布模式「逐页追加去重」纯函数（新增）
 import { describe, it, expect } from 'vitest';
 import { appendUniqueItems, pageSignature } from '../src/renderer/lib/listAppend';
 

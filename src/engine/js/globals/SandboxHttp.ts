@@ -10,7 +10,7 @@
 // 返回 { headers, content }；任何异常 → { headers: {}, content: '' }（Connect.error，不抛）。
 // content：buffer=0（默认）文本 / 1 字节数组 number[] / 2 标准 base64。
 //
-// ★ 同步语义说明：安卓 QuickJS 里 req() 真同步（阻塞 executor 线程）。Node 主线程无法阻塞等待
+// 同步语义说明：安卓 QuickJS 里 req() 真同步（阻塞 executor 线程）。Node 主线程无法阻塞等待
 //   异步 HTTP，这里的实现：
 //   - async === false（req 路径）：优先用宿主注入的 host.httpSync（测试 mock / 未来 worker），
 //     否则用 spawnSync 子进程（ELECTRON_RUN_AS_NODE）做真同步请求 —— 严格 1:1 同步返回。
@@ -208,7 +208,7 @@ function requestSyncIn(host: EngineHost, url: string, opts: HttpOptions): HttpRe
       const res = host.httpSync(req);
       return toRes(res);
     }
-    // ★★ 2026-09-30 排障埋点（用户报「另一台设备搜索时卡死」）：spawnSync 会**同步阻塞主进程**，
+    // 排障埋点：spawnSync 会**同步阻塞主进程**，
     //   期间界面/IPC/本地代理服务全部停摆。超过 200ms 就记一行（含目标主机），
     //   用来区分「某个源在同步请求上拖住了整个软件」还是别的原因。
     const t0 = Date.now();
@@ -226,10 +226,10 @@ function requestSyncIn(host: EngineHost, url: string, opts: HttpOptions): HttpRe
 }
 
 /**
- * ★★ 2026-09-30（「搜索时软件卡死」根因）：
+ * （「搜索时软件卡死」根因）
  *   同步请求若指向**本机回环**（我们自己的本地代理 127.0.0.1:9978），会与主进程**互等死锁** ——
  *   spawnSync 把主进程阻塞住等子进程，而子进程请求的正是主进程里那个 HTTP 服务（它也停摆了），
- *   只能等到子进程超时（默认 10s + 5s）才返回。日志实证：`97_search.js` 的
+ *   只能等到子进程超时（默认 10s + 5s）才返回。实测确认：部分源的 search 脚本，
  *   `req('http://127.0.0.1:9978/pkg/0/config/env.json')` 之后整整 62s 无任何日志（软件假死）。
  *   命中即给出可读提示，便于定位是哪个源在用回环同步请求。
  */

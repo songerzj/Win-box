@@ -1,16 +1,16 @@
 // src/engine/spider/SpiderProcPool.ts
-// ★ 蜘蛛子进程常驻复用池（进程池 v3）：JVM(--serve)/Python(-serve) 同一进程跨请求复用，
+// 蜘蛛子进程常驻复用池（进程池 v3）：JVM(--serve)/Python(-serve) 同一进程跨请求复用，
 //   摊销每次冷启动（JVM 1~3s / Python 0.5~1s）。
 //
-// 设计要点（★ 2026-09-23 三轮重做：从「一个进程一个请求」改为「**进程内并发**」）：
+// 设计要点（从「一个进程一个请求」改为「**进程内并发**」）：
 //  - 分组 key = 固定 argv 前缀（exe + serve 头 + classpath/env 差异段）的组合；同 key 共享进程池。
-//  - ★ **一个进程同时承接多个在途请求**（MAX_INFLIGHT_PER_PROC）：JVM 侧是 24 线程池，
+//  - **一个进程同时承接多个在途请求**（MAX_INFLIGHT_PER_PROC）：JVM 侧是 24 线程池，
 //    蜘蛛调用绝大多数时间在等网络 → 一个热 JVM 就能跑完整轮 33 源并发搜索，
 //    不必再多开 6 个 JVM（那正是「进源慢、搜索更慢」的根因：冷启动 ×N + 内存 ×N + 杀软扫描 ×N）。
 //  - PER_KEY_CAP 只在「线程池被占满」时兜底扩容；全局上限（内存自适应）防失控。
-//  - 请求超时 = 调用方给的源 timeout；★ **单请求超时不再 kill 进程**（进程里还有别的源的在途请求）。
-//  - ★ 空结果与失败必须区分：蜘蛛成功返回 '' 是合法结果（空搜索），不误判失败去回退一次性。
-//  - 空闲 25s 回收冗余进程（保留每 key 1 个热进程）；★ 2026-10-17（B1）起：用户**开始播放**后池整体空闲 30s 再收敛到 1 个。
+//  - 请求超时 = 调用方给的源 timeout；**单请求超时不再 kill 进程**（进程里还有别的源的在途请求）。
+//  - 空结果与失败必须区分：蜘蛛成功返回 '' 是合法结果（空搜索），不误判失败去回退一次性。
+// - 空闲 25s 回收冗余进程（保留每 key 1 个热进程）；（B1）起：用户**开始播放**后池整体空闲 30s 再收敛到 1 个。
 //  - 单测默认禁用（VITEST）或 TVBOX_DISABLE_SPIDER_POOL=1 关闭。
 import { spawn, type ChildProcess } from 'node:child_process';
 import { freemem } from 'node:os';
@@ -32,16 +32,16 @@ export interface PoolResult {
   /** ok=false 时的失败原因（超时/退出/排队超时…） */
   reason?: PoolFailReason;
   /**
-   * ★ 2026-09-28：serve 信封里**蜘蛛自己报的错**（`env.ok=false` 时的 data，形如
+   * serve 信封里**蜘蛛自己报的错**（`env.ok=false` 时的 data，形如
    *   `java.lang.ClassNotFoundException: com.github.catvod.spider.Xxx` / 蜘蛛异常串）。
    *   传输层本身是成功的（ok 仍为 true → 不回退一次性），但调用方必须据此
    *   ① 记失败原因（翻译后上屏）② 触发「类缺失 → 缓存 jar 并集兜底」重试。
    *   旧行为把 `env.ok=false` 的 data 当**正常蜘蛛输出**返回 → 上述两件事全部失效
-   *   （实测：`木兮影视` 报出上一请求遗留的陈旧原因 “java.lang.Object”）。
+   *   （实测：某源报出上一请求遗留的陈旧原因 “java.lang.Object”）。
    */
   error?: string;
   /**
-   * ★ 2026-10-09：该 serve 进程**实际绑定**的宿主代理端口（信封 `pp` 字段，SpiderRunner 预启动后上报）。
+   * 该 serve 进程**实际绑定**的宿主代理端口（信封 `pp` 字段，SpiderRunner 预启动后上报）。
    *   多 JVM 并存时 -Dtvbox.proxy.port 只有第一只能绑到，其余退化临时端口 —— 播放地址改写必须打到
    *   「真正服务过这次调用的这一只」（`Pan.proxy` 的 shareid/BDCLND 状态在它内存里）。
    */
@@ -71,7 +71,7 @@ interface Proc {
   /** 子进程自报的实际代理端口，用于把 playerContent 留在详情所属 JVM。 */
   proxyPort?: number;
   /**
-   * ★ 2026-09-26：钉住到该时刻（毫秒）。本地代理（壳的 `<host>/proxy?do=proxy&key=…`）正在服务
+   * 钉住到该时刻（毫秒）。本地代理（壳的 `<host>/proxy?do=proxy&key=…`）正在服务
    *   播放时，该 JVM 是**内容源**，被回收就会让播放中段断流 → 回收器跳过钉住的进程。
    *   LRU 和空闲回收均跳过仍被钉住的进程（冗余 JVM 也可能拥有当前分享会话）。
    */
@@ -91,7 +91,7 @@ export interface SpawnFn {
 
 /**
  * 全局存活进程上限（内存自适应）：空闲内存 >1.5GB 用 4，否则退回 3。
- * ★ 2026-10-17（B1，用户报「播放时太臃肿」）由 8/6 下调。
+ * （B1）由 8/6 下调。
  * 依据：实测一个常驻 serve JVM **≈84MB**、py 蜘蛛 **≈35MB**，原上限 8 ≈ 0.3~0.7GB；
  *   而「一个 serve 进程内 24 线程并发」（见 MAX_INFLIGHT_PER_PROC）已足够跑完整轮 33 源并发搜索，
  *   只有「同 key 线程池被占满」时才需要扩容 —— 4/3 才是真正的必要规模。
@@ -109,32 +109,32 @@ export function effectiveGlobalCap(): number {
 }
 
 /**
- * 同 key 进程上限：★ 三轮重做为「**进程内并发**」后，进程数不再等于并行度
+ * 同 key 进程上限：改为「**进程内并发**」后，进程数不再等于并行度
  * （一个 serve 进程内 24 线程并发，见 SpiderRunner.serve），本上限只用于兜底扩容
  * （例如某蜘蛛把线程池占满时的第二/第三个进程）。
  */
 export const PER_KEY_CAP = 3;
 /**
- * ★★ 单个 serve 进程允许的在途请求数（2026-09-23 三轮重做的关键）★★
+ * 单个 serve 进程允许的在途请求数（进程内并发的关键）
  *   旧实现「一个进程同一时刻只处理一个请求」→ 33 个源要么排队、要么多开 6 个 JVM 换并行度；
  *   而每个 JVM 冷启动 1~3s + 84MB，首次搜索同时冷启 6 个 → 「进源慢、搜索更慢」的真身。
  *   现在 JVM 侧是 24 线程池并发，宿主侧同步放开在途数（申请超过 24 时会在 JVM 内排队，等价于限流）。
  */
 export const MAX_INFLIGHT_PER_PROC = 24;
-/** 排队等待上限：超过即失败该请求（进程本身可能仍在跑长任务）。★ 25s：宁可等也不要在排队超时后回退冷启动一次性进程 */
+/** 排队等待上限：超过即失败该请求（进程本身可能仍在跑长任务）。25s：宁可等也不要在排队超时后回退冷启动一次性进程 */
 const QUEUE_WAIT_MS = 25_000;
 /** 单请求默认超时（调用方一般会传源 timeout；Python 侧会传更长值） */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
 /** 预热探针方法名（Java/Python 两侧 serve 循环都识别它：只确认环境已就绪，不实例化蜘蛛） */
 export const PING_METHOD = '__ping__';
-/** ★ 深度预热探针：连「加载蜘蛛类 + 预建实例（含 init(ext)）」一起做掉（args[0]=ext） */
+/** 深度预热探针：连「加载蜘蛛类 + 预建实例（含 init(ext)）」一起做掉（args[0]=ext） */
 export const WARM_METHOD = '__warm__';
 /** 预热探针超时：JVM 启动 + setupEnv（加载大 jar）留足余量 */
 const WARM_TIMEOUT_MS = 30_000;
-/** 空闲回收：★ 25s（2026-10-17 B1 由 60s 下调）—— 冗余进程尽早还内存；再次搜索仍大概率命中热进程 */
+/** 空闲回收：25s（B1 由 60s 下调）—— 冗余进程尽早还内存；再次搜索仍大概率命中热进程 */
 export const IDLE_RECLAIM_MS = 25_000;
 const RECLAIM_INTERVAL_MS = 15_000;
-/** ★ 2026-10-17（B1）：播放期收缩 —— 用户开始播放后，池**整体空闲**这么久就把存活数收敛到 1 */
+/** （B1）：播放期收缩 —— 用户开始播放后，池**整体空闲**这么久就把存活数收敛到 1 */
 export const PLAYBACK_SHRINK_IDLE_MS = 30_000;
 
 export function poolEnabled(): boolean {
@@ -154,7 +154,7 @@ export class SpiderProcPool {
   private groups = new Map<string, Proc[]>();
   /** 全局上限快照（30s 刷新一次：既随内存压力自适应，又不会因瞬时抖动来回变） */
   private capCache = { at: 0, val: 0 };
-  /** ★ 2026-10-17（B1）：播放期收缩已布防（见 armPlaybackShrink）—— 一次性，收敛后自动解除 */
+  /** （B1）：播放期收缩已布防（见 armPlaybackShrink）—— 一次性，收敛后自动解除 */
   private playbackShrinkArmed = false;
 
   constructor(private readonly spawnFn: SpawnFn) {}
@@ -176,7 +176,7 @@ export class SpiderProcPool {
 
   /**
    * 提交 serve 请求；spec 供池按需 spawn。
-   * ★ 三轮：一个进程可**并发承接多个在途请求**（JVM 内 24 线程池），
+   * 一个进程可**并发承接多个在途请求**（JVM 内 24 线程池），
    *   因此这里先找「在途未满」的进程直接派发，只有全都满了才考虑扩容/排队。
    * @param timeoutMs 单请求执行超时（= 源 timeout）；排队等待另有 QUEUE_WAIT_MS 上限。
    */
@@ -223,11 +223,11 @@ export class SpiderProcPool {
   }
 
   /**
-   * ★ 预热（2026-09-23 / 2026-09-24 增强）：为某个 key 先起常驻进程，并发一条探针进去。
+   * 预热：为某个 key 先起常驻进程，并发一条探针进去。
    *
    * 探针两种（Java/Python 两侧都识别）：
    *   - `__ping__`：只付「spawn + setupEnv / 脚本编译」的成本（不实例化蜘蛛）；
-   *   - `__warm__`（三轮续增强，见 JarSpider.prewarm 传入）：再加「**加载蜘蛛类 + 预建实例（含 init(ext)）**」，
+   *   - `__warm__`（续增强，见 JarSpider.prewarm 传入）：再加「**加载蜘蛛类 + 预建实例（含 init(ext)）**」，
    *     放进实例池 —— 用户第一次进这个源时连类加载与 init 都不用付（「进去加载 jar 源慢」的最后一截）。
    *
    * @param count 期望的**同 key 热进程数**（幂等：只补差额，不重复堆进程）
@@ -268,7 +268,7 @@ export class SpiderProcPool {
   }
 
   /**
-   * ★ 2026-10-17（B1）播放期收缩：用户开始播放时布防。
+   * （B1）播放期收缩：用户开始播放时布防。
    *   播放期间不会再发搜索请求 ⇒ 常驻池纯属白占内存。布防后由回收器在「**池整体空闲 ≥30s**
    *   且无在途/排队」时把全局存活数收敛到 1（只留最近用过的那个，被钉住的不动）。
    *   布防是**一次性**的：收敛后自动解除，下一次播放事件再布防。
@@ -330,8 +330,8 @@ export class SpiderProcPool {
   private dispatch(proc: Proc, req: ServeRequest, resolve: (r: PoolResult) => void, timeoutMs: number): void {
     proc.lastUsed = Date.now();
     const timer = setTimeout(() => {
-      // ★ 三轮：单请求执行超时 **不再 kill 进程** —— 进程里可能还有 20+ 个其它源的在途请求，
-      //   杀掉会把它们一起判失败（用户侧表现为「一两个卡住的源把整轮搜索拖垮」）。
+      // 单请求执行超时 **不再 kill 进程** —— 进程里可能还有 20+ 个其它源的在途请求，
+      // 杀掉会把它们一起判失败（表现为「一两个卡住的源把整轮搜索拖垮」）。
       //   只失败这一个请求；迟到的应答按 id 找不到 pending 会被丢弃。
       const p = proc.pending.get(req.id);
       if (!p) return;
@@ -355,7 +355,7 @@ export class SpiderProcPool {
     for (const procs of this.groups.values()) {
       for (const p of procs) {
         if (p.dead || p.pending.size > 0 || p.queue.length > 0) continue; // 有在途请求的绝不回收
-        if (p.pinnedUntil && p.pinnedUntil > Date.now()) continue; // ★ 本地代理正在服务播放 → 不回收
+        if (p.pinnedUntil && p.pinnedUntil > Date.now()) continue; // 本地代理正在服务播放 → 不回收
         if (procs.length === 1 && procs === keepGroup) continue; // 本组唯一进程不可回收（还要用它排队）
         if (!victim || p.lastUsed < victim.lastUsed) victim = p;
       }
@@ -392,8 +392,8 @@ export class SpiderProcPool {
             clearTimeout(p.timer);
             proc.pending.delete(env.id ?? '');
             proc.lastUsed = Date.now();
-            // ★ ok:true 且 data 为空串 = 蜘蛛合法空结果（不触发调用方回退）
-            // ★ 2026-09-28：信封 ok=false = 蜘蛛自己抛了（类缺失/内部异常…）—— 传输层成功，
+            // ok:true 且 data 为空串 = 蜘蛛合法空结果（不触发调用方回退）
+            // 信封 ok=false = 蜘蛛自己抛了（类缺失/内部异常…）—— 传输层成功，
             //   但 data 是**错误串**而不是蜘蛛输出：单独放进 error，data 归空，
             //   调用方据此记原因 / 触发类缺失兜底重试（见 PoolResult.error 注释）。
             const pp = Number.isInteger(env.pp) && (env.pp as number) > 0 ? (env.pp as number) : undefined;
@@ -458,7 +458,7 @@ export class SpiderProcPool {
       for (const p of idleList) if (p !== keep) this.kill(p, 'idle');
       if (procs.every((p) => p.dead)) this.groups.delete(key);
     }
-    // ★ 2026-10-17（B1）：播放期收缩（每 key 1 个之外，整体空闲够久再收敛到 1）
+    // （B1）：播放期收缩（每 key 1 个之外，整体空闲够久再收敛到 1）
     if (this.playbackShrinkArmed) this.shrinkForPlayback(now);
   }
 
@@ -467,7 +467,7 @@ export class SpiderProcPool {
   }
 
   /**
-   * ★ 2026-09-26：按 key 钉住进程（本地代理正在服务播放时不回收）。
+   * 按 key 钉住进程（本地代理正在服务播放时不回收）。
    * 到期自动失效，无需解除；key 不存在（进程已死/未起）时静默无操作。
    */
   pin(key: string, ttlMs: number): void {

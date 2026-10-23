@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
  *   常驻:   SpiderRunner --serve <spiderJar>[;<jar2>...]
  * 结果 JSON 打到 stdout；错误/日志走 stderr。
  *
- * ★ 常驻(--serve)协议（进程池复用核心）：环境只初始化一次（URLClassLoader + Init/App 单例），
+ * 常驻(--serve)协议（进程池复用核心）：环境只初始化一次（URLClassLoader + Init/App 单例），
  *   然后循环从 stdin 读 JSON 行请求：
  *     {"id": "...", "className": "com.github.catvod.spider.Xxx", "method": "homeContent", "args": ["ext", ...]}
  *   每请求 new 一个蜘蛛实例（复用 JVM、不复用实例，避免跨请求状态串扰），
@@ -29,18 +29,18 @@ import java.util.LinkedHashMap;
  */
 public class SpiderRunner {
 
-  /** ★ 宿主代理实际绑定端口（ensureHostProxy 后生效；信封 `pp` 字段上报给宿主） */
+  /** 宿主代理实际绑定端口（ensureHostProxy 后生效；信封 `pp` 字段上报给宿主） */
   private static int hostProxyPort = -1;
 
   /**
-   * ★ 2026-10-09（jar 自解链前置，勿删）：**启动即拉起 JVM 内宿主代理**。
+   * （jar 自解链前置，勿删）：**启动即拉起 JVM 内宿主代理**。
    *   背景：jar 里的 `com.github.catvod.spider.Proxy.a()` 自己探 9978~9999 的 `/proxy?do=ck`
    *   （桌面端已应答 ok）来决定播放地址端口——它**不会**经 `Class.forName("com.github.catvod.Proxy")`
    *   触发本 JVM 宿主代理（`com.github.catvod.Proxy.ensure()`）启动 ⇒ 宿主代理端口（-Dtvbox.proxy.port）
-   *   无人监听，播放器打 `/proxy/<port>` 必 ECONNREFUSED（1.20.0 第三出真机实证）。
+   *   无人监听，播放器打 `/proxy/<port>` 必 ECONNREFUSED（1.20.0 第三出实测）。
    *   反射调一次 getPort() 即完成 ensure()（绑 -Dtvbox.proxy.port，失败退化临时端口），与旧行为兼容。
-   *   ★ 端口经信封 `pp` 上报：多 JVM 并存时，宿主把播放地址改写到**真正服务过调用的这一只**，
-   *     `Pan.proxy` 的 shareid/BDCLND 状态就在它内存里（第四→五轮实证 19973 被无状态 JVM 占有的错位）。
+   *   端口经信封 `pp` 上报：多 JVM 并存时，宿主把播放地址改写到**真正服务过调用的这一只**，
+   *     `Pan.proxy` 的 shareid/BDCLND 状态就在它内存里（实测 19973 被无状态 JVM 占有的错位）。
    */
   private static void ensureHostProxy() {
     try {
@@ -52,7 +52,7 @@ public class SpiderRunner {
   }
 
   /**
-   * ★ 2026-10-09（第六轮真机实证修复，勿删）：把**蜘蛛 jar 的类加载器**绑定给宿主代理。
+   * （实测修复，勿删）：把**蜘蛛 jar 的类加载器**绑定给宿主代理。
    *   预启动发生在 setupEnv 之前（栈上只有应用加载器），captureCallerLoader 捕获不到
    *   jar 加载器且只捕获一次 ⇒ dispatch 反射 `com.github.catvod.spider.Proxy` 时
    *   `ClassNotFoundException` → `/proxy/<port>` 全部 500。
@@ -68,15 +68,15 @@ public class SpiderRunner {
 
   public static void main(String[] args) {
     ensureHostProxy();
-    // ★ stdout 专供「结果/信封」：蜘蛛自己的 System.out.println 会与结果/信封共用同一管道，
+    // stdout 专供「结果/信封」：蜘蛛自己的 System.out.println 会与结果/信封共用同一管道，
     //   打印碎片（不带换行的半行）+ 信封 → 整行 JSON 解析失败 → 常驻池侧挂起到超时
-    //   （用户侧表现「半天搜不出来」）。这里把 System.out 重定向到 stderr，
+    // （表现「半天搜不出来」）。这里把 System.out 重定向到 stderr，
     //   结果与信封一律走 realOut（stderr 由宿主消费，既防管道写满也保留 SpiderLog 诊断）。
     PrintStream realOut = System.out;
     System.setOut(System.err);
     int code = 0;
     try {
-      // ★ 常驻模式：--serve <jars;...>（环境只初始化一次，服务多请求）
+      // 常驻模式：--serve <jars;...>（环境只初始化一次，服务多请求）
       if (args.length >= 2 && "--serve".equals(args[0])) {
         serve(args[1].split(";"), realOut);
         return; // serve 靠 EOF / quit 自然返回，不 System.exit（保持 JVM 退出码 0）
@@ -101,11 +101,11 @@ public class SpiderRunner {
   /**
    * 常驻服务：读 stdin JSON 行 → **提交到线程池并发执行** → 单行 JSON 信封应答（realOut 专用）。
    *
-   * ★★ 2026-09-23 三轮重做（用户反馈「进源加载慢得要死、搜索更慢」）★★
+   * 重做
    *   旧实现两个致命点：
    *     ① **串行**：一个 JVM 同时只处理一个请求 → 33 个源要么排队（慢），要么靠多开 JVM 换并行度
    *        （每个 JVM 冷启动 1~3s + 84MB，且首次搜索要同时冷启 6 个 → 磁盘/CPU/杀软齐打，越搜越慢）；
-   *     ② **每请求 new 实例 + init(ext) + initApi**：绝大数 fty 蜘蛛的 init 会解析/解密 ext、
+   *     ② **每请求 new 实例 + init(ext) + initApi**：绝大数 某第三方源蜘蛛的 init 会解析/解密 ext、
    *        建 HTTP 客户端甚至预取站点数据 —— 每次调用都重付一遍，进源/搜索自然慢。
    *   现在：线程池（24 线程并发，蜘蛛调用绝大多数时间在等网络）+ **实例池复用**
    *   （同一「类名+ext」最多 2 个实例：init 只做一次，并发调用各取一个；池满则临时实例兜底）。
@@ -138,7 +138,7 @@ public class SpiderRunner {
         writeEnvelope(realOut, gson, reqId, false, "bad request: " + t0);
         continue;
       }
-      // ★ 预热探针（池 warm）：
+      // 预热探针（池 warm）：
       //   __ping__ → 只确认 env 就绪（setupEnv 已在 serve 入口完成）；
       //   __warm__ → 进一步**加载蜘蛛类并预建实例（含 init(ext)/initApi）放入实例池**，
       //              于是用户第一次进源/搜索时连类加载与 init 都不用付（args[0] = ext）。
@@ -203,7 +203,7 @@ public class SpiderRunner {
     out.put("id", id);
     out.put("ok", ok);
     out.put("data", data == null ? "" : data);
-    if (hostProxyPort > 0) out.put("pp", hostProxyPort); // ★ 2026-10-09：宿主代理实际端口（jar 自解链改写用）
+    if (hostProxyPort > 0) out.put("pp", hostProxyPort); // 宿主代理实际端口（jar 自解链改写用）
     String s = gson.toJson(out);
     synchronized (realOut) {
       realOut.println(s);
@@ -212,7 +212,7 @@ public class SpiderRunner {
   }
 
   /**
-   * ★ 实例池：键 = 类名 + ext（ext 变 = 网盘 token/配置变了 → 必须换实例）。
+   * 实例池：键 = 类名 + ext（ext 变 = 网盘 token/配置变了 → 必须换实例）。
    * 每键最多 MAX 个实例常驻；都被占用时新建「临时实例」（用完即弃，不干扰池内状态）。
    */
   private static final class SpiderPool {
@@ -307,7 +307,7 @@ public class SpiderRunner {
 
   /**
    * 一次性环境初始化（classloader + 宿主上下文 + Init/InitOrigin/yq 开关）。
-   * ★ 顺序契约：宿主上下文必须早于「加载/实例化蜘蛛类」——蜘蛛构造函数里
+   * 顺序契约：宿主上下文必须早于「加载/实例化蜘蛛类」——蜘蛛构造函数里
    *   就可能用到宿主 Context（Guard 系 BaseSpiderGuard.<init>() → Init.context()）。
    */
   private static Env setupEnv(String[] jars) throws Exception {
@@ -320,12 +320,12 @@ public class SpiderRunner {
     }
 
     List<URL> urls = new ArrayList<URL>();
-    // ★ 2026-09-26 原生桥（ARM .so，见 resources/jvm/native-bridge/）：
+    // 原生桥（ARM .so，见 resources/jvm/native-bridge/）：
     //   jar 内带 ARM/AArch64 .so 时，先把「native 方法改写产物目录」占位在 URL **最前**
     //   （类加载顺序覆盖原类），再建 URLClassLoader，随后用**同一个 cl** 反射调用桥门面生成改写类。
     //   必须同一个 cl：改写类引用的 NativeBridge 与桥的静态状态（unidbg 会话）要落在同一个类上，
     //   否则状态为空、所有 native 调用都会失败。
-    //   ★★ 2026-09-27 修正（实测「第一次进源必空」）：URLClassLoader 对**目录 URL** 的查找
+    // 修正（实测「第一次进源必空」）：URLClassLoader 对**目录 URL** 的查找
     //   **不是**每次直读磁盘（早期注释说反了）——空目录被查过一次后列表会缓存，
     //   之后写进去的 .class 在同一 JVM 内**查不到**。因此顺序必须是：
     //   先用临时 loader 做改写 → 再建正式 loader（含改写目录）。见下方实现。
@@ -339,12 +339,12 @@ public class SpiderRunner {
         patchedDir = new File(patchRoot.trim(), nativeJar.getName() + ".patched");
         try {
           if (!patchedDir.exists() && !patchedDir.mkdirs()) throw new java.io.IOException("mkdirs failed: " + patchedDir);
-          // ★★ 2026-09-27（实测「第一次进源必空」修复，勿回退）★★
+          // （实测「第一次进源必空」修复，勿回退）
           //   改写产物必须**先写好、再建正式 URLClassLoader**：反序（先建 loader 再写）时，
           //   patch 期间用 loader 解析 jar 里的类会让 URLClassLoader 对「目录 URL」缓存一次
           //   （当时还是空目录的）列表 → 改写类「写好了却加载不到」→ 同一 JVM 的首次调用
           //   落到原始 DexNative（`System.load(ARM .so)` → UnsatisfiedLinkError → 该源空结果），
-          //   第二次调用（新进程，产物已在盘上）才正常 —— 用户侧就是「第一次进源必空」。
+          // 第二次调用（新进程，产物已在盘上）才正常 —— 就是「第一次进源必空」。
           //   这里先用「临时 loader（只含蜘蛛 jar）」做改写，随后再建正式 loader 并把
           //   正式 loader 重新 arm 给桥（见下方 armNativeBridge）。
           URLClassLoader patchLoader = new URLClassLoader(
@@ -356,9 +356,9 @@ public class SpiderRunner {
           }
         } catch (Throwable t) {
           System.err.println("[native-bridge] 准备失败，按无原生桥降级: " + t);
-          // ★ 关键：只有在「状态戳缺失/不属于当前 jar」时才清产物 —— 戳存在且 jar 匹配说明
+          // 关键：只有在「状态戳缺失/不属于当前 jar」时才清产物 —— 戳存在且 jar 匹配说明
           //   这是**别的进程**刚写好的有效产物（同一只 jar 会被池并行拉起多个 JVM）；
-          //   失败方一律清掉会让桥在整机永久失效（真机实测踩过）。陈旧戳由桥自己按状态键重写。
+          //   失败方一律清掉会让桥在整机永久失效（实测踩过）。陈旧戳由桥自己按状态键重写。
           if (stampMatchesJar(patchedDir, nativeJar)) {
             System.err.println("[native-bridge] 保留其它进程已写好的改写产物（状态戳匹配当前 jar）");
           } else {
@@ -441,7 +441,7 @@ public class SpiderRunner {
       catch (Throwable ig) { System.err.println("[InitOrigin.init] " + ig); }
     } catch (ClassNotFoundException ig) { }
 
-    // fty 壳 Rc 加密分支开关：merge.cn.yq 默认推翻为 true（HideUtils 占位）
+    // 某第三方源壳 Rc 加密分支开关：merge.cn.yq 默认推翻为 true（HideUtils 占位）
     try {
       Class<?> cnCls = Class.forName("com.github.catvod.spider.merge.cn", true, cl);
       try {

@@ -1,5 +1,5 @@
 // tests/favorites.spec.ts
-// ★ 2026-10-17（用户要求）：收藏集合（增删改查 + 跨窗口合并 + 删除墓碑）。
+// 收藏集合（增删改查 + 跨窗口合并 + 删除墓碑）。
 // 全部走真实代码路径（add/remove/restore/update/load 往返），只额外注入一个最小 localStorage 桩。
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import {

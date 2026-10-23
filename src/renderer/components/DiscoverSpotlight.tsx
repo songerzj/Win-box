@@ -1,6 +1,6 @@
 // src/renderer/components/DiscoverSpotlight.tsx
-// ★ 2026-10-16（用户要求「四套皮肤绝对大改」）：发现页首屏**聚光卡**（四皮肤共用结构，材质由各皮肤 CSS 决定）。
-// ★ 2026-10-16 修正（用户报「Hero 做了但加载不出封面」→ 先试 360 图搜 → 又报「配图是错的」）：
+// 发现页首屏**聚光卡**（四皮肤共用结构，材质由各皮肤 CSS 决定）。
+// 修正（Hero 加载不出封面 → 先试 360 图搜 → 配图出错）：
 //   最终口径 = **横版图只走 TMDB 系**（榜单自带 backdrop，或按 tmdbId 调纯 TMDB images），
 //   **彻底弃用 360 图搜**（它对短名片名会配错图，实测「希望」→ 写着「好运来」的图，属机制性缺陷）。
 //   取不到横版图时退回「竖版海报模糊成色场」兜底（不做生硬裁切，也不会看着像没加载出来）。
@@ -47,11 +47,11 @@ export default function DiscoverSpotlight({
       const k = keyOf(it);
       if (bgsRef.current[k]) return;              // 已有横版图
       /**
-       * ★★ 2026-10-16（用户口径「海报横图还是走 TMDB / 抓豆瓣的横板剧照」）：
+       * 
        *   取图顺序 = ① 榜单自带 backdrop（TMDB backdrop_path）→ ② `metaDiscoverImages`
        *   （主进程内部：**优先豆瓣剧照**（按 doubanId 精确取，图源与条目一一对应，不会错配）→
        *     其次用户自带的 TMDB 凭据）→ ③ 都没有就**不出图**，退竖版海报模糊色场。
-       *   ★ 并**拒绝 360 图搜的来源**（其 URL 走 `/file/discovery-images/`）：实测它对短名片名会配错图
+       *   并**拒绝 360 图搜的来源**（其 URL 走 `/file/discovery-images/`）：实测它对短名片名会配错图
        *     （「希望」→ 写着「好运来」的图），属机制性缺陷 —— 宁可不轮播，也不给错图。
        */
       if (it.backdrop) { take(k, it.backdrop); return; }
@@ -76,7 +76,7 @@ export default function DiscoverSpotlight({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [landscape, itemsKey]);
 
-  /** ★ 只在「有横版图」的片子里轮播；一张都没有才整体退回兜底列表 */
+  /** 只在「有横版图」的片子里轮播；一张都没有才整体退回兜底列表 */
   const usable = useMemo(
     () => (landscape ? items.filter((it) => bgs[keyOf(it)]) : items),
     // eslint-disable-next-line react-hooks/exhaustive-deps

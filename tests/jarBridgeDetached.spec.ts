@@ -1,8 +1,8 @@
 // tests/jarBridgeDetached.spec.ts
-// ★ 2026-09-27「关软件也要转完 + 等待有感知」回归测试。
+// 「关软件也要转完 + 等待有感知」回归测试。
 //
 // 事故背景（真机日志实录）：同一只加固 jar 一天内被重转 5 次、每次 3.5 分钟，
-// 用户观感是「每次打开软件都要等很久」。根因是 dex2jar 转换**随 App 进程生死**：
+// 现象是「每次打开软件都要等很久」。根因是 dex2jar 转换**随 App 进程生死**
 // 关窗/重启/点清理缓存 → 3 分钟白跑 → 下次进源从头再来。
 //
 // 本测试覆盖新设计的四条链路（都不触网、不跑真 JVM：spawn 用桩、http 用桩）：
@@ -125,7 +125,7 @@ describe('JarSpiderBridge — 转换脱离 App 进程（detached / 收编 / 接�
     expect(existsSync(join(cacheDir, `${key}.d2j.log`))).toBe(true);
   });
 
-  it('★ 上次会话遗留、已跑完的 part → 直接收编（不起第二个 dex2jar）', async () => {
+  it('上次会话遗留、已跑完的 part → 直接收编（不起第二个 dex2jar）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -137,13 +137,13 @@ describe('JarSpiderBridge — 转换脱离 App 进程（detached / 收编 / 接�
     const bridge = new JarSpiderBridge({ jvmDir, cacheDir }, makeHost());
     const out = await bridge.ensureConverted(url);
 
-    expect(spawnMock.mock.calls.length).toBe(0); // ★ 关键：没有重跑 dex2jar
+    expect(spawnMock.mock.calls.length).toBe(0); // 关键：没有重跑 dex2jar
     expect(out).toBe(join(cacheDir, `${md5Hex(url)}.jar`));
     expect(existsSync(out)).toBe(true);
     expect(bridge.resolvePaths([url])).toEqual([out]);
   });
 
-  it('★ 后台转换还活着（lock 的 pid 存活）→ 接管等待，不重复起进程', async () => {
+  it('后台转换还活着（lock 的 pid 存活）→ 接管等待，不重复起进程', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -160,7 +160,7 @@ describe('JarSpiderBridge — 转换脱离 App 进程（detached / 收编 / 接�
     const bridge = new JarSpiderBridge({ jvmDir, cacheDir }, makeHost());
     const out = await bridge.ensureConverted(url);
 
-    expect(spawnMock.mock.calls.length).toBe(0); // ★ 没有第二个 dex2jar
+    expect(spawnMock.mock.calls.length).toBe(0); // 没有第二个 dex2jar
     expect(existsSync(out)).toBe(true);
     expect(existsSync(join(cacheDir, `${md5Hex(url)}.part.jar`))).toBe(false);
   });
@@ -179,7 +179,7 @@ describe('JarSpiderBridge — 转换脱离 App 进程（detached / 收编 / 接�
 
     expect(spawnMock.mock.calls.length).toBe(1);
     expect(existsSync(out)).toBe(true);
-    // 僵死锁被清掉（否则每次进源都要白等一轮）
+    // 僵死锁被清掉（否则每次进源都要白等）
     expect(existsSync(join(cacheDir, `${md5Hex(url)}.lock`))).toBe(false);
   });
 

@@ -20,11 +20,11 @@ public class Build {
 
     // ---------------- CPU ABI ----------------
     //
-    // ★ 这几个字段是「加固/壳」型蜘蛛的关键：它们按 CPU_ABI 决定加载哪个 native 库。
+    // 这几个字段是「加固/壳」型蜘蛛的关键：它们按 CPU_ABI 决定加载哪个 native 库。
     //   典型（实测 com.github.catvod.spider.DexNative.<clinit>）：
     //
     //       String which = Build.CPU_ABI.contains("64") ? "v8" : "v7";
-    //       → 从 assets 里提取 wexguard_v8.so / wexguard_v7.so → System.load(...)
+    //       → 从 assets 里提取 某加固壳_v8.so / 某加固壳_v7.so → System.load(...)
     //
     //   缺失时抛 `NoSuchFieldError: CPU_ABI`，报错完全看不出与"加载 native 库"有关。
     //   这里取 32 位 ARM（安卓电视盒最常见），且**不含 "64"** —— 不去冒认一个
@@ -47,7 +47,7 @@ public class Build {
     public static final String[] SUPPORTED_32_BIT_ABIS = new String[]{"armeabi-v7a", "armeabi"};
     public static final String[] SUPPORTED_64_BIT_ABIS = new String[0];
 
-    // ---------------- 设备指纹字段（★ 2026-09-26 补：App88 系源 <clinit> 读 BOOTLOADER → NoSuchFieldError） ----------------
+    // ---------------- 设备指纹字段（补：App88 系源 <clinit> 读 BOOTLOADER → NoSuchFieldError） ----------------
     public static final String BOOTLOADER = "unknown";
     public static final String RADIO = "unknown";
     public static final String USER = "android-build";

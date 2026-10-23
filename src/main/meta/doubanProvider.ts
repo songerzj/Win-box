@@ -10,7 +10,7 @@ import { LOCAL_PROXY_BASE } from '../../shared/constants';
 import type { Logger, MetaHit } from '../../shared/types';
 import type { MetaSuggestion } from '../../shared/meta';
 
-// ★ 2026-09-23：豆瓣是**国内**站点，走系统 DNS 直连更快更稳（DoH 只是为 TMDB 这类被污染域名准备的）；
+// 豆瓣是**国内**站点，走系统 DNS 直连更快更稳（DoH 只是为 TMDB 这类被污染域名准备的）；
 //   实测系统 DNS 直连 m.douban.com 可达（400/200 都说明连上了）。
 //   DoH Agent 作为兜底：系统 DNS 失败（异常/被劫持）时再试一次。
 const agent = new Agent({ connect: { timeout: 15000 } });
@@ -81,7 +81,7 @@ interface RexxarResp {
 }
 
 /**
- * ★ 2026-09-23 豆瓣熔断：rexxar 接口有风控，真机日志实测一次会话刷出 43 条
+ * 豆瓣熔断：rexxar 接口有风控，实测一次会话刷出 43 条
  *   `meta:豆瓣 搜索失败 status=403` —— 每次补封面都要串行白等（每片名 2 个请求）。
  *   连续 BREAKER_THRESHOLD 次 403/429 → 本会话内暂停豆瓣兜底 BREAKER_COOLDOWN_MS，
  *   链路自动退到「TMDB → 360 图片」，风控解除后（冷却到期）自动恢复。
@@ -121,7 +121,7 @@ export function __resetDoubanBreakerForTest(): void {
 
 /** 豆瓣 rexxar 通用 GET（导出供 doubanExplore 复用，保持同一套 UA/Referer/出站链） */
 export async function doubanJson(url: string, headersTimeoutMs: number): Promise<RexxarResp> {
-  // ★ 2026-09-25：出站链 —— 用户设了代理则代理优先（豆瓣在部分网络被墙），否则 系统 DNS → DoH
+  // 出站链 —— 用户设了代理则代理优先（豆瓣在部分网络被墙），否则 系统 DNS → DoH
   const chain = dispatchChain(url, agent, dohFallback);
   for (let i = 0; i < chain.length; i++) {
     const dispatcher = chain[i];
@@ -185,7 +185,7 @@ async function verifyDoubanPoster(url: string): Promise<boolean> {
  * 按中文片名查询豆瓣（rexxar 搜索，movie/tv 并行），返回最优 MetaHit 或 null。
  * - 名称不含 CJK → 不查（调用方已按 isCjkName 前置过滤，此处再兜一层）；
  * - HTTP 非 200 → 不写缓存、返回 null（服务端抖动/风控：下次重试，不误缓存 miss）；
- *   ★ 2026-09-23：403/429 连续 3 次触发熔断，冷却期内直接返回 null（不发请求）。
+ * 403/429 连续 3 次触发熔断，冷却期内直接返回 null（不发请求）。
  * - 命中封面必须 verifyDoubanPoster 真实可读；
  * - 结果直接以经 /img 中继的 URL 存入 hit.poster（渲染层可直接显示）。
  * 注意：本模块不做磁盘缓存（缓存归 MetaStore，key 带 DOUBAN_CACHE_PREFIX 由调用方写入）。
@@ -228,10 +228,10 @@ export async function doubanSearchTitle(logger: Logger, name: string, year?: str
 }
 
 /**
- * ★★ 2026-10-16（用户口径「Hero 抓豆瓣的横板封面或剧照」）：**豆瓣剧照（横版）** —— 按 subject id 取「剧照」相册。
+ * **豆瓣剧照（横版）** —— 按 subject id 取「剧照」相册。
  *   为什么必须有它：
  *     · 360 图搜对**短名片名**会配错图（「希望」2 字 → 相关性过滤的「全包含」分支放行任何含该词的标题），
- *       属机制性缺陷，已按用户口径从首屏 hero 中退役；
+ * 属机制性缺陷，已从首屏 hero 中退役；
  *     · TMDB 只认用户自带的凭据（`hasUserTmdbKey()`），无凭据时首屏就一张横图都没有；
  *     · 豆瓣 rexxar 的 photos 接口**返回带宽高**，可按横宽比**精确筛掉竖版**，且图源与条目一一对应（不会错配）。
  *   与 doubanSearchTitle 共用熔断口径；失败/熔断中返回空数组（调用方自然回落下一档）。
@@ -279,7 +279,7 @@ export async function doubanStills(logger: Logger, doubanId: string): Promise<st
 }
 
 /**
- * ★ 2026-09-24：搜索面板「自动联想（豆瓣）」——同一 rexxar 端点，只要标题（不校验封面）。
+ * 搜索面板「自动联想（豆瓣）」——同一 rexxar 端点，只要标题（不校验封面）。
  * 与 doubanSearchTitle 共用熔断口径；失败/熔断中返回空数组（联想不打扰用户）。
  */
 export async function doubanSuggest(logger: Logger, name: string, limit = 8): Promise<MetaSuggestion[]> {

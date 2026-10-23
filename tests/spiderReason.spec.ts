@@ -73,9 +73,9 @@ describe('extractSpiderReason', () => {
   });
 });
 
-// ★ 2026-10-08（用户报「配置中心」源只见一句「接口缺失请反馈」、原始异常被吞）：
+// （「配置中心」源只见一句「接口缺失请反馈」、原始异常被吞）
 //   人话翻译会给用户看，但「具体缺哪个类/方法」在 ` :: 异常` 尾巴里 —— 须并行落原始串才能定位。
-describe('extractSpiderReasonRaw（同一条 SpiderLog 的原文，★ 2026-10-08）', () => {
+describe('extractSpiderReasonRaw（同一条 SpiderLog 的原文）', () => {
   it('保留 :: 异常尾巴（extractSpiderReason 会吞掉它）', () => {
     const err = `${LOADED}\n[android.Log.D] SpiderLog: 配置中心接口失败 :: java.lang.NoSuchMethodError: android.content.Context.getExternalFilesDir`;
     expect(extractSpiderReason(err)).toBe('配置中心接口失败');
@@ -96,7 +96,7 @@ describe('extractSpiderReasonRaw（同一条 SpiderLog 的原文，★ 2026-10-0
 /**
  * 翻译层回归：把"行话"映射成用户能懂的中文。
  *
- * 重点是**架构性不兼容**这一类（第六轮新增）：加固壳蜘蛛依赖安卓原生库
+ * 重点是**架构性不兼容**这一类（新增）：加固壳蜘蛛依赖安卓原生库
  * （ARM/AArch64 .so）、dalvik DexClassLoader，桌面 JVM 架构上无法执行。
  * 这类必须与"依赖缺失请反馈"区分开，否则会把用户引向错误的解决方向。
  */
@@ -112,7 +112,7 @@ describe('translateSpiderLog', () => {
     expect(r).toContain('架构限制');
   });
 
-  // ★ 第十二轮实测的**真实**报错形态：资源已经补对了，卡在 CPU 架构上。
+  // 实测的**真实**报错形态：资源已经补对了，卡在 CPU 架构上。
   //   这一条必须与"找不到原生库"区分开（前者是移植缺陷已修，后者是资源缺失）。
   it('原生库 ABI 不匹配（实测 Can\'t load this .dll）→ 告知与 x64 不兼容', () => {
     const r = translateSpiderLog(
@@ -142,7 +142,7 @@ describe('translateSpiderLog', () => {
     expect(r).not.toContain('架构限制');
   });
 
-  // ★ 2026-10-08（用户报「配置中心」源）：符号名必须上屏 —— 只说「接口缺失请反馈」等于没有可行动信息。
+  // （「配置中心」源）：符号名必须上屏 —— 只说「接口缺失请反馈」等于没有可行动信息。
   it('NoSuchMethodError 带上缺失方法名', () => {
     const r = translateSpiderLog('java.lang.NoSuchMethodError: android.app.Activity.getWindow()Landroid/view/Window;');
     expect(r).toContain('桌面版缺失方法');
@@ -154,7 +154,7 @@ describe('translateSpiderLog', () => {
     expect(translateSpiderLog('java.lang.ClassNotFoundException: android.content.ContentResolver')).toContain('android.content.ContentResolver');
   });
 
-  // ★ 区分「蜘蛛自己的类找不到」与「桌面版缺接口」——两者成因与处置完全不同：
+  // 区分「蜘蛛自己的类找不到」与「桌面版缺接口」——两者成因与处置完全不同：
   //   前者 = 这只 jar 压根没加载成功（缓存丢了 / 配置与 jar 不匹配），
   //   后者才是兼容性问题。混为一谈会让用户反复反馈一个根本不用修的问题。
   it('蜘蛛自身类找不到 → 归因为"jar 未加载"，不是"桌面版缺接口"', () => {
@@ -185,7 +185,7 @@ describe('translateSpiderLog', () => {
 });
 
 describe('isSpiderClassMissing（类缺失兜底重试的触发判定）', () => {
-  // ★ 2026-09-28：池信封 ok=false 的错误串会先过 translateSpiderLog 再落 lastSpiderReason，
+  // 池信封 ok=false 的错误串会先过 translateSpiderLog 再落 lastSpiderReason，
   //   因此翻译后的中文形态必须仍能被判定识别，否则「缓存 jar 并集兜底」在池路径失效。
   it('翻译后的中文原因仍能触发重试（池路径：先 translate 再判定）', () => {
     const translated = translateSpiderLog('java.lang.ClassNotFoundException: com.github.catvod.spider.Symx');

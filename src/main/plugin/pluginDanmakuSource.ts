@@ -1,10 +1,10 @@
 // src/main/plugin/pluginDanmakuSource.ts
 // 插件弹幕源适配层：把 `contributes.danmaku.source`（L2 **声明式**）适配为宿主的三步弹幕源。
 //
-// ★ 弹幕是**三步链路**（与内置 logvar 源同形）：
+// 弹幕是**三步链路**（与内置 logvar 源同形）：
 //   ① search（关键词 → 番剧候选） ② episodes（番剧 → 剧集候选） ③ comment（剧集 → 弹幕 **XML**）
 //   三步之间靠**source 键**路由：插件源合成 `plugin:<contributeId>`（内置源用的是接口基础地址）。
-// ★ 插件不产出解析结果：第 ③ 步只把 **XML 文本**交给宿主，由引擎的弹幕解析器消费。
+// 插件不产出解析结果：第 ③ 步只把 **XML 文本**交给宿主，由引擎的弹幕解析器消费。
 // 事实源：docs/design/插件制作规范.md §5.7；机器契约见 src/shared/plugin.ts。
 import { expandSubTemplate, jsonPathGet, type DanmakuSourceContribute } from '../../shared/plugin';
 import type { DanmakuAnime, DanmakuCandidate } from '../../shared/danmaku';

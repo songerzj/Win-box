@@ -5,7 +5,7 @@ import java.util.Arrays;
 /**
  * SparseIntArray stub —— int→int 映射（Android 为省内存用双数组实现）。
  *
- * ★ 纯数据结构：必须功能完整。这里用真实数组实现稀疏映射，
+ * 纯数据结构：必须功能完整。这里用真实数组实现稀疏映射，
  *   保证 get() / put() / size() 语义正确（空壳会让业务读到恒 0）。
  */
 public class SparseIntArray implements Cloneable {

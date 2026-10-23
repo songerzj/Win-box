@@ -1,4 +1,4 @@
-// tests/baiduQr.spec.ts — 百度扫码适配器的纯函数（★ 2026-09-30 新增）
+// tests/baiduQr.spec.ts — 百度扫码适配器的纯函数（新增）
 // 只测解析/生成类纯函数；HTTP 流程靠真机复验（.tmp 探针 + 应用内扫码）。
 import { describe, it, expect } from 'vitest';
 import { guideRandom, parseJsonp, parseChannelV } from '../src/main/net/qr/baidu';

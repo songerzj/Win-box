@@ -1,9 +1,9 @@
 // src/main/server/LocalProxyServer.ts
-// ★ 127.0.0.1:9978 本地代理 —— 与安卓同端口同路由。
+// 127.0.0.1:9978 本地代理 —— 与安卓同端口同路由。
 // 路由 /proxy?do=live&type=txt&ext=<base64urlsafe> —— 解 ext 得真实订阅 URL，抓取返回原文（让 lives 归一化可 1:1 复刻）。
 // 路由 /play?url=<encoded>&ua=<encoded>&referer=<encoded> —— header 注入中继（v1 简单透传，带自定义 header）。
 // 路由 /file/<path> —— 等效安卓 TVBox 的 Local 蜘蛛：按路径提供本地文件。
-//   ★ 部分 jar 蜘蛛的 ext 直接写成 `http://127.0.0.1:9978/file/<子路径>`（如
+//   部分 jar 蜘蛛的 ext 直接写成 `http://127.0.0.1:9978/file/<子路径>`（如
 //     KungFu404 的 token 文件、PushAgent 系蜘蛛推送的图片）；安卓侧由内置
 //     Local 蜘蛛从 assets/数据目录读出。桌面版必须实现同名路由，否则这些蜘蛛
 //     拿到 404 → 初始化失败 → 分类/首页空白。
@@ -34,7 +34,7 @@ const imgAgent = createDohAgent();
 const BT_CHUNK = 512 * 1024;
 
 /**
- * ★ 2026-09-29：BT 取流访问口（磁力 B）。实现方是 main/torrent/torrentPlay（会话表 + piece 门控）。
+ * BT 取流访问口（磁力 B）。实现方是 main/torrent/torrentPlay（会话表 + piece 门控）。
  * 抽成接口是为了让本中继不认识 aria2：它只负责「Range 解析 → 等数据 → 从磁盘喂字节」。
  */
 export interface BtStreamAccess {
@@ -45,25 +45,25 @@ export interface BtStreamAccess {
 }
 
 /**
- * ★ 2026-09-25：出站 dispatcher 链 —— 用户设的**网络代理**（非本机目标）优先，其次 DoH，最后直连。
+ * 出站 dispatcher 链 —— 用户设的**网络代理**（非本机目标）优先，其次 DoH，最后直连。
  * `/img`（封面）与 `/play`（取流）的源站请求都走这里，保证被 DNS 污染 / TLS SNI 阻断的站点在代理下可用。
  */
 function outboundDispatchers(targetUrl: string): Array<Agent | import('undici').ProxyAgent> {
   return dispatchChain(targetUrl, imgAgent, agent);
 }
 
-// ★ 并发回源聚合参数：夸克单连接被限速，多连接并发可叠加带宽。
+// 并发回源聚合参数：夸克单连接被限速，多连接并发可叠加带宽。
 //   每片 512KB、一次 8 个并发回源、纯利用 Range。太小(<1MB)的请求不值得并发。
 const AGGREGATE_CHUNK = 512 * 1024;
 const AGGREGATE_CONCURRENCY = 8;
 const AGGREGATE_MIN_LEN = 1 * 1024 * 1024;
 /**
- * ★ 2026-10-08（用户报「jd4k 点开就提示已播放完毕」根因修复）：jpg 伪装分片嗅探窗口。
+ * jpg 伪装分片嗅探窗口（根因修复）。
  *   分片 = [JPEG 缩略图][真 TS 载荷]（实测前导 ≈9.7KB），这里给到 128KB 足够容纳更大的缩略图；
  *   也覆盖 [PNG 图片][TS]；非图片响应读到首个 ≥2 字节即提前停止。
  */
 const DETECT_HEAD_LEN = 128 * 1024;
-// ★★ 2026-09-19 回归 release65 定论：**加速节点（dl-c-zb 等）禁聚合、单连接透传**。
+// 回归 release65 定论：**加速节点（dl-c-zb 等）禁聚合、单连接透传**。
 //   release75 曾在加速节点加「Range 预检 + 3 并发聚合」：预检会额外消费一次 auth_key 直链请求
 //   （夸克 download_url 的 token 绑定会话，多打一次 Range 会被 CDN 拒绝后续请求 → 直接无法播放），
 //   且加速节点不理会并发子 Range（release65 已实测坏流）→ 播放反向劣化"出现快反而播不出"。
@@ -76,7 +76,7 @@ export class LocalProxyServer {
   /** 实时网速回调（KB/s）：主进程注入后即可把真实转发字节推给渲染层显示 */
   onSpeed?: (kbs: number) => void;
   /**
-   * ★ 2026-09-26：蜘蛛 JVM 内宿主代理被访问的回调（主进程注入 → 把该 JVM「钉住」）。
+   * 蜘蛛 JVM 内宿主代理被访问的回调（主进程注入 → 把该 JVM「钉住」）。
    *   壳/蜘蛛的 `<entry>?do=proxy&key=…` 播放地址指向本机 9978 的 `/proxy/<jvmPort>`，
    *   key 只有那个 JVM 能解，所以这里要做一次本机转发；转发的同时通知池别回收它，否则播放中段断流。
    */
@@ -92,39 +92,39 @@ export class LocalProxyServer {
    */
   onSpiderConfigRestored?: (hint: string) => void;
   onPythonProxy?: (key: string, params: Record<string, string>) => Promise<unknown[]>;
-  /** ★ 2026-09-29：BT 取流口（磁力 B；main/index.ts 注入 TorrentPlay；未注入 = /bt 一律 404） */
+  /** BT 取流口（磁力 B；main/index.ts 注入 TorrentPlay；未注入 = /bt 一律 404） */
   bt?: BtStreamAccess;
   /**
-   * ★ 2026-09-29 本地包：包下标 → 包根绝对路径（main/index.ts 注入 LocalPkgStore.rootOf）。
+   * 本地包：包下标 → 包根绝对路径（main/index.ts 注入 LocalPkgStore.rootOf）。
    * `/pkg/<i>/<rel>` 供三处使用：① 订阅里展开出的相对引用（jar 的 OkHttp、drpy 的相对 require、
    * spider 的 ext 配置）；② py 之外的一切包内资源；③ 网页源（html）与它的相对资源。
    * 未注入 = /pkg 一律 404（旧行为）。
    */
   pkgRoot?: (index: number) => string | null;
   /**
-   * ★ 2026-09-26：网盘播放会话 Cookie jar（provider → 上游下发的 `k=v` 键值行）。
+   * 网盘播放会话 Cookie jar（provider → 上游下发的 `k=v` 键值行）。
    *   上游直链/清单响应会刷新 `__puus` 等会话 cookie，必须与账号 cookie 一起用；
-   *   否则分片请求仍带旧值 → 中途 401/403 断流（用户报「UC 没会员播放要两个 cookie」）。
+   * 否则分片请求仍带旧值 → 中途 401/403 断流。
    *   仅内存态（一次播放会话内有效），上限 20 条防无限增长。
    */
   private playCookieJar = new Map<string, string[]>();
   /** 百度成功 CDN 跳转：按 dlink 和凭据隔离，Range 间复用；5 分钟过期、最多 32 项，仅内存。 */
   private baiduPlayNodes = new Map<string, { url: string; expires: number }>();
-  /** ★ 2026-10-16：已 stop（退出中）—— 用于让「端口重试链」立刻停摆 */
+  /** 已 stop（退出中）—— 用于让「端口重试链」立刻停摆 */
   private stopped = false;
 
   constructor(
     private logger: Logger,
     private driveTokens?: () => Record<string, string>,
     /**
-     * ★ 2026-09-29：m3u8 去广告注入（对位 TVBox `HawkConfig.M3U8_PURIFY`，默认关）。
+     * m3u8 去广告注入（对位 TVBox `HawkConfig.M3U8_PURIFY`，默认关）。
      *   · `enabled()` —— 配置页开关（<userData>/player-settings.json），每轮清单回源时读一次 → 改后即时生效；
      *   · `rulesFor(url)` —— 该播放地址所属 host 的订阅 `rules[].regex`（`hostRegexFor` 的产物）。
      *   不注入 = 彻底不做去广告（旧行为）。
      */
     private purify?: { enabled: () => boolean; rulesFor: (url: string) => string[] },
     /**
-     * ★ 2026-09-29 WebDAV 取流认证：`/play?...&dav=<serverId>` → 该服务器的 `Authorization` 头值。
+     * WebDAV 取流认证：`/play?...&dav=<serverId>` → 该服务器的 `Authorization` 头值。
      *   凭据只存在主进程加密存储里，**绝不进 URL**；不注入 = 不做 WebDAV 认证（旧行为）。
      */
     private davAuth?: (id: string) => string,
@@ -150,10 +150,9 @@ export class LocalProxyServer {
 
   start(port: number = LOCAL_PROXY_PORT): Promise<void> {
     return new Promise((resolve) => {
-      // ★★ 2026-10-16（用户报「卸载重装后打开会闪退，排查指向 9978 被占用」）★★
-      //   实测用户日志：出现过两次 `EADDRINUSE 127.0.0.1:9978`，且那次会话**整场本地中继失效**
+      // 实测日志：出现过两次 `EADDRINUSE 127.0.0.1:9978`，且那次会话**整场本地中继失效**
       //   （直播归一化 / `/play` / `/img` 全废）。成因 = **另一个实例还活着占着 9978**
-      //   （本机实测 TIME_WAIT 不挡重新绑定 —— 第 1 次重绑即成功，故只可能是活进程）。
+      //   （实测 TIME_WAIT 不挡重新绑定 —— 第 1 次重绑即成功，故只可能是活进程）。
       //   旧行为：监听失败就当场降级 + 只记一条日志，之后再没人去抢端口 → 整场不可用。
       //   现行为：**后台静默重试**（每 2s × 15 ≈ 30s），等对方退干净后中继自愈；
       //   首次失败仍**立即放行启动**（不拖慢开窗），成功后日志会写明「第 N 次尝试成功」。
@@ -172,7 +171,7 @@ export class LocalProxyServer {
           const code = (e as NodeJS.ErrnoException).code;
           if (code === 'EADDRINUSE' && tries <= RETRY_MAX && !this.stopped) {
             this.logger.w(`proxy: ${port} 被占用（多半是上一个实例还没退干净 / 仍在运行）→ 第 ${tries} 次重试将在 ${RETRY_DELAY}ms 后开始`);
-            if (first) done(); // ★ 只有首次放行启动；后续重试不再影响启动流程
+            if (first) done(); // 只有首次放行启动；后续重试不再影响启动流程
             setTimeout(attempt, RETRY_DELAY).unref?.();
             return;
           }
@@ -190,7 +189,7 @@ export class LocalProxyServer {
   }
 
   stop(): void {
-    // ★ 2026-10-16：置位后，重试链立刻停摆（避免「已退出却在后台又抢回 9978」）
+    // 置位后，重试链立刻停摆（避免「已退出却在后台又抢回 9978」）
     this.stopped = true;
     this.htmlMedia.stop();
     this.baiduPlayNodes.clear();
@@ -198,7 +197,7 @@ export class LocalProxyServer {
   }
 
   /**
-   * ★ 2026-09-26：`/proxy/<jvmPort>?do=proxy&key=…` → 蜘蛛 JVM 内的宿主代理。
+   * `/proxy/<jvmPort>?do=proxy&key=…` → 蜘蛛 JVM 内的宿主代理。
    *   key→真实 url/headers 的静态表在**那个 JVM** 里，只有它能解；本机转发 + 顺带钉住该进程。
    *   本机目标一律直连（绝不走用户代理/DoH）。
    */
@@ -222,7 +221,7 @@ export class LocalProxyServer {
     }
     const target = `http://127.0.0.1:${port}/proxy${u.search}`;
     try {
-      // ★ 2026-10-09：转发 Range（拉流 seek 必需）——此前一个头都不带，jar 自解链（do=pan）会整段 200。
+      // 转发 Range（拉流 seek 必需）——此前一个头都不带，jar 自解链（do=pan）会整段 200。
       const fwdHeaders: Record<string, string> = {};
       for (const h of ['range', 'accept']) {
         const v = req.headers[h];
@@ -244,8 +243,8 @@ export class LocalProxyServer {
         if (typeof v === 'string') outHeaders[k.replace(/(^|-)([a-z])/g, (_m, a, b) => a + b.toUpperCase())] = v;
       }
       outHeaders['Access-Control-Allow-Origin'] = '*';
-      // ★ 2026-10-09：自解链排障 —— 非 2xx/206 或非媒体 Content-Type 时记一行（含正文前 160 字节预览）。
-      //   第五轮实证「转发通了但 mpv Failed to open」时完全无线索；正文预览能直接看到 Pan.proxy 的报错串。
+      // 自解链排障 —— 非 2xx/206 或非媒体 Content-Type 时记一行（含正文前 160 字节预览）。
+      //   实测「转发通了但 mpv Failed to open」时完全无线索；正文预览能直接看到 Pan.proxy 的报错串。
       const ct = String(up.headers['content-type'] || '');
       const statusOk = up.statusCode >= 200 && up.statusCode <= 299;
       const mediaish = /video|audio|octet-stream|mpegurl|mp2t/i.test(ct);
@@ -352,7 +351,7 @@ export class LocalProxyServer {
       if (u.pathname === '/proxy' && u.searchParams.get('do') === 'm3u8') {
         return await this.m3u8Proxy(u, req, res);
       }
-      // ★ 2026-10-09：jar 的 `spider.Proxy.a()` 会探 9978~9999 的 `/proxy?do=ck`（应答体 == "ok" 才采用）。
+      // jar 的 `spider.Proxy.a()` 会探 9978~9999 的 `/proxy?do=ck`（应答体 == "ok" 才采用）。
       //   应答 ok 后 jar 把 `http://127.0.0.1:9978/proxy?do=pan&…` 当播放地址 —— playInner 再改写成
       //   `/proxy/<jvmPort>` 进该源蜘蛛 JVM 自解链（桌面端原生通道解不了的「分享内 fs_id」只有 jar 能解）。
       if (u.pathname === '/proxy' && u.searchParams.get('do') === 'ck') {
@@ -369,7 +368,7 @@ export class LocalProxyServer {
       if (u.pathname.startsWith('/file/')) {
         return this.fileProxy(u, res);
       }
-      // ★ 2026-09-29 本地包：包内资源（订阅相对引用 / 网页源 html 及其相对资源 / jar / xbpq 配置）
+      // 本地包：包内资源（订阅相对引用 / 网页源 html 及其相对资源 / jar / xbpq 配置）
       if (u.pathname.startsWith('/pkg/')) {
         return this.pkgProxy(u, res);
       }
@@ -390,7 +389,7 @@ export class LocalProxyServer {
   /**
  * /img?u=<encoded image URL>&ref=<encoded Referer?> —— 封面出图中继（TMDB / 豆瓣 / 任意源站图床）。
  *
- * ★ 2026-09-23 三处强化（用户报「还是有部分封面无内容，尤其 py 源」）：
+ * 三处强化：
  *   ① **放开主机白名单**：源站图床五花八门，白名单无法穷举；本服务只监听 127.0.0.1，
  *      与 /play 同级（/play 一直是任意 URL 中继），放开不新增暴露面。
  *   ② **Referer 重试链**：源图常见两种失败 —— 防盗链要 Referer（缺失/跨站 403）、
@@ -455,7 +454,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
    * 桌面版把可用根对齐为 <userData> 与其下的 cache/（同样是"应用私有、配置可写"的位置），
    * 让蜘蛛写入/读取的文件都能被 `/file/` 取到。
    *
-   * ★ 安全：路径穿越校验在 resolveLocalFilePath（纯函数，已单测）里完成。
+   * 安全：路径穿越校验在 resolveLocalFilePath（纯函数，已单测）里完成。
    */
   private fileProxy(u: URL, res: ServerResponse): void {
     let rel: string;
@@ -477,13 +476,13 @@ private imgProxy(u: URL, res: ServerResponse): void {
   }
 
   /**
-   * `/pkg/<i>/<rel>` —— ★ 2026-09-29（用户要求）本地包：按登记的包根提供包内文件。
+   * `/pkg/<i>/<rel>` —— 本地包：按登记的包根提供包内文件。
    *
    * 与 `/file/` 的区别：`/pkg` 的根是**用户导入的本地包目录**（就地引用，见 LocalPkgStore），
    * 且路径可含中文/emoji/空格（订阅里的相对引用由 rewritePkgPaths 逐段百分号转义）。
    * 安全：穿越校验在 resolvePkgFile（纯函数，已单测）——`../` 越出包根一律 404。
    *
-   * ★ 一律 `Cache-Control: no-cache`：包是用户随时会改的（改 py/js/html 应即时生效）。
+   * 一律 `Cache-Control: no-cache`：包是用户随时会改的（改 py/js/html 应即时生效）。
    */
   private pkgProxy(u: URL, res: ServerResponse): void {
     const m = /^\/pkg\/(\d+)\/(.+)$/.exec(u.pathname);
@@ -526,7 +525,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
   }
 
   /**
-   * `/bt/<infoHash>/<fileIndex>` —— 磁力（BT）取流中继（★ 2026-09-29，方案 B）。
+   * `/bt/<infoHash>/<fileIndex>` —— 磁力（BT）取流中继（方案 B）。
    *
    * 与 `/play` 的差别：数据不在上游，而在**本机 aria2 正在下载的文件**里，因此：
    *   ① 必须有 Range：`<video>` 的 seek、外部播放器的起播探测全靠它（200 只回整段会拖死拖动）；
@@ -722,7 +721,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
     Object.assign(headers, relayHeaders);
     if (ua) headers['User-Agent'] = ua;
     if (referer) headers['Referer'] = referer;
-    // ★ 2026-09-29 WebDAV：凭据从主进程加密存储取（`dav=<id>`），只注入 Authorization
+    // WebDAV：凭据从主进程加密存储取（`dav=<id>`），只注入 Authorization
     if (dav) {
       const auth = this.davAuth ? this.davAuth(dav) : '';
       if (!auth) {
@@ -746,19 +745,19 @@ private imgProxy(u: URL, res: ServerResponse): void {
         return;
       }
     }
-    // ★ 2026-09-26：网盘会话 Cookie 合并 —— 上游（取流/清单）下发的 Set-Cookie 里有**刷新后的
+    // 网盘会话 Cookie 合并 —— 上游（取流/清单）下发的 Set-Cookie 里有**刷新后的
     //   `__puus`**，必须与账号 cookie（`__pus` 等）一起用于后续分片；否则中途 401/403 断流
-    //   （用户报「UC 没会员播放似乎要两个 cookie」）。本会话内按 provider 记忆合并结果。
+    // 。本会话内按 provider 记忆合并结果。
     if (ck) cookie = this.applyPlayCookieJar(ck, cookie);
     if (cookie) headers['Cookie'] = cookie;
-    // ★ 转发客户端（<video>/HLS）发来的 Range 字节范围请求，让上游返回 206 分段；
+    // 转发客户端（<video>/HLS）发来的 Range 字节范围请求，让上游返回 206 分段；
     //   否则拿整段大文件 + 无 Content-Length 的 200，Chromium 播放器无法定位/拉流 → 永远"缓冲中"。
     const range = req.headers['range'];
     if (range) headers['Range'] = Array.isArray(range) ? range[0] : String(range);
 
     let resp = await this.openPlayStream(target, headers);
     let bufferedHead: Buffer = Buffer.alloc(0);
-    // ★ 2026-09-28：网盘会话过期（UC 非会员尤甚）→ 上游 401/403 往往**同时下发刷新后的会话 Cookie**
+    // 网盘会话过期（UC 非会员尤甚）→ 上游 401/403 往往**同时下发刷新后的会话 Cookie**
     //   （`__puus`）。先把 Set-Cookie 记进会话 jar，再用刷新后的 Cookie 重试一次；仍失败才把失败透传。
     if (ck && (resp.status === 401 || resp.status === 403)) {
       this.rememberPlaySetCookies(ck, resp.headers);
@@ -782,7 +781,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
       const code = /(?:error_code|error_no|errno)["']?\s*[:=]\s*["']?(-?\d+)/i.exec(text)?.[1] || '-';
       const hitcode = /hitcode["']?\s*[:=]\s*["']?(\d+)/i.exec(text)?.[1] || '-';
       this.logger.w(`proxy /play: 百度 dlink 403 code=${code} hitcode=${hitcode} upstream=${redactUrl(resp.finalUrl)}`);
-      // 真机验证：原 dlink 首次跳转的 CDN 偶发 31326/104，重新从 dlink
+      // 实测确认：原 dlink 首次跳转的 CDN 偶发 31326/104，重新从 dlink
       // 获取跳转即可 206。只处理此错误一次，不改 UA/Range、不重转存，
       // 也不直接重试旧 CDN URL（其它账号/防盗链错误应原样返回）。
       let baiduCdn = false;
@@ -796,7 +795,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
     }
     // 上游 Set-Cookie（刷新后的 __puus 等）→ 记入本会话 cookie jar，供后续分片/清单请求使用
     if (ck) this.rememberPlaySetCookies(ck, resp.headers);
-    // ★ 2026-09-28：每次回源的**结果落一行诊断**（播放失败率统计的第一手数据）
+    // 每次回源的**结果落一行诊断**（播放失败率统计的第一手数据）
     logPlayDiag({
       kind: 'relay',
       stage: 'upstream',
@@ -808,7 +807,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
     });
     res.setHeader('Access-Control-Allow-Origin', '*');
     const ct = safeResponseHeader('content-type', resp.headers['content-type']) || 'application/octet-stream';
-    // ★ 2026-09-23 修复 py 源「视频无法播放」：清单判定不能只看 Content-Type，
+    // 修复 py 源「视频无法播放」：清单判定不能只看 Content-Type，
     //   且**相对地址必须以「302 之后的最终地址」为基准**重写。
     //   实测（可可影视）：play URL 在 208.69.102.188:21302 → 302 到 142.248.97.185:11302；
     //   片段是相对地址（`xxx.ts?sign=…`）→ 老实现按**原始** target 拼 → 请求回到 208 主机，
@@ -836,8 +835,8 @@ private imgProxy(u: URL, res: ServerResponse): void {
     if (isPlaylist) {
       // m3u8 清单小，读全文后重写片段地址（每段都走 /play 带回 header/Cookie）
       const rawText = Buffer.from(await resp.body.arrayBuffer()).toString('utf-8');
-      const base = resp.finalUrl || target; // ★ 302/重定向后的真实地址
-      // ★ 2026-09-29 m3u8 去广告（TVBox M3u8.purify 移植；默认关，见 player-settings.json）
+      const base = resp.finalUrl || target; // 302/重定向后的真实地址
+      // m3u8 去广告（TVBox M3u8.purify 移植；默认关，见 player-settings.json）
       //   口径照抄 TVBox VodController.java:1962-1974：只对**点播**清单（含 ENDLIST）做，
       //   且只有确实删到段（removed > 0）才替换播放列表 —— 否则一律回原文。
       let text = rawText;
@@ -858,7 +857,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
       res.end(body);
       return;
     }
-    // ★ 真实网速：统计本 /play 实际写回播放器的字节（透传 + 聚合两路都涵盖），
+    // 真实网速：统计本 /play 实际写回播放器的字节（透传 + 聚合两路都涵盖），
     //   经 onSpeed 推送渲染层 —— 比渲染层 Resource Timing 可靠（媒体 timing 常拿不到字节）。
     const out = { bytes: 0, prev: 0, prevT: 0 };
     let speedTimer: ReturnType<typeof setInterval> | null = null;
@@ -884,7 +883,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
         out.prevT = now;
       }, 600);
     }
-    // ★ 并发回源聚合（对齐影视仓多段并发，绕开关卡单连接限速）：
+    // 并发回源聚合（对齐多段并发，绕开关卡单连接限速）：
     //   夸克对"单条上游连接"限速（实测约 1.1MB/s），但允许多连接并发叠加（8 并发约 3.7MB/s）。
     //   这里把播放器发来的一个 Range 拆成多个并发的子 Range 回源夸克（每个子请求一条独立连接），
     //   再按偏移顺序拼装回写 —— 对播放器完全透明（仍见到单条 206/200 流），seek 照常。
@@ -900,12 +899,12 @@ private imgProxy(u: URL, res: ServerResponse): void {
     // 因此这里必须按 provider 禁用聚合，保留单连接和原始签名。
     const isBaiduDirect = isBaiduTarget(target);
     const rng = range === undefined ? '' : Array.isArray(range) ? range[0] : String(range);
-    // ★★ 2026-10-08（用户报「橘汁4K · jd4k 点开就提示已播放完毕」根因修复）★★
+    // jpg 伪装分片剥离（根因修复）
     //   图片伪装分片剥离：仅对「整段起始」请求（无 Range 或 `bytes=0-`）嗅探响应头 ≤128KB；
     //   命中 [JPEG/PNG 图片][TS 载荷] → 只把 TS 部分回给播放器（否则 ffmpeg 按图片解析、
     //   读包失败 → mpv 当 EOF → 「已播放完毕」假象；识别口径见 imagePreludeLen）。
     //   非伪装响应：保留已消费字节，透传时先写预读头部再接剩余流。
-    //   ★ 带偏移的 Range 请求不嗅探（HLS 拖动 = 重开分片，实测 mpv/ffmpeg 均从 0 开始取）。
+    //   带偏移的 Range 请求不嗅探（HLS 拖动 = 重开分片，实测 mpv/ffmpeg 均从 0 开始取）。
     if (resp.status < 400 && resp.body && (rng === '' || parseByteRange(rng)?.start === 0)) {
       const head = await this.readHead(resp.body as unknown as NodeJS.ReadableStream, DETECT_HEAD_LEN, (b) => {
         if (b.length >= 2 && !((b[0] === 0xff && b[1] === 0xd8) || (b[0] === 0x89 && b[1] === 0x50) || (b[0] === 0x52 && b[1] === 0x49))) return true;
@@ -956,8 +955,8 @@ private imgProxy(u: URL, res: ServerResponse): void {
         (resp.body as unknown as { cancel?: () => Promise<void> }).cancel?.().catch(() => { /* ignore */ });
         return;
       }
-      // ★ 2026-09-28：聚合**没能接管**时必须留痕 —— 旧实现静默降级成单连接，
-      //   表现是「能播但极慢/偶发卡顿」，却查不到原因（用户第 6 项的一部分症状）。
+      // 聚合**没能接管**时必须留痕 —— 旧实现静默降级成单连接，
+      //   表现是「能播但极慢/偶发卡顿」，却查不到原因。
       this.logger.w(`proxy /play: Range 聚合未接管，降级为单连接透传（status=${resp.status} range=${rng}）`);
       logPlayDiag({ kind: 'relay', stage: 'aggregate-failed', ok: false, status: resp.status, range: rng, url: redactUrl(target) });
     }
@@ -976,7 +975,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
     res.writeHead(resp.status, fwd);
     // resp.body 是 Node 可读流（undici BodyReadable），直接管道转发 → 边收边发给播放器
     const upstream = resp.body as unknown as NodeJS.ReadableStream;
-    // ★ 快进/拖动进度条会让 <video> 关闭旧的 /play 连接 → 我们 destroy 上游 undici 流；
+    // 快进/拖动进度条会让 <video> 关闭旧的 /play 连接 → 我们 destroy 上游 undici 流；
     //   未挂 'error' 监听时，销毁 in-flight 流会把 AbortError 冒泡成主进程"未捕获异常"弹窗。
     //   这里吞掉（seek 中止属预期行为），仅非 AbortError 才记日志。
     upstream.on('error', (e: unknown) => {
@@ -1040,7 +1039,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
   }
 
   /**
-   * ★ 2026-10-08（jpg 伪装分片剥离配套）：从上游流预读 ≤n 字节头部后**暂停**流。
+   * （jpg 伪装分片剥离配套）：从上游流预读 ≤n 字节头部后**暂停**流。
    *   - `stop(head)` 返回 true 即提前结束（普通流读到首块就停，不拖慢起播）；
    *   - 8s 兜底超时（流卡住时不再等，按已读内容继续）；
    *   - 调用方负责后续：命中伪装 → 丢弃前导；未命中 → 先写 head，再 pipe 剩余（已 end 则直接结束响应）。
@@ -1119,7 +1118,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
       'Content-Range': `bytes ${start}-${end}/${total}`,
       'Accept-Ranges': 'bytes',
     });
-    // ★ 有界并发 + 按序即写：每片就绪且轮到其偏移时立即写出（边下边喂），
+    // 有界并发 + 按序即写：每片就绪且轮到其偏移时立即写出（边下边喂），
     //   不再"攒满一个 8×512KB 窗口才回写"。改进三处体感：
     //   1) 启动/快进只需第一片（512KB）就绪即可开播，而非等 4MB 全齐；
     //   2) 后续保持 8 个 in-flight 子请求持续补位（滑窗流水），数据稳定流入，
@@ -1233,7 +1232,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
     try {
       const r = await this.openStream(target, h);
       const buf = Buffer.from(await (r.body as unknown as { arrayBuffer(): Promise<ArrayBuffer> }).arrayBuffer());
-      // ★★ 2026-09-19 片长校验改为「容错」而非「直接中止」：
+      // 片长校验改为「容错」而非「直接中止」：
       //   · 长度与请求区间严重不符（<50%）——典型"节点不理会子 Range 返回整流"（release65 坏流）
       //     → 立即抛错中止聚合（防拼装损坏），外层 res.destroy 让播放器重试；
       //   · 长度偏差不大（尾巴片偶发差几个字节/重复几字节）→ 重试一次后按预期长度截断继续，
@@ -1276,7 +1275,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
    * 含 statusCode、headers、**finalUrl（重定向后的真实地址）**与**未消费的可读 body 流**
    * （供调用方流式转发，避免大文件整块载入内存）。
    *
-   * ★ finalUrl 是 m3u8 相对地址重写的基准：302 后的 m3u8 与其分片常在不同主机上
+   * finalUrl 是 m3u8 相对地址重写的基准：302 后的 m3u8 与其分片常在不同主机上
    *   （实测可可影视：清单 208.x → 142.x，分片只在 142.x 可下载），
    *   用原始 URL 拼分会拿到防盗链哨兵响应（3 字节 "OK\n"）→ 播放无声无画。
    */
@@ -1286,7 +1285,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
   ): Promise<{ status: number; headers: Record<string, unknown>; body: import('undici').Dispatcher.ResponseData['body']; finalUrl: string }> {
     let cur = url;
     for (let i = 0; i <= 10; i++) {
-      // ★ 取流也走代理链（被 DNS 污染 / SNI 阻断的源站在代理下才可播）
+      // 取流也走代理链（被 DNS 污染 / SNI 阻断的源站在代理下才可播）
       const dispatchers = outboundDispatchers(cur);
       let r: Awaited<ReturnType<typeof undiciRequest>> | undefined;
       let lastError: unknown;
@@ -1307,7 +1306,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
       const loc = r.headers['location'];
       if (r.statusCode >= 300 && r.statusCode < 400 && loc && i < 10) {
         cur = new URL(Array.isArray(loc) ? loc[0] : loc, cur).toString();
-        // ★ 2026-09-30 修复（百度 dlink 必 302 到 CDN，暴露此坑）：undici `request` 的 body 是
+        // 修复（百度 dlink 必 302 到 CDN，暴露此坑）：undici `request` 的 body 是
         //   Node 可读流，**没有 `cancel()`** —— 旧代码调它会抛 `r.body.cancel is not a function`，
         //   异常冒泡成未捕获 rejection 且 /play 永不回应 → 播放器一直「缓冲中」。
         //   改用同文件既有的 `dump()`（undici BodyReadable 提供）释放旧响应体。
@@ -1331,7 +1330,7 @@ private imgProxy(u: URL, res: ServerResponse): void {
         headers: { 'User-Agent': 'Mozilla/5.0 TVBoxWin/0.1', ...headers },
         headersTimeout: 30000,
         bodyTimeout: 30000,
-        // ★ 同 openStream：走代理链（字幕/封面等小文件抓取同理）
+        // 同 openStream：走代理链（字幕/封面等小文件抓取同理）
         dispatcher: outboundDispatchers(cur)[0],
       });
       const loc = r.headers['location'];
@@ -1405,7 +1404,7 @@ export function rewriteM3u8WithHeaders(body: Buffer, baseUrl: string, headers: R
     const t = line.trim();
     if (!t) { out.push(line); continue; }
     if (t.startsWith('#')) {
-      // ★ 2026-09-23 修复「HLS播放失败：KeyLoadError」：AES-128 加密流的密钥地址写在
+      // 修复「HLS播放失败：KeyLoadError」：AES-128 加密流的密钥地址写在
       //   `#EXT-X-KEY:...URI="..."`（初始化段 #EXT-X-MAP、备用音轨 #EXT-X-MEDIA 同理），
       //   它们都是**注释行**、此前被原样透传 —— 相对 URI 会被 hls.js 按中继地址解析成
       //   http://127.0.0.1:9978/<key>（404），绝对 URI 又缺 Referer/UA/Cookie 被源站 403，
@@ -1546,9 +1545,9 @@ export function decodeProxyHeaders(value: string): Record<string, string> | null
 }
 
 /**
- * ★★ 2026-10-08（用户报「橘汁4K · jd4k 点开就提示已播放完毕」根因修复）★★
+ * jpg 伪装分片剥离（根因修复）
  * **jpg 伪装分片**识别：分片字节 = [完整 JPEG 缩略图][真正的 TS 载荷]，TS 从 JPEG 的 EOI（FF D9）
- * 之后开始且 188 字节对齐（`0x47` 同步头）。实测来源：橘汁4K「JD4K-可下载」线路
+ * 之后开始且 188 字节对齐（`0x47` 同步头）。实测来源：「某 4K 线路-可下载」
  * （m3u8 的分片全是 `.jpg`，CDN 如实返回 JPEG+TS 拼接体）。
  * 不做剥离时：ffmpeg 按 mjpeg 解析分片 → `error reading packet: Invalid argument` ×10 →
  * mpv 把它当 EOF（`demux_lavf.c` 重试计数耗尽）→ 播放器弹「已播放完」假象。
@@ -1569,7 +1568,7 @@ const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0
 export function imagePreludeLen(head: Buffer): number {
   if (head[0] === 0xff && head[1] === 0xd8) return jpegPreludeLen(head);
   if (head.length >= 20 && head.toString('ascii', 0, 4) === 'RIFF' && head.toString('ascii', 8, 12) === 'WEBP') {
-    // 摸鱼儿 JD4K：RIFF 长度包括 TS_D 数据，不能把 RIFF 末尾当图片末尾。
+    // 某 4K 线路：RIFF 长度包括 TS_D 数据，不能把 RIFF 末尾当图片末尾。
     // 按 chunk 边界解析，不在 VP8 像素中搜索同步头或 TS_D 字符串。
     const riffEnd = head.readUInt32LE(4) + 8;
     let imageSeen = false;
@@ -1642,7 +1641,7 @@ export function buildSlices(start: number, end: number, chunk: number): Array<{ 
 /**
  * 把 `/file/<rel>` 的相对路径解析为绝对路径，并做路径穿越防护。
  *
- * ★ 这是安全敏感逻辑，抽成纯函数以便单测（不进 Electron 运行时）。
+ * 这是安全敏感逻辑，抽成纯函数以便单测（不进 Electron 运行时）。
  *
  * 攻击面：`/file/../../../../Windows/win.ini` 这类请求若被放行，等于把本机
  * 任意文件暴露给蜘蛛（蜘蛛代码来自第三方 jar，不可信）。防护分两步：
@@ -1674,7 +1673,7 @@ export function resolveLocalFilePath(rel: string, roots: string[]): string | nul
 /**
  * 极简扩展名 → Content-Type 映射，只覆盖 `/file/` 实际会遇到的类型。
  *
- * ★ 文本类型必须带 `; charset=utf-8`：蜘蛛多数用 OkHttp 读文本，缺 charset 时
+ * 文本类型必须带 `; charset=utf-8`：蜘蛛多数用 OkHttp 读文本，缺 charset 时
  *   OkHttp 会退到 ISO-8859-1，中文 ext 直接乱码（比"读不到"更难排查）。
  */
 function guessContentType(path: string): string {
@@ -1682,7 +1681,7 @@ function guessContentType(path: string): string {
   if (p.endsWith('.json')) return 'application/json; charset=utf-8';
   if (p.endsWith('.txt') || p.endsWith('.m3u') || p.endsWith('.m3u8')) return 'text/plain; charset=utf-8';
   if (p.endsWith('.js')) return 'application/javascript; charset=utf-8';
-  // ★ 2026-09-29 本地包：网页源/蜘蛛会取包内的 py 与 css（/pkg 路由），给对类型
+  // 本地包：网页源/蜘蛛会取包内的 py 与 css（/pkg 路由），给对类型
   if (p.endsWith('.py')) return 'text/plain; charset=utf-8';
   if (p.endsWith('.css')) return 'text/css; charset=utf-8';
   if (p.endsWith('.html') || p.endsWith('.htm')) return 'text/html; charset=utf-8';
@@ -1692,7 +1691,7 @@ function guessContentType(path: string): string {
   if (p.endsWith('.gif')) return 'image/gif';
   if (p.endsWith('.webp')) return 'image/webp';
   if (p.endsWith('.svg')) return 'image/svg+xml';
-  // ★ 2026-09-29 /bt 取流：媒体类型必须给对（浏览器据此选解码器；octet-stream 会被拒）
+  // /bt 取流：媒体类型必须给对（浏览器据此选解码器；octet-stream 会被拒）
   if (p.endsWith('.mp4') || p.endsWith('.m4v')) return 'video/mp4';
   if (p.endsWith('.webm')) return 'video/webm';
   if (p.endsWith('.mkv')) return 'video/x-matroska';

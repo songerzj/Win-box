@@ -1,5 +1,5 @@
 // tests/dataDirBootstrap.spec.ts
-// ★ 2026-09-30：dataDirBootstrap 接线单测（mock electron）——
+// dataDirBootstrap 接线单测（mock electron）——
 //   dev 不动 / 打包态切到安装目录/data 并迁移 / 目标不可写回退 / 迁移失败回滚 setPath 并保留旧目录。
 //   模块是「import 即执行」，每个用例先 vi.resetModules() 再动态 import 拿全新实例。
 import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest';

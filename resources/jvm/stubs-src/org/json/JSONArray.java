@@ -462,7 +462,7 @@ public class JSONArray implements Iterable<Object> {
         if (object instanceof String) {
             return (String) object;
         }
-        // ★ 2026-09-16 宽松语义补丁：与 JSONObject.getString 对齐（见其注释）
+        // 宽松语义补丁：与 JSONObject.getString 对齐（见其注释）
         return object == null ? null : object.toString();
     }
 

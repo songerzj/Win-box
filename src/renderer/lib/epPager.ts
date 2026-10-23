@@ -1,5 +1,5 @@
 // src/renderer/lib/epPager.ts
-// ★ 2026-09-30（用户要求）：详情页剧集列表分页 —— **每页至多 `EP_PAGE_SIZE` 集**，多的翻页展示。
+// 详情页剧集列表分页 —— **每页至多 `EP_PAGE_SIZE` 集**，多的翻页展示。
 //   纯函数（不碰 DOM），可在 Vitest 直接单测；页码一律以「全局集下标」对外（chooseEp / 高亮用同一个下标）。
 export const EP_PAGE_SIZE = 50;
 

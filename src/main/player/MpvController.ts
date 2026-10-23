@@ -1,5 +1,5 @@
 // src/main/player/MpvController.ts
-// ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容播放内核的主进程侧 —— 单会话管理。
+// MPV 高兼容播放内核的主进程侧 —— 单会话管理。
 //
 // 生命周期：渲染层 `mpvStart` → spawn mpv（`--wid` 钉进播放器窗口）→ 等 JSON IPC 管道就绪 →
 //   下发属性观察 + `loadfile`；状态由 mpv 事件驱动（节流 200ms 推给渲染层）；`mpvStop`/换集/
@@ -35,6 +35,12 @@ const PUSH_INTERVAL_MS = 200;
 const CONNECT_TIMEOUT_MS = 6000;
 /** quit 后的强杀宽限 */
 const QUIT_GRACE_MS = 1500;
+/**
+ * 随包 Mozilla CA 包（给 mpv 的 TLS 用）。
+ *   内置的 Yaozhi 核心其 FFmpeg 走 OpenSSL 而没有 CA 路径 ⇒ **https 校验必失败**；
+ *   启动 mpv 时把这个路径注入 `SSL_CERT_FILE` 即可（见 spawn 处注释）。缺失则该变量不注入。
+ */
+const CA_BUNDLE = join(resourcesDir(), 'mpv', 'cacert.pem');
 
 /**
  * 取原生窗口句柄（win32 = HWND / macOS = NSView 指针）的十进制字符串
@@ -179,8 +185,24 @@ export class MpvController {
       env: process.env,
     });
     this.log.i(`mpv: 启动（session=${session}，${st.note}）→ ${url.slice(0, 120)}`);
+    // CA 包缺失就明确告警（否则「https 全播不了」会以「源有问题」的面目出现，极难排查）
+    if (!existsSync(CA_BUNDLE)) {
+      this.log.w(`mpv: 未找到随包 CA 包（${CA_BUNDLE}）—— https 源可能因证书校验失败而打不开；内置 Yaozhi 核心的 FFmpeg 必须依赖它`);
+    }
     // ★ 2026-10-12：spawn 选项平台化（win32 `windowsHide:true`；darwin 只留 stdio，行为不变）
-    const proc = spawn(st.path, args, { ...spawnOptions(), stdio: ['ignore', 'pipe', 'pipe'] });
+    const proc = spawn(st.path, args, {
+      ...spawnOptions(),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      //   根因 = **自编译的 FFmpeg 走 OpenSSL 且没有可用的 CA 路径**（构建前缀是 CI 上的 Linux 目录）
+      //   ⇒ 证书校验必然失败（实测日志 `[e][ffmpeg] tls: error:0A000086` = `SSL_R_CERTIFICATE_VERIFY_FAILED`，
+      //   随后 `[stream] Failed to open` + `finished playback, loading failed (reason 4)`）；
+      //   它自带的 libcurl 先试、ffmpeg 兜底，两者都过不了 ⇒ **所有 https 源全播不了**，
+      //   而本地文件与 http 源不受影响（正好对上「很多内容播不了」的观感）。
+      //   修：注入 `SSL_CERT_FILE` 指向**随包 Mozilla CA 包**（resources/mpv/cacert.pem）——
+      //   校验保持开启，**不用** `--tls-verify=no` 那种降级（那会让中间人有机可乘）。
+      //   官方 mpv 若本来走 Schannel/系统证书，这个变量对它无副作用。
+      ...(existsSync(CA_BUNDLE) ? { env: { ...process.env, SSL_CERT_FILE: CA_BUNDLE } } : {}),
+    });
     this.proc = proc;
     proc.on('error', (e) => {
       this.log.w(`mpv: 进程错误 ${e.message}`);
@@ -248,7 +270,7 @@ export class MpvController {
     sock.write(mpvCmdLine(['set_property', 'mute', 'no']));
     sock.write(mpvCmdLine(['set_property', 'pause', opts.paused ? 'yes' : 'no']));
     sock.write(mpvCmdLine(['set_property', 'volume', Math.max(0, Math.min(1, opts.volume ?? 1)) * 100]));
-    // ★ 超分插件（M1）：初始着色器链必须在 loadfile **之前**下发（逐条 clr+append，见 mpvShadersCmd）；
+    // 超分插件（M1）：初始着色器链必须在 loadfile **之前**下发（逐条 clr+append，见 mpvShadersCmd）；
     //   运行期换档走 `command({type:'glsl-shaders'})`，同样即时生效、不重启会话。
     const shaders = (opts.shaders ?? []).map((s) => String(s ?? '').trim()).filter(Boolean);
     if (shaders.length) for (const l of mpvShadersCmd(shaders)) sock.write(l);

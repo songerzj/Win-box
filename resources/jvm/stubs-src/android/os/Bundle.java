@@ -6,7 +6,7 @@ import java.util.Set;
 /**
  * Bundle stub —— Intent / IPC 的键值容器。
  *
- * ★ 与 ContentValues 同理：这是**纯数据结构**，不依赖 Android 系统能力，
+ * 与 ContentValues 同理：这是**纯数据结构**，不依赖 Android 系统能力，
  *   必须是功能完整的。用真实 HashMap 实现。
  */
 public class Bundle implements Cloneable {

@@ -1,5 +1,5 @@
 // src/engine/live/TxtSubscribe.ts
-// ★★ 1:1 移植自 ref2/app__src__main__java__com__github__tvbox__osc__util__live__TxtSubscribe.java
+// 1:1 移植自 ref2/app__src__main__java__com__github__tvbox__osc__util__live__TxtSubscribe.java
 // 复刻安卓既有行为（含怪癖）。所有"刻意复刻，勿修正"处都标注了 // ANDROID_QUIRK。
 import {
   DEFAULT_GROUP_NAME,
@@ -329,7 +329,7 @@ function parseM3uToJsonArray(str: string): TxtGroup[] {
         groupName = normalizeGroupName(groupName);
         currentGroup = findOrCreateGroup(result, groupName);
         pendingChannel = {};
-        // ★ 上游 bug 修复（2026-09-20 用户授权）：频道名改用引号感知提取（含逗号频道名不再被截断）
+        // 上游 bug 修复：频道名改用引号感知提取（含逗号频道名不再被截断）
         pendingChannel.name = extractM3uName(line);
         pendingChannel = mergeMeta(pendingChannel, buildMeta(line));
         pendingChannel = mergeMeta(pendingChannel, pendingMeta);

@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 /**
  * ViewGroup stub —— 视图容器 + 布局参数。
  *
- * ★ 2026-09-10 第四轮修复：新增 `MarginLayoutParams`（此前缺失导致
+ * 修复：新增 `MarginLayoutParams`（此前缺失导致
  *   `ClassNotFoundException: android.view.ViewGroup$MarginLayoutParams`）。
  *   MarginLayoutParams 是 LinearLayout/RelativeLayout 等的 LayoutParams 基类，
  *   混淆工具库会 Class.forName 它。
@@ -211,7 +211,7 @@ public class ViewGroup extends View implements ViewParent {
     }
 
     /**
-     * ★ 带边距的布局参数 —— 此前缺失，是某次 ClassNotFoundException 的直接原因。
+     * 带边距的布局参数 —— 此前缺失，是本次 ClassNotFoundException 的直接原因。
      */
     public static class MarginLayoutParams extends LayoutParams {
 

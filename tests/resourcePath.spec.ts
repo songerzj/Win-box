@@ -1,5 +1,5 @@
 // tests/resourcePath.spec.ts
-// ★ portable(单文件) 资源路径回归护栏。
+// portable(单文件) 资源路径回归护栏。
 //
 // 事故背景：portable 的 NSIS 解压脚本把内容放在 $PLUGINSDIR\7z-out 下
 // （见 app-builder-lib extractAppPackage.nsh → extractUsing7za），
@@ -36,7 +36,7 @@ describe('resourceRootCandidates — 布局覆盖', () => {
     ).toBe(true);
   });
 
-  it('★ portable：resourcesPath 停在 <tmp>\\resources 时，能命中 7z-out 真实根', () => {
+  it('portable：resourcesPath 停在 <tmp>\\resources 时，能命中 7z-out 真实根', () => {
     const tmp = 'C:/Users/u/AppData/Local/Temp/nso8227.tmp';
     const c = resourceRootCandidates({
       packaged: true,

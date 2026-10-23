@@ -1,5 +1,5 @@
 // tests/pluginSettingsPanel.spec.ts — 插件设置面板（L3 声明式 UI）适配层：
-//   `contributes.settings.panel` → 宿主视图 `SettingsPanelView`（★ 插件不跑代码；主进程只做校验 + 装配 +
+//   `contributes.settings.panel` → 宿主视图 `SettingsPanelView`（插件不跑代码；主进程只做校验 + 装配 +
 //   合并**有效值**，表单渲染与写回在渲染层，持久化在主进程 PluginHost 的设置 JsonStore）。
 // 覆盖：白名单字段搬运 / 归属插件标注 / 可选字段不留 undefined / **有效值回落** / options 副本隔离。
 import { describe, it, expect } from 'vitest';

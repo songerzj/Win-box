@@ -3,9 +3,9 @@
 // 输出渲染层可直接使用的定位数据（行号 / 速度 / 存活区间），渲染层免重算。
 // 不依赖 Electron/Node，可独立单测。
 //
-// ★ 速度模型 = **恒定行程时长**（2026-10-18 用户拍板，取代原「恒定 px/s」）：
+// 速度模型 = **恒定行程时长**（取代原「恒定 px/s」）：
 //   所有滚动弹幕都花同样的 `duration = 屏宽 / speed` 走完「屏宽 + 自身文本宽」⇒ **长句更快、短句更慢**
-//   （同 B 站 / DanmakuFlameMaster / DPlayer 口径）。代价 = 长短句视觉速度不再统一（用户已接受），
+//   （同 B 站 / DanmakuFlameMaster / DPlayer 口径）。代价 = 长短句视觉速度不再统一，
 //   换来的是**同轨允许多条共存**（靠 willHitScroll 判「后车会不会追上前车」）⇒ 同屏密度量级提升。
 
 import type { DanmakuItem, DanmakuRegion } from '../../shared/danmaku';
@@ -14,21 +14,21 @@ export interface PlacedDanmaku {
   item: DanmakuItem;
   /** 轨道行号（类型内：滚动 0..，顶 0..，底 0..；不跨类型） */
   row: number;
-  /** ★ 最终 y 坐标（px，已按分区/方向算好），渲染层直接用，免重复计算 */
+  /** 最终 y 坐标（px，已按分区/方向算好），渲染层直接用，免重复计算 */
   y: number;
   /** 初始 x（滚动 = 容器宽，从右缘进入；顶/底 = 0） */
   x0: number;
-  /** ★ 速度（px/s）= (容器宽 + width) / duration ⇒ 长句更快、短句更慢；顶/底为 0 */
+  /** 速度（px/s）= (容器宽 + width) / duration ⇒ 长句更快、短句更慢；顶/底为 0 */
   velocity: number;
   /** 存活到时间（秒；滚动 = 出左界，顶/底 = 固定显示结束） */
   activeUntil: number;
-  /** ★ 占屏时长（秒）= 恒定行程时长；滚动「出左界」与顶/底「显示结束」都等于 time + duration */
+  /** 占屏时长（秒）= 恒定行程时长；滚动「出左界」与顶/底「显示结束」都等于 time + duration */
   duration: number;
-  /** ★ 文本像素宽（布局时测一次并 memo；渲染层逐帧判定出界 / 居中直接用，免每帧重测） */
+  /** 文本像素宽（布局时测一次并 memo；渲染层逐帧判定出界 / 居中直接用，免每帧重测） */
   width: number;
-  /** ★ 实际绘制文本（重复合并后带「 ×N」后缀；未合并时 = item.text） */
+  /** 实际绘制文本（重复合并后带「 ×N」后缀；未合并时 = item.text） */
   displayText: string;
-  /** ★ 同屏重复合并计数（1 = 未合并） */
+  /** 同屏重复合并计数（1 = 未合并） */
   count: number;
 }
 
@@ -53,7 +53,7 @@ export interface LayoutOpts {
   /** 时间偏移（秒，与片源时间轴对齐） */
   offsetSec: number;
   /**
-   * ★ 重复弹幕合并（默认关）：同类型同文本、且落在"已显示那条"存活窗内的，只显示 1 条 + 后缀「 ×N」。
+   * 重复弹幕合并（默认关）：同类型同文本、且落在"已显示那条"存活窗内的，只显示 1 条 + 后缀「 ×N」。
    *   仿 DanmakuFlameMaster 的 DuplicateMergingFilter；默认关以免改变既有布局结果。
    */
   mergeDuplicates?: boolean;
@@ -61,7 +61,7 @@ export interface LayoutOpts {
 
 export const REGION_RATIO: Record<DanmakuRegion, number> = { full: 1, half: 0.5, quarter: 0.25 };
 
-/** ★ 弹幕总量上限（超限时均匀抽稀而非丢尾部，见 layoutDanmaku）——2h 电影 ~10k 条也全片可显示 */
+/** 弹幕总量上限（超限时均匀抽稀而非丢尾部，见 layoutDanmaku）——2h 电影 ~10k 条也全片可显示 */
 const MAX_ITEMS = 10000;
 
 /** 滚动 / 顶 / 底 三类对行空间的占用比例（滚动态量最大，顶/底少量占位） */
@@ -73,7 +73,7 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 const mergeKey = (it: DanmakuItem): string => `${it.type}\u0000${it.text}`;
 
 /**
- * ★ 追尾判定（willHit）：在「后车 A」入场后的存活期内，A 的左缘会不会追上「前车 B」的右缘（= 叠字）。
+ * 追尾判定（willHit）：在「后车 A」入场后的存活期内，A 的左缘会不会追上「前车 B」的右缘（= 叠字）。
  *   **恒定行程时长**模型下速度随文本宽变化（长句更快、短句更慢）⇒ 必须判追赶；旧「恒定 px/s」模型同速
  *   永不追尾，所以只需等前车出屏（那条旧判据正是密度被压死的根因）。仿 DanmakuFlameMaster
  *   `DanmakuUtils.willHitInDuration`。所有量自洽（v 已含屏宽）⇒ 不需要单独传屏宽。
@@ -98,7 +98,7 @@ export function regionRows(height: number, fontSize: number, region: DanmakuRegi
   return Math.max(1, Math.floor((height * REGION_RATIO[region]) / lineHeight));
 }
 
-/** ★ 行空间分区：滚动 / 顶 / 底 各自行数（保证至少 1 行，且滚动不挤占顶/底）。 */
+/** 行空间分区：滚动 / 顶 / 底 各自行数（保证至少 1 行，且滚动不挤占顶/底）。 */
 export function zoneRows(height: number, fontSize: number, region: DanmakuRegion): { scroll: number; top: number; bottom: number } {
   const total = regionRows(height, fontSize, region);
   const top = Math.max(1, Math.floor(total * ZONE_RATIO.top));
@@ -123,7 +123,7 @@ let textMeasurer: TextMeasurer | null = null;
 
 /**
  * 注入真实文本测量器（传 null 恢复估算）。
- * ★ 引擎保持纯 TS（不 import DOM/Electron）：渲染层在模块加载时注入，单测环境不注入 → 走估算、断言不变。
+ * 引擎保持纯 TS（不 import DOM/Electron）：渲染层在模块加载时注入，单测环境不注入 → 走估算、断言不变。
  *   测量结果的缓存由注入方自带（见 DanmakuOverlay 的 LRU）。
  */
 export function setTextMeasurer(fn: TextMeasurer | null): void {
@@ -142,8 +142,8 @@ export function measureWidth(text: string, fontSize: number): number {
 /**
  * 轨道分配：
  * - 滚动：**恒定行程时长** ⇒ 同轨允许多条共存；自上而下扫行，取**首个「不会追尾」**的行（= DFM AlignTopRetainer 口径），
- *   全部轨道都会追尾才丢弃该条。★ 旧口径（每行维护 next、要求前车**完全出屏**才放行）在 110px/s × 1920px 下
- *   等于每轨 18~23s 才能再进一条 ⇒ 密度被结构性压死（用户报「弹幕少」的根因）。
+ *   全部轨道都会追尾才丢弃该条。旧口径（每行维护 next、要求前车**完全出屏**才放行）在 110px/s × 1920px 下
+ * 等于每轨 18~23s 才能再进一条 ⇒ 密度被结构性压死（弹幕稀疏的根因）。
  * - 顶/底：固定区，行按 duration 占用，取最早空闲行（底从末行向上取）。
  * - 滚动 / 顶 / 底 **分区独立行空间**（zoneRows）：滚动占上区、顶占中区、底占下区，
  *   三类互不重叠（修复 D2：原先共用行号池导致滚动与顶部弹幕 y 重叠视觉互挡）。
@@ -156,7 +156,7 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
   const lineHeight = Math.round(fontSize * 1.4);
   const zoneH = height * REGION_RATIO[region];
   const rows = zoneRows(height, fontSize, region);
-  // ★ 恒定行程时长（秒）：所有滚动弹幕都花同样时间走完「屏宽 + 文本宽」，顶/底同用该值作显示时长。
+  // 恒定行程时长（秒）：所有滚动弹幕都花同样时间走完「屏宽 + 文本宽」，顶/底同用该值作显示时长。
   //   `speed` 语义 = **零宽弹幕的参考速度** ⇒ 既有「弹幕速度」设置与滑杆手感不变（短句观感与旧口径几乎一致），
   //   长句按 (屏宽+文本宽)/duration 提速（最多 +文本宽/屏宽 倍）。下限 1s 防「首帧未测得屏宽」时退化。
   const duration = Math.max(1, width / speed);
@@ -173,7 +173,7 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
     sampled = sampled.filter((_, i) => i === 0 || Math.floor(i / ratio) !== Math.floor((i - 1) / ratio));
   }
 
-  // ★ 重复弹幕合并（opt-in）：同类型同文本、时间落在"已显示那条"的显示窗内 → 只留 1 条、计一次 ×N。
+  // 重复弹幕合并（opt-in）：同类型同文本、时间落在"已显示那条"的显示窗内 → 只留 1 条、计一次 ×N。
   //   窗 = 该条的 duration（恒定）⇒ 「同时可见」判据与速度模型同源。
   let placed0 = sampled;
   let mergeCount: Map<string, number> | null = null;
@@ -200,7 +200,7 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
   const bottom: PlacedDanmaku[] = [];
   const topUntil = new Array<number>(rows.top).fill(0);
   const bottomUntil = new Array<number>(rows.bottom).fill(0);
-  // ★ 滚动轨道：每行保留「仍在本行的弹幕」（同轨可共存多车），并用游标剪枝已出屏的
+  // 滚动轨道：每行保留「仍在本行的弹幕」（同轨可共存多车），并用游标剪枝已出屏的
   //   —— 同轨的 activeUntil = time + 同一个 duration ⇒ 随入场时间单调递增，游标只需前移。
   const rowItems: PlacedDanmaku[][] = Array.from({ length: rows.scroll }, () => []);
   const rowHead = new Array<number>(rows.scroll).fill(0);
@@ -217,7 +217,7 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
     return -1;
   };
 
-  // ★ 各类型 y 起点：滚动在最上（从 0 起），顶在滚动之下，底从区域底部向上铺
+  // 各类型 y 起点：滚动在最上（从 0 起），顶在滚动之下，底从区域底部向上铺
   const yScroll = (row: number) => row * lineHeight;
   const yTop = (row: number) => rows.scroll * lineHeight + row * lineHeight;
   const yBottom = (row: number) => zoneH - (row + 1) * lineHeight;
@@ -225,9 +225,9 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
   for (const it of placed0) {
     const cnt = mergeCount?.get(mergeKey(it)) ?? 1;
     const displayText = cnt > 1 ? `${it.text} ×${cnt}` : it.text;
-    const estW = measureWidth(displayText, fontSize); // ★ 只在这里测一次，结果 memo 进 PlacedDanmaku.width
+    const estW = measureWidth(displayText, fontSize); // 只在这里测一次，结果 memo 进 PlacedDanmaku.width
     if (it.type === 'scroll') {
-      const velocity = (width + estW) / duration; // ★ 恒定行程时长 ⇒ 速度随文本宽变化（长句更快）
+      const velocity = (width + estW) / duration; // 恒定行程时长 ⇒ 速度随文本宽变化（长句更快）
       let row = -1;
       for (let r = 0; r < rowItems.length && row < 0; r++) {
         const act = rowItems[r];
@@ -263,7 +263,7 @@ export function layoutDanmaku(items: DanmakuItem[], opts: LayoutOpts): DanmakuLa
   return { scroll, top, bottom };
 }
 
-// ---------------- 逐帧绘制辅助（★ 2026-09-26 真 bug 修复：滚动弹幕只画一帧） ----------------
+// ---------------- 逐帧绘制辅助（真 bug 修复：滚动弹幕只画一帧） ----------------
 
 /** 一帧要绘制的滚动弹幕（相对画布坐标） */
 export interface ScrollDraw {
@@ -275,10 +275,10 @@ export interface ScrollDraw {
 
 /**
  * 滚动弹幕的**绘制起点**：只跳过「已到时间且已完全出左界」的条目。
- * ★ 旧实现每帧无脑自增扫描指针（画过即丢）→ 每条滚动弹幕只被绘制**一帧**，而且那一帧它的
+ * 旧实现每帧无脑自增扫描指针（画过即丢）→ 每条滚动弹幕只被绘制**一帧**，而且那一帧它的
  *   x ≈ 画布宽（刚入界、基本在画布外）→ 屏幕上看不到弹幕；一 seek/快进指针归零重扫才"满屏"。
  *   现在起点只在条目真正出界后前移，且帧间 O(1) 摊销（条目按时间升序 ⇒ x 单调递减）。
- * ★ 宽度取 {@link PlacedDanmaku.width}（布局时已 memo）——不再逐帧重测文本宽。
+ * 宽度取 {@link PlacedDanmaku.width}（布局时已 memo）——不再逐帧重测文本宽。
  *   `fontSize` 参数保留仅为兼容既有调用签名（含单测），不参与计算。
  */
 export function scrollDrawStart(
@@ -318,7 +318,7 @@ export function eachScrollDraw(
 
 /**
  * {@link eachScrollDraw} 的数组版（保留既有调用 / 单测签名）。
- * ★ 传入 `out` 可复用数组与元素对象 → 逐帧零分配；不传则每次新建（单测/一次性调用）。
+ * 传入 `out` 可复用数组与元素对象 → 逐帧零分配；不传则每次新建（单测/一次性调用）。
  */
 export function scrollDrawList(placed: PlacedDanmaku[], t: number, width: number, start = 0, out: ScrollDraw[] = []): ScrollDraw[] {
   let n = 0;
@@ -336,7 +336,7 @@ export function scrollDrawList(placed: PlacedDanmaku[], t: number, width: number
 
 /**
  * 弹幕绘制区（相对画布）：`contain` 时按视频**真实显示区**做上下留边 —— 避免弹幕落在宽银幕黑边上
- * （用户报「位置明显不对」）；其它比例模式（fill / cover / none / 强制 16:9·4:3）内容铺满盒子 → 用整块画布。
+ * ；其它比例模式（fill / cover / none / 强制 16:9·4:3）内容铺满盒子 → 用整块画布。
  */
 export function danmakuArea(opts: {
   fit: string;

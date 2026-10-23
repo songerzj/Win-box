@@ -23,7 +23,7 @@ public class PosixFile extends File {
     }
 
     /**
-     * ★ 2026-09-27（壳通解）：把「来宾 POSIX 路径」解析成宿主真实文件，供 dex 加载器读取壳的落盘产物。
+     * （壳通解）：把「来宾 POSIX 路径」解析成宿主真实文件，供 dex 加载器读取壳的落盘产物。
      * 宿主路径原样可读时直接用它；否则按「rootfs + 来宾路径」映射。找不到返回原 File（调用方自行判存在）。
      */
     public static File resolveHost(String path) {

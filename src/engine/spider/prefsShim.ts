@@ -1,8 +1,8 @@
 // src/engine/spider/prefsShim.ts
-// ★★ 2026-10-14（路线 B，最小可用版）：让 wex 族的网盘 cookie 能被 jar 读到 ★★
+// （路线 B，最小可用版）：让某第三方源族的网盘 cookie 能被 jar 读到 
 //
-// 问题（反编译实证，见 MEMORY 一〇八）：
-//   wex 族（玩偶/虎斑/爱看…）的 `Wex_ucpan_cookie / Wex_baidu_cookie / Wex_quark_cookie …` 全部存在
+// 问题（经调用链分析确认）：
+//   某第三方源族的 `Wex_ucpan_cookie / Wex_baidu_cookie / Wex_quark_cookie …` 全部存在
 //   **Android SharedPreferences `NewWexFnw_preferences`** 里：
 //     `merge/x0/e.H()`     = `InitOrigin.context().getSharedPreferences("NewWexFnw_preferences", 0)`
 //     `merge/x0/e.I(k, d)` = `H().getString(k, d)`
@@ -19,7 +19,7 @@
 //       `表名 \t 键 \t 值`），pref 名与键值均来自 Node 侧写入的文件。
 //   该替换类打成小 jar，排在 `-cp` **最前**（先于 stubs.jar，同 okhttp4-compat 手法）⇒ 影子掉原桩。
 //
-// 为什么不用「改桩源码 + 重建 stubs.jar」：本机**已无任何 JDK/javac**（见 MEMORY 一〇八-5），
+// 为什么不用「改桩源码 + 重建 stubs.jar」：本机**已无任何 JDK/javac**，
 //   且打包后 `resources/` 只读 —— 只有"Node 现场生成类字节"这条路走得通。
 import { buildZip, type ZipEntryData } from '../util/syncZip';
 
@@ -27,7 +27,7 @@ import { buildZip, type ZipEntryData } from '../util/syncZip';
 export const PREFS_MEM_CLASS = 'android/content/SharedPreferences$Mem';
 /** 影子 jar 文件名（放 `resources/jvm/prefs-shim/` 下） */
 export const PREFS_SHIM_JAR = 'winbox-prefs-shim.jar';
-/** SharedPreferences 名（反编译实证：`merge/x0/e.H()` 里写死） */
+/** SharedPreferences 名（`merge/x0/e.H()` 里写死） */
 export const WEX_PREFS_NAME = 'NewWexFnw_preferences';
 /** 种子文件名（相对 `Context.getBaseDir()`）—— Node 写、`Mem.<clinit>` 读 */
 export const PREFS_SEED_REL = 'shared_prefs/seed.txt';
@@ -54,7 +54,7 @@ class Cp {
   private add(key: string, make: () => Buffer): number {
     const hit = this.memo.get(key);
     if (hit) return hit;
-    // ★ 必须先 make()（它可能 push 出内层 utf8 项），再定自己的下标 —— 否则下标会比实际位置小。
+    // 必须先 make()（它可能 push 出内层 utf8 项），再定自己的下标 —— 否则下标会比实际位置小。
     const buf = make();
     const idx = this.list.length + 1;
     this.list.push(buf);
@@ -446,7 +446,7 @@ export function buildPrefsShimJar(): Buffer {
 }
 
 // ---------------------------------------------------------------------------
-// 自检探针类（仅测试/取证用；同样免 javac）：跑真 JVM 验证「种子 → SharedPreferences」生效。
+// 自检探针类（仅测试/自检用；同样免 javac）：跑真 JVM 验证「种子 → SharedPreferences」生效。
 // main(String[]) 步骤：
 //   Context.setBaseDir(new File(System.getProperty("tvbox.spiderCacheDir")))
 //   sp = SharedPreferences.Mem.get("NewWexFnw_preferences")
@@ -481,7 +481,7 @@ export function buildPrefsProbeClass(prefsName = WEX_PREFS_NAME, key = 'Wex_baid
   const mainAttr = codeAttr(cp, a, 6, 2);
   const iThis = cp.klass(C_PROBE);
   const iObj = cp.klass(J_OBJ);
-  // ★ 必须先建好方法（它会往常量池里加 name/desc 项），再取 count / 序列化常量池。
+  // 必须先建好方法（它会往常量池里加 name/desc 项），再取 count / 序列化常量池。
   const methods: Buffer[] = [method(cp, ACC_PUBLIC | ACC_STATIC, 'main', '([Ljava/lang/String;)V', mainAttr)];
 
   return Buffer.concat([

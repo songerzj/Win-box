@@ -1,14 +1,14 @@
 // src/engine/util/m3u8Purify.ts
-// ★ 2026-09-29：m3u8 去广告 —— 移植 TVBox `util/M3u8.java` 的 `purify()` 链（958 行，作者 asdfgh/FongMi）。
+// m3u8 去广告 —— 移植 TVBox `util/M3u8.java` 的 `purify()` 链（958 行，作者 asdfgh/FongMi）。
 //   参照源码已落 `research/ref/M3u8.java`（q215613905/TVBoxOS），逐函数对齐、注释标出处行号。
 //
 // 为什么需要它：这类站点的正片与广告切在同一个播放列表里，靠 `#EXT-X-DISCONTINUITY` 分段；
 //   播放器直连会把广告一起播完（进度条莫名变长 / 中间插一段不相干画面）。TVBox 的做法是播放前
 //   把播放列表文本洗一遍；我们的接线点是 `/play` 中继取到清单之后、回给播放器之前。
 //
-// ★ 开关语义照抄 TVBox：`HawkConfig.M3U8_PURIFY` **默认 false**（配置页「播放」里可开）。
+// 开关语义照抄 TVBox：`HawkConfig.M3U8_PURIFY` **默认 false**（配置页「播放」里可开）。
 //   默认关是有意为之 —— 清洗是启发式的，宁可少删也不能删掉正片；每级都有回退保护（见下）。
-// ★ 调用口径照抄 TVBox VodController.java:1962-1974：**只有 removed > 0 才用清洗结果**，
+// 调用口径照抄 TVBox VodController.java:1962-1974：**只有 removed > 0 才用清洗结果**，
 //   否则播原文（未删到段时清洗结果与原文等价，不必替换）。
 //
 // 五级流程（与 M3u8.java 逐级对齐）：
@@ -52,7 +52,7 @@ const TIMES_NO_AD = 15; // M3u8.java:106
 export interface PurifyResult {
   /** 清洗后的清单文本（removed === 0 时调用方仍应用原文，见文件头「调用口径」） */
   text: string;
-  /** 本轮删掉的段数（对位 M3u8.currentAdCount） */
+  /** 本次删掉的段数（对位 M3u8.currentAdCount） */
   removed: number;
   /** 原文总段数（日志/诊断用） */
   total: number;

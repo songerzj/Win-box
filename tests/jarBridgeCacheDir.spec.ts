@@ -1,8 +1,8 @@
 // tests/jarBridgeCacheDir.spec.ts
-// ★ 回归测试：缓存目录被外部删除后，doConvert 必须能自愈重建，
+// 回归测试：缓存目录被外部删除后，doConvert 必须能自愈重建，
 //   而不是抛出误导性的 `ENOENT: no such file or directory, open '...raw.jar'`。
 //
-// 事故背景（2026-09-10）：converted 目录被外部清理后，writeFileSync 直接 ENOENT，
+// 事故背景：converted 目录被外部清理后，writeFileSync 直接 ENOENT，
 // 错误信息看起来像「jar 下载失败」，实际是目录缺失。上游 ApiConfig.downloadJarAsync
 // 在写盘前也做 cacheDir.mkdirs()（ApiConfig.java:450），这里对齐该行为。
 //
@@ -30,7 +30,7 @@ function fakeChild(): EventEmitter & { stdout: EventEmitter; stderr: EventEmitte
 
 /**
  * 模拟 dex2jar：把 `-o` 指向的 target 写成一个**含 .class 的真 zip** 后正常退出。
- * ★ 2026-09-26：产物有效性判据变了（必须是含 .class 的 zip，见 isUsableConvertedJar）——
+ * 产物有效性判据变了（必须是含 .class 的 zip，见 isUsableConvertedJar）——
  *   以前这里写 `Buffer.alloc(4096,1)` 也能算"转换成功"，而那正是「22 字节空 zip 残骸
  *   被当成已转换」的事故温床。
  */
@@ -64,7 +64,7 @@ function makeJvmDir(): string {
 
 /**
  * 真 jar（≥100 字节）的 base64，用于骗过 `jarBytes.length < 100` 检查。
- * ★ 2026-09-28：内容必须是**真 zip（PK 魔数）** —— 新增的「jar 下载 okhttp UA 兜底」
+ * 内容必须是**真 zip（PK 魔数）** —— 新增的「jar 下载 okhttp UA 兜底」
  *   用 isJarOrDex(魔数) 判定，非 zip 会多打一次重试请求（并打破「只下载 1 次」的断言）。
  */
 const FAKE_JAR_B64 = buildZip([{ name: 'classes.dex', bytes: Buffer.alloc(2048, 7) }]).toString('base64');
@@ -165,11 +165,11 @@ describe('JarSpiderBridge.doConvert — 缓存目录自愈', () => {
     await expect(bridge.ensureConverted('https://example.com/tiny.jar')).rejects.toThrow(/jar 下载失败/);
   });
 
-  // ★ 2026-09-28（实测订阅 `…/eggp/0211/tv.json` 的 spider=`…/lubin.php`）：
-  //   该站按 UA 分流 —— 默认/浏览器 UA 给「影视仓 & OK影视 - 官方配置分发」HTML 页，
+  // （实测订阅 `…/eggp/0211/tv.json` 的 spider=`…/lubin.php`）
+  //   该站按 UA 分流 —— 默认/浏览器 UA 给「某影视壳 & OK影视 - 官方配置分发」HTML 页，
   //   只有 TVBox/okhttp UA 才返回真 jar。旧行为把 HTML 存成 jar → dex2jar 报
   //   「The source file is not a .dex or .zip file」→ 该配置**所有源**一起报「jar 转换失败」。
-  it('★ 默认 UA 拿到 HTML 分发页 → 自动按 okhttp UA 重试并转换成功（UA 分流站）', async () => {
+  it('默认 UA 拿到 HTML 分发页 → 自动按 okhttp UA 重试并转换成功（UA 分流站）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     cacheDir = join(jvmDir, 'converted');
@@ -297,7 +297,7 @@ describe('JarSpiderBridge.resolvePaths — 失效产物不得外传', () => {
     expect(bridge.resolvePaths(['https://example.com/a.jar'])).toEqual([p]);
   });
 
-  it('★ 产���被外部删除后 → resolvePaths 返回空并清除条目（不再把失效���径喂给 SpiderRunner）', async () => {
+  it('产物被外部删除后 → resolvePaths 返回空并清除条目（不再把失效路径喂给 SpiderRunner）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');

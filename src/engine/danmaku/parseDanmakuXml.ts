@@ -41,7 +41,7 @@ function toHexColor(n: number): string {
 /** 解析 B 站格式弹幕 XML。非 <d> 内容忽略；无有效项返回 []。 */
 export function parseDanmakuXml(xml: string): DanmakuItem[] {
   const out: DanmakuItem[] = [];
-  // ★ D8（修复）：①自闭合 <d …/> 统一成空对（内容空 → 丢弃，避免正则吞后续弹幕）；
+  // D8（修复）：①自闭合 <d …/> 统一成空对（内容空 → 丢弃，避免正则吞后续弹幕）；
   //   ②p 属性宽松提取：属性顺序任意（不一定首位）、单双引号均可
   const normalized = (xml || '').replace(/<d\b([^>]*?)\/>/g, '<d$1></d>');
   const re = /<d\b([^>]*)>([\s\S]*?)<\/d>/g;

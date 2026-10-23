@@ -1,5 +1,5 @@
 // src/renderer/lib/uiMemory.ts
-// ★ 页面切换（含系统返回/前进）后保留关键状态的模块级内存：
+// 页面切换（含系统返回/前进）后保留关键状态的模块级内存：
 //   同一渲染进程内页面卸载再挂载时共享，覆盖"播放进度/资源列表定位"。
 //   与 Electron 系统级返回（Alt+← / 浏览器返回）天然协同：popstate 触发路由切换，
 //   页面重挂载时从此处恢复状态。
@@ -12,7 +12,7 @@ export interface HomeSearchMem {
   /** 搜索结果（SearchAllReport 可 JSON 序列化） */
   agg: { items: unknown[]; perSource: unknown[]; hitSources: number; failedSources: number; totalRaw: number } | null;
   /**
-   * ★ 2026-09-30（用户报「其他接口的盘搜类型源搜索结果看不了内容」）：
+   * 
    * 当前是否停留在某个**文件夹**（`vod_tag=folder`，如盘搜的「夸克 (92个)」）里 ——
    * 内容由 `categoryContent(tid)` 展开。存进搜索态，从详情页返回时文件夹视图能原样恢复。
    */
@@ -28,7 +28,7 @@ export interface HomeMem {
   /** 上次搜索态；搜索 → 详情 → 返回时由 HomePage 恢复（exitSearch 清除） */
   search?: HomeSearchMem | null;
   /**
-   * ★ 2026-09-28 修复「搜索返回栈错乱」：本份 home 状态的**最后有意变更时间**（ms）。
+   * 修复「搜索返回栈错乱」：本份 home 状态的**最后有意变更时间**（ms）。
    *
    * 根因：`loadUiMemory()` 会用盘上的 home **整份覆盖**内存（挂载 / 窗口 focus / visibility 都会触发），
    * 而盘上那份可能是**上一次搜索**（第二次搜索的 2s 防抖还没落盘，或播放器窗口把自己的旧快照写了回去）
@@ -48,13 +48,13 @@ export interface WatchHistory {
   /** 资源展示名（如"狂飙 第12集"）；无名称时回退为 url */
   name: string;
   /**
-   * ★ 历史条目的主键/回退地址。原则上保存**原始 episode url**（可重新走 client.play 转存/解析），
+   * 历史条目的主键/回退地址。原则上保存**原始 episode url**（可重新走 client.play 转存/解析），
    *   不要存已过期的直链 —— 否则夸克这类"转存直链临时有效、播放完即删"的资源从历史续播必然失败。
    */
   url: string;
-  /** ★ 原始 episode url（与 url 同值；显式字段便于历史页点开时重新转存/解析） */
+  /** 原始 episode url（与 url 同值；显式字段便于历史页点开时重新转存/解析） */
   rawUrl?: string;
-  /** ★ 播放源 flag（client.play 需要 key+flag 才能重新解析/转存） */
+  /** 播放源 flag（client.play 需要 key+flag 才能重新解析/转存） */
   flag?: string;
   /** 封面图（详情/搜索结果携带的 pic；缺失时卡片占位） */
   pic?: string;
@@ -64,7 +64,7 @@ export interface WatchHistory {
   sourceName?: string;
   /** 来源源 key（点击可回详情） */
   sourceKey?: string;
-  /** ★ 所属订阅档案 ID；历史跨订阅播放时先恢复该档案 */
+  /** 所属订阅档案 ID；历史跨订阅播放时先恢复该档案 */
   profileId?: string;
   /** 详情 vod_id（回详情用） */
   vodId?: string;
@@ -84,7 +84,7 @@ export interface UiMemory {
   /** 观看历史：键 = 播放 url（去重，一资源一记录） */
   history: Map<string, WatchHistory>;
   /**
-   * ★ 2026-09-28 修复「历史删一次删不掉（播放中尤甚）」：**删除标记**（url → 带符号时间戳 ms）。
+   * 修复「历史删一次删不掉（播放中尤甚）」：**删除标记**（url → 带符号时间戳 ms）。
    *
    * 根因：`saveUiMemory()` 会把 localStorage 里已有的 history 合并回内存（修「历史为空」时的多窗口
    * 覆盖问题），而被删条目在内存里已不存在（`!cur`）→ 于是**从 localStorage 原样补回**，
@@ -127,7 +127,7 @@ function baseNameOfHistory(name?: string): string {
 }
 
 /**
- * ★ 2026-09-29（用户报「同一部剧第一集/第二集算两条历史」）：**历史分组键** —— 同源同片合并为一条。
+ * **历史分组键** —— 同源同片合并为一条。
  *   判据优先级：`sourceKey + vodId`（最稳，跨集同键）→ `sourceKey + 片名基底` → 退回 url（保持旧行为）。
  */
 export function historyGroupKey(meta: { sourceKey?: string; vodId?: string; name?: string; url?: string; profileId?: string }): string {
@@ -177,15 +177,15 @@ export function recordWatch(meta: RecordWatchInput): void {
     sourceKey: meta.sourceKey ?? prev?.sourceKey,
     profileId: meta.profileId ?? prev?.profileId,
     vodId: meta.vodId ?? prev?.vodId,
-    // ★ 换成新一集时进度归零重算（不能沿用上一集看到第 40 分钟的位置）
+    // 换成新一集时进度归零重算（不能沿用上一集看到第 40 分钟的位置）
     time: Math.max(0, sameEp ? (meta.time ?? prev?.time ?? 0) : (meta.time ?? 0)),
     updatedAt: Date.now(),
   });
-  schedulePersist(); // ★ 变更即落盘，避免只靠退出时保存（崩溃/强杀不丢）
+  schedulePersist(); // 变更即落盘，避免只靠退出时保存（崩溃/强杀不丢）
 }
 
 /**
- * ★ 2026-09-30（用户要求「从历史记录启动第三方播放器，播放器也应该正确识别历史播放的位置」）：
+ * 
  * 同一集已有进度（秒）—— 拉起外部播放器时作为起播位置。
  * 不同集（或没有记录）→ 0（外部播放器无法回传进度，跨集沿用旧位置会"跳错集"）。
  */
@@ -202,7 +202,7 @@ export function sameEpProgress(sourceKey: string | undefined, vodId: string | un
 
 /**
  * 删除单条历史（返回内存里是否命中）。
- * ★ 2026-09-28：写入**删除墓碑**并**立即落盘**（不等 2s 防抖）——
+ * 写入**删除墓碑**并**立即落盘**（不等 2s 防抖）——
  *   否则另一个窗口（播放器窗口每 5s 写一次盘）的合并会把这条从 localStorage 原样补回。
  */
 export function deleteWatch(keyOrUrl: string): boolean {
@@ -228,7 +228,7 @@ export function restoreWatch(item: WatchHistory): boolean {
   const key = historyGroupKey(item) || item.url;
   // 仅在"当前离线"时恢复，避免把用户后来的新记录覆盖掉
   if (uiMem.history.has(key) || uiMem.history.has(item.url)) return false;
-  // ★ 记一条**撤销**标记（负数）而不是删掉标记：盘上可能已有删除标记，
+  // 记一条**撤销**标记（负数）而不是删掉标记：盘上可能已有删除标记，
   //   只删内存里的会被下一次合并（并盘上）重新并回来，撤销等于没做。
   uiMem.deleted.set(key, -Date.now());
   if (key !== item.url) uiMem.deleted.set(item.url, -Date.now());
@@ -244,7 +244,7 @@ export function recentWatch(limit = 100): WatchHistory[] {
     .slice(0, limit);
 }
 
-// ---- ★ 2026-09-26：历史页「有更新」检测的两个纯函数（可单测）----
+// ---- 历史页「有更新」检测的两个纯函数（可单测）----
 
 /** 从历史记录的备注/名称里解析**已看到第几集**（解析不到返回 0，如电影「HD」） */
 export function watchedEpisodeOf(it: Pick<WatchHistory, 'remarks' | 'name'>): number {
@@ -263,7 +263,7 @@ export function latestEpisodeOf(d: { episodes?: Record<string, Array<unknown>>; 
   return n;
 }
 
-// ---- ★ 2026-09-28：历史删除墓碑（纯函数，可单测）----
+// ---- 历史删除墓碑（纯函数，可单测）----
 
 /** 墓碑保留时长（30 天）——过期的墓碑不再影响合并（用户很久以前删过的片子可以正常重新记录） */
 export const TOMB_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
@@ -360,7 +360,7 @@ export function mergeHistoryViews(
 }
 
 /**
- * ★ 2026-09-29：把「按 url 存的旧记录」归并到**分组键**（同源同片多集合并为一条）。
+ * 把「按 url 存的旧记录」归并到**分组键**（同源同片多集合并为一条）。
  *   载入/写盘都过一遍 —— 用户既有历史（ep1/ep2 两条）在升级后自动合并；
  *   合并取 `updatedAt` 更新者（即最近看的那一集），并施加墓碑（旧键或新键命中即丢弃）。
  */
@@ -383,7 +383,7 @@ export function regroupHistory(
   return out;
 }
 
-// ---- ★ 2026-09-28：home 状态版本守卫（搜索返回栈，纯函数可单测）----
+// ---- home 状态版本守卫（搜索返回栈，纯函数可单测）----
 
 /** 归一「盘上形态」的 home（缺字段兜底；非法输入返回 null） */
 export function normalizeHome(raw: unknown): HomeMem | null {
@@ -433,12 +433,12 @@ export function pickHomeForSave(mine: HomeMem, disk: unknown, preferDiskOnTie: b
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * ★ 2026-09-26：**只写播放进度与观看历史**（独立播放器窗口专用）。
+ * **只写播放进度与观看历史**（独立播放器窗口专用）。
  *
  * 为什么需要：播放器窗口与主窗口是两个渲染进程、共享同一份 localStorage。播放器窗口启动时
  * 会把当时 localStorage 的 `home/detail`（含「上次搜索态」）读进自己的 uiMem；此后它每写一次历史
  * （recordWatch / setPlayTime → schedulePersist）都会**整份**写盘 → 把主窗口已经清掉的旧值
- * **复活**。用户症状：不在搜索页进的资源，返回列表却回到了上一次的搜索页。
+ * **复活**。症状：不在搜索页进的资源，返回列表却回到了上一次的搜索页。
  * 打开本开关后，播放器窗口写盘时沿用 localStorage 里的 `home/detail`，只覆盖 history/playTime。
  */
 let historyOnlyWriter = false;
@@ -464,10 +464,10 @@ export function saveUiMemory() {
     clearTimeout(persistTimer);
     persistTimer = null;
   }
-  // ★ 多窗口合并写盘：主窗口与独立播放器窗口是不同渲染进程，各自持有一份 uiMem。
+  // 多窗口合并写盘：主窗口与独立播放器窗口是不同渲染进程，各自持有一份 uiMem。
   //   若直接覆盖 localStorage，任一阵地 flush 都会把另一窗口刚写的历史冲掉（历史上"历史为空"的根因）。
   //   这里把 localStorage 现存 history 按每条 url 合并（同 url 取 updatedAt 更新者），再整写。
-  //   ★ 2026-09-28：合并**必须先施加删除墓碑**，否则被删条目会从盘上原样补回（"删一次删不掉"）。
+  // 合并**必须先施加删除墓碑**，否则被删条目会从盘上原样补回（"删一次删不掉"）。
   const prev = (() => {
     try {
       const raw = localStorage.getItem('tvboxUiMemory');
@@ -482,12 +482,12 @@ export function saveUiMemory() {
   })();
   const existing = prev && Array.isArray(prev.history) ? prev.history : null;
   uiMem.deleted = unionTombstones(uiMem.deleted, prev?.deleted);
-  // ★ 2026-09-29：合并后按分组键归并（同源同片多集 → 一条），并回写内存保持一致
+  // 合并后按分组键归并（同源同片多集 → 一条），并回写内存保持一致
   const map = regroupHistory(mergeHistoryViews(uiMem.history, existing, uiMem.deleted), uiMem.deleted);
   uiMem.history = map;
   // 播放器窗口：浏览态（home/detail）沿用盘里主窗口写的那份，绝不用自己的旧快照覆盖（见 markHistoryOnlyWriter）
   const keep = prev as { home?: unknown; detail?: unknown } | null;
-  // ★ 2026-09-28：home 取「更新的那份」——播放器窗口不再把自己的旧快照（含上一次搜索态）写回去
+  // home 取「更新的那份」——播放器窗口不再把自己的旧快照（含上一次搜索态）写回去
   const home = historyOnlyWriter ? (normalizeHome(keep?.home) || { key: '', tid: '', pg: 1, scrollTop: 0, filters: {}, search: null }) : pickHomeForSave(uiMem.home, keep?.home, false);
   const detail = historyOnlyWriter ? (Array.isArray(keep?.detail) ? keep.detail : []) : Array.from(uiMem.detail.entries());
   const tombstones = Array.from(uiMem.deleted.entries());
@@ -516,17 +516,17 @@ export function saveUiMemory() {
 // 从 localStorage 加载（可选，按需调用）
 export function loadUiMemory() {
   try {
-    // ★ 与 saveUiMemory 对称：取盘动作也放在 try 内（存储不可用时不炸调用方）
+    // 与 saveUiMemory 对称：取盘动作也放在 try 内（存储不可用时不炸调用方）
     const raw = localStorage.getItem('tvboxUiMemory');
     if (!raw) return;
     const data = JSON.parse(raw);
-    // ★ 2026-09-28：浏览态从盘上刷新，搜索态取 updatedAt 更新的一方（防盘上旧搜索覆盖内存里的新搜索）
+    // 浏览态从盘上刷新，搜索态取 updatedAt 更新的一方（防盘上旧搜索覆盖内存里的新搜索）
     if (!historyOnlyWriter) {
       uiMem.home = mergeHomeOnLoad(uiMem.home, data.home);
       uiMem.detail = new Map(data.detail || []);
     }
     uiMem.playTime = new Map(data.playTime || []);
-    // ★ 2026-09-28：墓碑一起载入（本窗口内存 ∪ 盘上），再按墓碑过滤历史 —— 否则"删了再切回本页"会回弹
+    // 墓碑一起载入（本窗口内存 ∪ 盘上），再按墓碑过滤历史 —— 否则"删了再切回本页"会回弹
     uiMem.deleted = unionTombstones(uiMem.deleted, data.deleted);
     const h: Array<[string, unknown]> = data.history || [];
     const norm = new Map<string, WatchHistory>();
@@ -551,14 +551,14 @@ export function loadUiMemory() {
 const SESSION_ID_KEY = 'winbox-session-id';
 
 /**
- * ★★ 2026-09-30（用户要求「软件关闭后，所有的墓碑机制都应该脱钩」）★★
+ * 
  *
  * 丢**页面状态类**记忆：浏览态 `home`（含搜索态 `search`）、详情态 `detail`、播放来源 `playSource`。
  * 这类记忆只在**本会话**内有意义（「搜索 → 详情 → 返回」要能回到搜索页；「点播 → 详情 → 返回」要回到原分类），
- * 跨启动保留只会让用户重启后点「点播」被拉回上一次的搜索界面（用户报的正是这个）。
+ * 跨启动保留只会导致重启后点「点播」被拉回上一次的搜索界面。
  * 跨启动保留的只有**用户资产**：观看历史 `history`、播放进度 `playTime`、历史删除墓碑 `deleted`。
  *
- * ★ `updatedAt` 必须 bump 成当前时间 —— `pickHomeForSave()` 取「更新的那份」，
+ * `updatedAt` 必须 bump 成当前时间 —— `pickHomeForSave()` 取「更新的那份」，
  *   不 bump 的话写盘时盘上那份旧 home（含旧搜索态）会被判定为更新而**原地复活**。
  */
 export function dropSessionUiMemory(): void {
@@ -569,11 +569,11 @@ export function dropSessionUiMemory(): void {
 }
 
 /**
- * ★ 会话凭据 = **主进程给的 sessionId**（进程启动时生成，重启必变）。
+ * 会话凭据 = **主进程给的 sessionId**（进程启动时生成，重启必变）。
  *
  * 为什么不看 sessionStorage：Electron/Chromium 会把 sessionStorage **落盘**
  * （`<userData>/Session Storage/` leveldb）并在下次启动给同一 origin 恢复 ——
- * 实测「重启后 sessionStorage 仍在」，据此判定"新会话"会**永远判不出重启**（本次踩过）。
+ * 实测「重启后 sessionStorage 仍在」，据此判定"新会话"会**永远判不出重启**。
  * @returns 是否判定为「新一次启动」并已执行脱钩
  */
 export function dropSessionUiMemoryIfRestarted(sessionId: string): boolean {
@@ -602,7 +602,7 @@ export function clearUiMemory() {
   uiMem.playTime.clear();
   uiMem.playSource = null;
   uiMem.history.clear();
-  uiMem.deleted.clear(); // ★ 整表清空 = 显式意图，墓碑一并清掉（否则重新观看同一条会被自己的墓碑挡住）
+  uiMem.deleted.clear(); // 整表清空 = 显式意图，墓碑一并清掉（否则重新观看同一条会被自己的墓碑挡住）
   try {
     localStorage.removeItem('tvboxUiMemory');
   } catch {
@@ -617,7 +617,7 @@ export function setPlayTime(url: string, sec: number): void {
 }
 
 /**
- * ★ 2026-09-20 修复「历史续播位置过期」：
+ * 修复「历史续播位置过期」
  * 从「历史数组（[url, 记录] 对）」中取指定 url **updatedAt 最新**的一条。
  * 纯函数（可单测）：播放器窗口可能把更新的进度写进 localStorage，主窗口内存快照过期，
  * 续播前应以此为准。
@@ -648,8 +648,8 @@ export function latestOf(entries: Array<[string, unknown]> | null | undefined, u
 }
 
 /**
- * ★ 从 localStorage 读指定记录的最新历史（无/异常/已被删除返回 null，调用方回退内存快照）。
- * ★ 2026-09-29：入参可为**分组键**或**记录 url/rawUrl**（同源同片多集合并后键不再是 url）。
+ * 从 localStorage 读指定记录的最新历史（无/异常/已被删除返回 null，调用方回退内存快照）。
+ * 入参可为**分组键**或**记录 url/rawUrl**（同源同片多集合并后键不再是 url）。
  */
 export function loadLatestWatch(keyOrUrl: string): WatchHistory | null {
   try {
@@ -673,7 +673,7 @@ export function loadLatestWatch(keyOrUrl: string): WatchHistory | null {
       }
     }
     if (!best) return null;
-    // ★ 已被删除（删除标记更晚）→ 视为不存在，避免从历史续播到用户删掉的条目
+    // 已被删除（删除标记更晚）→ 视为不存在，避免从历史续播到用户删掉的条目
     const tombs = unionTombstones(uiMem.deleted, d?.deleted);
     if (tombstoneActive(tombs, bestKey, best.updatedAt || 0)) return null;
     if (bestKey !== keyOrUrl && tombstoneActive(tombs, keyOrUrl, best.updatedAt || 0)) return null;

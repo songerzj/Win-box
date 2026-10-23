@@ -70,7 +70,7 @@ export class ParseService {
     if (!url || isErrorVideoUrl(url)) return null;
     if (isMediaUrl(url)) return { url, headers: {}, via: 'already-media' };
 
-    // ★ 只认 http(s) 的解析接口：R18 这类订阅里带 "Parallel"/"Sequence"（并发/轮询的编排标记，
+    // 只认 http(s) 的解析接口：R18 这类订阅里带 "Parallel"/"Sequence"（并发/轮询的编排标记，
     //   不是真实接口地址）与「超级解析」(type=4，本机内置) → 全都要排除。
     const list = (parses || []).filter(
       (p) => p && p.name !== SUPER_PARSE_NAME && p.type !== SUPER_PARSE_TYPE && /^https?:\/\//i.test(p.url || ''),

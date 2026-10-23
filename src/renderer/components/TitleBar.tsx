@@ -4,8 +4,8 @@
 // 可选 props（仅播放器窗口使用）：
 //   showMini —— 在最小化旁显示「小窗口」按钮；mini —— 当前是否为小窗口模式；
 //   onMiniToggle —— 切换回调。mini 时隐藏 最大化(还原)，小窗口按钮变「恢复原窗口」。
-//   ★ 2026-10-08（用户要求）：showPin + pinTop + onPinToggle —— 「置顶」按钮挪到**最小化旁**
-//   （原在播放器下方控制条，用户反馈下方功能区太拥挤；状态由 PlayerPage 统一持有）。
+// showPin + pinTop + onPinToggle —— 「置顶」按钮挪到**最小化旁**
+// （原在播放器下方控制条，下方功能区太拥挤；状态由 PlayerPage 统一持有）。
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';
 import { isMacRenderer } from '../lib/platform';
@@ -15,13 +15,13 @@ interface TitleBarProps {
   showMini?: boolean;
   mini?: boolean;
   onMiniToggle?: () => void;
-  /** ★ 2026-10-08：显示「置顶」按钮（播放器窗口用；紧挨最小化按钮左侧） */
+  /** 显示「置顶」按钮（播放器窗口用；紧挨最小化按钮左侧） */
   showPin?: boolean;
   /** 当前置顶态（由外层持有，TitleBar 只渲染） */
   pinTop?: boolean;
   onPinToggle?: () => void;
   /**
-   * ★ 2026-09-29：`mac` = macOS 交通灯变体（仅供 Apple 皮肤的全宽工具栏使用）——
+   * `mac` = macOS 交通灯变体（仅供 Apple 皮肤的全宽工具栏使用）——
    *   渲染**左置红/黄/绿圆点**（关闭/最小化/最大化，符号悬停显现），标题与右侧窗口按钮不再渲染
    *   （标题与搜索/换源由 App 的 `.ap-toolbar` 负责；其余皮肤保持 `win` 原样，零影响）。
    */
@@ -116,7 +116,7 @@ export default function TitleBar({ title = 'Win-Box', showMini = false, mini = f
         <span className="tb-text">{title}</span>
       </div>
       <div className="tb-controls" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        {/* ★ 2026-10-08（用户要求）：置顶（始终在最上层）—— 紧挨最小化按钮左侧；图标填充 + accent 高亮表示开启 */}
+        {/* 置顶（始终在最上层）—— 紧挨最小化按钮左侧；图标填充 + accent 高亮表示开启 */}
         {showPin && (
           <button
             className={`tb-btn tb-pin${pinTop ? ' tb-pin-on' : ''}`}

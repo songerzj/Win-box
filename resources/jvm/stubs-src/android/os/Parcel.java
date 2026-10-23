@@ -3,7 +3,7 @@ package android.os;
 /**
  * Parcel stub —— Android 的序列化容器。
  *
- * ★ 桌面版无 Binder 传输，这里做**内存型**实现（单一字节缓冲 + 读游标），
+ * 桌面版无 Binder 传输，这里做**内存型**实现（单一字节缓冲 + 读游标），
  *   保证 read/write 成对调用不炸：AIDL 生成的 marshall/unmarshall
  *   代码在某些蜘蛛里会真的执行。
  *

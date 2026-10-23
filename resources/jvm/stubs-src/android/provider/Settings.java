@@ -5,7 +5,7 @@ import android.content.ContentResolver;
 /**
  * Settings stub —— 系统设置表访问。
  *
- * ★ 2026-09-16 修复：瓜子（Appgz）init 阶段调用 Settings.Secure 做设备探测
+ * 修复：瓜子（Appgz）init 阶段调用 Settings.Secure 做设备探测
  *   （ClassNotFoundException: android.provider.Settings$Secure）。
  *   桌面版无真实系统设置，返回占位值即可让蜘蛛继续流程。
  */

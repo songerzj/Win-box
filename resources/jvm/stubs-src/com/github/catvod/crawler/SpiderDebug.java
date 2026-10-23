@@ -4,9 +4,9 @@ package com.github.catvod.crawler;
  * SpiderDebug —— 蜘蛛调试日志（与基线行为一致）。
  * log(Throwable) 仅记一行 message，不打印完整堆栈（避免刷 stderr）。
  *
- * ★ 诊断开关（-Dtvbox.trace.log=1，默认关闭）：额外把「日志调用点」的 Java 调用栈打到 stderr。
+ * 诊断开关（-Dtvbox.trace.log=1，默认关闭）：额外把「日志调用点」的 Java 调用栈打到 stderr。
  *   用途：壳类日志（如 `[FishSoLoader] prepare failed`）只在被混淆的类里，静态读不出归属；
- *   开栈即可定位到具体类/方法，属于离线取证手段，不影响正常行为。
+ *   开栈即可定位到具体类/方法，属于离线实测手段，不影响正常行为。
  */
 public class SpiderDebug {
 

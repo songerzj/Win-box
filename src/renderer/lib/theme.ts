@@ -3,7 +3,7 @@
 // 选择持久化到 localStorage，并同步到 <html data-theme>，驱动 global.css + netflix.css/bilibili.css/apple.css/douban.css
 // 的 CSS 变量；插件皮肤的令牌由本模块注入一段 <style id="winbox-plugin-themes">。
 // 同时通过 IPC 通知主进程设置 nativeTheme.themeSource（按皮肤 base 取亮/暗），让窗口底色对齐。
-// ★ 2026-10-18（用户要求「统一皮肤标准」）：新增 useSkinLayout() —— 组件读 layout 结构枚举，不再按皮肤 id 分支。
+// 新增 useSkinLayout() —— 组件读 layout 结构枚举，不再按皮肤 id 分支。
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';
 import {
@@ -60,9 +60,9 @@ function applyRadiusScale(scale?: number): void {
 
 /**
  * 应用皮肤：设置 DOM 属性 + 写入 localStorage + 通知主进程对齐原生主题 + 广播给 React。
- * ★ 只把**归一后**的 id 写进 DOM；localStorage 里保留用户原始选择 —— 插件皮肤在注册表载入前
+ * 只把**归一后**的 id 写进 DOM；localStorage 里保留用户原始选择 —— 插件皮肤在注册表载入前
  *   会先落到默认皮肤，若此时把回落值写盘，用户的选择就被抹掉了（见 initTheme 的二段式恢复）。
- * ★ 除 `data-theme`（皮肤 id）外还写两个**宿主属性**（不由皮肤控制）：
+ * 除 `data-theme`（皮肤 id）外还写两个**宿主属性**（不由皮肤控制）：
  *   `data-base`（dark|light，选基线）与 `data-shell`（外壳枚举）—— global.css 的壳层规则按它们生效。
  */
 export function applyTheme(t: Theme) {
@@ -73,7 +73,7 @@ export function applyTheme(t: Theme) {
   root.setAttribute('data-theme', theme);
   root.setAttribute('data-base', skinBase(theme));
   root.setAttribute('data-shell', layout.shell ?? 'topbar');
-  // ★ 结构枚举属性：详情 / 发现 / 筛选排版（缺省 = 基础排版），global.css 的宿主结构层按它们生效
+  // 结构枚举属性：详情 / 发现 / 筛选排版（缺省 = 基础排版），global.css 的宿主结构层按它们生效
   root.setAttribute('data-detail', layout.detailStyle ?? 'basic');
   root.setAttribute('data-discover', layout.discoverStyle ?? 'basic');
   root.setAttribute('data-filter', layout.filterStyle ?? 'plain');

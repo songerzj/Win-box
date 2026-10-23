@@ -1,5 +1,5 @@
 // tests/keepAlive.spec.ts
-// ★ 2026-10-15（用户要求「伪墓碑」）：主界面内跳转的缓存范围与 LRU 淘汰（纯函数）。
+// 主界面内跳转的缓存范围与 LRU 淘汰（纯函数）。
 import { describe, it, expect } from 'vitest';
 import {
   isCacheableRoute,
@@ -11,12 +11,15 @@ import {
 } from '../src/renderer/lib/keepAlive';
 
 describe('缓存范围 — 哪些页面保持挂载', () => {
-  it('发现 / 点播 / 全源搜索 / 历史 / 收藏 纳入缓存', () => {
-    expect(isCacheableRoute('/')).toBe(true);
+  it('收紧后只保留「点播 / 全源搜索」两页', () => {
     expect(isCacheableRoute('/home')).toBe(true);
     expect(isCacheableRoute('/search')).toBe(true);
-    expect(isCacheableRoute('/history')).toBe(true);
-    expect(isCacheableRoute('/favorites')).toBe(true);
+  });
+
+  it('「发现 / 历史 / 收藏」不再缓存（内存：发现页是最重的海报墙）', () => {
+    expect(isCacheableRoute('/')).toBe(false);
+    expect(isCacheableRoute('/history')).toBe(false);
+    expect(isCacheableRoute('/favorites')).toBe(false);
   });
 
   it('详情（按片）纳入缓存', () => {
@@ -50,7 +53,8 @@ describe('缓存键与分组', () => {
     expect(cacheGroupOf('/detail/b/2')).toBe('/detail');
   });
 
-  it('上限：详情 4，其余 1', () => {
+  it('上限：详情 2（由 4 收紧），其余 1', () => {
+    expect(DETAIL_CACHE_MAX).toBe(2);
     expect(cacheLimitOf('/detail/a/1')).toBe(DETAIL_CACHE_MAX);
     expect(cacheLimitOf('/home')).toBe(1);
     expect(cacheLimitOf('/search')).toBe(1);

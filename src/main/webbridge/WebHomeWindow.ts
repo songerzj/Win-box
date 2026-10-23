@@ -1,7 +1,7 @@
 // src/main/webbridge/WebHomeWindow.ts
-// ★ 2026-09-29（用户要求）：本地包的**网页源**（`homePage: ./html/x.html`）在桌面端的展示窗口。
+// 本地包的**网页源**（`homePage: ./html/x.html`）在桌面端的展示窗口。
 //
-// 上游形态：影视壳/FongMi 生态的 html 首页是一张自包含 Web UI，靠宿主的 `window.fm` 桥拿数据
+// 上游形态：上游壳类生态的 html 首页是一张自包含 Web UI，靠宿主的 `window.fm` 桥拿数据
 //   （`fm.req` 跨域请求 / `fm.res` 出图出流 / `fm.play` 起播放 / `fm.getCookie` 带登录态）。桌面端
 //   用一个**独立窗口 + preload 注入 window.fm** 复刻该桥（见 webhomePreload.ts），而不是 iframe：
 //     · iframe 受浏览器沙箱限制（拿不到跨域 Cookie、无法读宿主会话）；

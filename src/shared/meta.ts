@@ -39,9 +39,9 @@ export interface MetaSuggestion {
 }
 
 /**
- * ★ 生效口径（纯函数，配置页与主进程共用）：
+ * 生效口径（纯函数，配置页与主进程共用）：
  *   未填自己的 TMDB API 时**不允许**「仅 TMDB」（会静默回落「全走」）——
- *   用户定稿：内置默认凭据不足以支撑「只用 TMDB」这种确定性诉求。
+ * 内置默认凭据不足以支撑「只用 TMDB」这种确定性诉求。
  */
 export function normalizeMetaSettings(s: MetaSettings): MetaSettings {
   if (s.metaSource === 'tmdb' && !(s.tmdbApiKey || '').trim()) return { ...s, metaSource: 'auto' };

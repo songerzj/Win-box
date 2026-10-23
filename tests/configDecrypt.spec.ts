@@ -1,5 +1,5 @@
 // tests/configDecrypt.spec.ts
-// ★ 2026-09-29：订阅「解密兜底」回归（用户口径：不做开关，用解密兜底）。
+// 订阅「解密兜底」回归（不做开关，用解密兜底）。
 //   本模块两档：① 本地 base64/hex 解码（不联网）；② 第三方解密服务（只在①失败且地址可用时）。
 import { describe, it, expect } from 'vitest';
 import { createCipheriv } from 'node:crypto';

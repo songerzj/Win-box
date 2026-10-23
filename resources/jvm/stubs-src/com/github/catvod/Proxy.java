@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * com.github.catvod.Proxy —— **宿主侧**本地代理（安卓 TVBox 里由 App 提供，桌面版由本类提供）。
  *
- * ★ 为什么需要它（2026-09-26 契约取证，勿删）：
+ * 为什么需要它（契约实测，勿删）
  *   jar 里的 `com.github.catvod.spider.Proxy.init()` 会
  *   `Class.forName("com.github.catvod.Proxy")` → `getPort()I` + `getUrl(Z)Ljava/lang/String;`；
  *   蜘蛛用 `com.github.catvod.spider.ProxyOrigin.buildUrl(url, headers)` 把「真实 url + 请求头」
@@ -32,8 +32,8 @@ import java.util.Map;
  * 说明：JRE 是 jlink 裁剪版，**没有 jdk.httpserver**，故这里用 ServerSocket 实现极简 HTTP/1.0
  * （Connection: close，逐请求一线程；只做 GET/HEAD）。
  *
- * ★★ 硬前提：蜘蛛 JVM 必须以 **UTF-8 作为默认字符集**（`-Dfile.encoding=UTF-8`，`JarSpiderBridge.jvmPrefix`
- *   已固定带上并被 `tests/jvmSpawnArgs.spec.ts` 断言守住）。原因（2026-09-26 实证）：壳用**默认字符集**
+ * 硬前提：蜘蛛 JVM 必须以 **UTF-8 作为默认字符集**（`-Dfile.encoding=UTF-8`，`JarSpiderBridge.jvmPrefix`
+ * 已固定带上并被 `tests/jvmSpawnArgs.spec.ts` 断言守住）。原因（实测）：壳用**默认字符集**
  *   解自己加密表里的字符串常量 —— 默认是 GBK 时，类名 `com.github.catvod.spider.merge.A.半杯清茶品人生`
  *   会被解成乱码（`鍓戞皵…\ufffd`）→ `Class.forName` 返回 null → 壳内反射调用 NPE
  *   （现象：`Proxy error: Cannot invoke "java.lang.reflect.Method.invoke" because "<parameter1>" is null`，
@@ -64,7 +64,7 @@ public final class Proxy {
         ensure();
         String entry = System.getProperty("tvbox.proxy.entry", "").trim();
         if (entry.isEmpty()) return "http://127.0.0.1:" + port + "/proxy";
-        // ★ 2026-10-09（孤儿端口场景修复）：入口属性里的端口是「期望端口」（-Dtvbox.proxy.port 的
+        // （孤儿端口场景修复）：入口属性里的端口是「期望端口」（-Dtvbox.proxy.port 的
         //   确定性散列值）；实际绑定时若被上一会话残留 JVM / 同 key 并存 JVM 占用，ensure() 已退化
         //   临时端口 —— 不改写的话，jar 吐出的 do=proxy&key 播放地址会打到**别的 JVM**（旧 stubs、
         //   无 key 表）→ 断流。按实际端口改写入口尾段（格式不符则原样返回，安全无操作）。
@@ -113,11 +113,11 @@ public final class Proxy {
     }
 
     /**
-     * ★ 2026-10-09：SpiderRunner 在 setupEnv 之后**显式绑定蜘蛛 jar 的类加载器**。
-     *   背景（第六轮真机实证）：预启动发生在 setupEnv 之前时，栈上只有应用加载器，
+     * SpiderRunner 在 setupEnv 之后**显式绑定蜘蛛 jar 的类加载器**。
+     *   背景（实测）：预启动发生在 setupEnv 之前时，栈上只有应用加载器，
      *   captureCallerLoader 捕获不到 jar 加载器（且只捕获一次）⇒ 反射
      *   `Class.forName("com.github.catvod.spider.Proxy")` 用错加载器 →
-     *   `ClassNotFoundException` → `/proxy/<port>` 全部 500（自解链响应异常诊断实证）。
+     *   `ClassNotFoundException` → `/proxy/<port>` 全部 500（自解链响应异常诊断实测）。
      */
     public static void bindLoader(ClassLoader cl) {
         if (cl == null) return;
@@ -161,9 +161,9 @@ public final class Proxy {
 
     private static void handle(Socket sock) {
         try (Socket s = sock) {
-            // ★ 请求线程带上**蜘蛛 jar 的类加载器**（安卓同款：宿主与 jar 同加载器）。
+            // 请求线程带上**蜘蛛 jar 的类加载器**（安卓同款：宿主与 jar 同加载器）。
             //   本服务的线程是新起的，否则会继承应用加载器；壳内若有用 TCCL 取资源/加载类的代码
-            //   就会落空（Android 侧不存在这个问题）。★ 注意：`merge.A.l1.b` 的 NPE **不是**这条引起的
+            //   就会落空（Android 侧不存在这个问题）。注意：`merge.A.l1.b` 的 NPE **不是**这条引起的
             //   —— 那次真因是「壳用**默认字符集**解自己的字符串常量」，见下方类注释的 UTF-8 要求。
             ClassLoader jarLoader = callerLoader;
             if (jarLoader != null) {
@@ -212,14 +212,14 @@ public final class Proxy {
                 writeContext(out, context == null ? 404 : 200, new com.google.gson.Gson().toJson(context));
                 return;
             }
-            // ★ 2026-10-09（方案①探针）：baidu 的 do=pan 转发前 dump jar 内部分享状态到 stderr。
+            // （方案①探针）：baidu 的 do=pan 转发前 dump jar 内部分享状态到 stderr。
             //   「播放链接为空」需区分映射缺失与百度接口拒绝；本探针把 merge.b.j 的静态映射
             //   （shareFsIdMap：shareid→fsids / bdclndMap：shareid→会话 / ukMap）与单例实例字段打出来，
             //   日志即可终判「表是否命中/会话是否存在」（stderr 由宿主消费进应用日志）。
             if ("pan".equals(params.get("do")) && "baidu".equalsIgnoreCase(String.valueOf(params.get("site")))) {
                 dumpBaiduPanState();
             }
-            // ★ 2026-10-09：把请求头并入 params（小写键；query 同名覆盖）——
+            // 把请求头并入 params（小写键；query 同名覆盖）——
             //   jar 里的处理器（如 `Pan.proxy` do=pan 网盘流）从 params 里读 `range` 等头
             //   做分段取流；安卓 App 侧同样把请求头并进 params。缺了它 do=pan 永远整段 200。
             params.putAll(parseHeaders(headers));
@@ -322,7 +322,7 @@ public final class Proxy {
         }
     }
 
-    /** ★ 2026-10-09 方案①探针：dump `merge.b.j`（百度盘模块）内部状态（字段名经该 jar javap 实证）。 */
+    /** 方案①探针：dump `merge.b.j`（百度盘模块）内部状态（字段名经该 jar javap 实测）。 */
     private static void dumpBaiduPanState() {
         try {
             ClassLoader cl = callerLoader != null ? callerLoader : Thread.currentThread().getContextClassLoader();
@@ -407,7 +407,7 @@ public final class Proxy {
         return map;
     }
 
-    /** ★ 2026-10-09：请求头 → 小写键 map（并入 params 用；仅收常见安全头，防注入泛滥） */
+    /** 请求头 → 小写键 map（并入 params 用；仅收常见安全头，防注入泛滥） */
     private static Map<String, String> parseHeaders(String headers) {
         Map<String, String> map = new LinkedHashMap<>();
         if (headers == null || headers.isEmpty()) return map;

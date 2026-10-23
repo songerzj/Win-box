@@ -1,5 +1,5 @@
 // src/engine/config/extHelper.ts
-// ★ ext（站点扩展参数）助手：JSON 校验 + 常见模板 + 插入变量说明。
+// ext（站点扩展参数）助手：JSON 校验 + 常见模板 + 插入变量说明。
 // 纯 TS、零 Node 依赖：renderer 直接 import（会打进 web bundle）。
 // ext 是给"采集/爬虫类"源的自定义参数：type=3 蜘蛛的 init(Context,ext) 会原样收到；
 // 苹果 CMS(type 0/1) 不用 ext（其"接入参数"在 api 上）；部分 csp 蜘蛛 / XPath / 海阔 / XBPQ 需要它。

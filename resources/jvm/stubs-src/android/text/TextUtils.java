@@ -12,7 +12,7 @@ package android.text;
  *       {@code isDigitsOnly} / {@code htmlEncode} / {@code concat}</li>
  * </ul>
  *
- * <p>★ 本类是**纯数据工具类**，必须真实实现（stub 三原则第一条）：
+ * <p>本类是**纯数据工具类**，必须真实实现（stub 三原则第一条）：
  * {@code isEmpty} 恒返回 true 会让蜘蛛的错误分支全走错，导致"没有报错但结果空"
  * 这类最难定位的问题。
  */

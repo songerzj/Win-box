@@ -1,5 +1,5 @@
 // src/engine/spider/JarSpiderBridge.ts
-// ★ 等效 DexClassLoader 的 JVM 桥（Windows）。
+// 等效 DexClassLoader 的 JVM 桥（Windows）。
 // 流程：jar(dex) URL → 下载 → 提取 classes.dex → dex2jar 转换 → JVM 子进程 SpiderRunner 反射调用。
 // 运行时资产（resources/jvm/）：jre/（jlink 裁剪）、d2j/（dex2jar 20M）、stubs/（安卓 stub + Spider 基类 + SpiderRunner）、libs/（okhttp/gson/jsoup）。
 // 引擎层契约：所有宿主能力经 EngineHost 注入；本文件只做进程编排，不 import electron。
@@ -24,10 +24,10 @@ import { NullLogger } from '../util/logger';
 import { buildZip, listZipEntries, looksLikeZip, readZipEntries, zipEntrySizes, type ZipEntryData } from '../util/syncZip';
 import { SpiderProcPool, poolEnabled, servePoolKey, WARM_METHOD, type PoolResult } from './SpiderProcPool';
 import { fixSelfSuperCallsInJarFile } from './classFix';
-// ★ 2026-10-14：补全蜘蛛 jar 自带的极简 com.github.catvod.spider.Proxy（补 getProxyUrlDo）——
+// 补全蜘蛛 jar 自带的极简 com.github.catvod.spider.Proxy（补 getProxyUrlDo）——
 //   否则该类调用必 NoSuchMethodError（安卓端由 App dex 的同名完整类兜住，桌面端没有）。
 import { patchSpiderProxyInJarFile } from './appProxyStub';
-// ★ 2026-10-14：部分蜘蛛按 **okhttp 4.x** 参数序调用 `RequestBody.create`，桌面端只有 3.14.9 ⇒
+// 部分蜘蛛按 **okhttp 4.x** 参数序调用 `RequestBody.create`，桌面端只有 3.14.9 ⇒
 //   必 NoSuchMethodError。修法 = 把「补了 4.x 重载的 RequestBody」打成小 jar 排在 -cp 最前
 //   （父加载器先命中者生效，覆盖一切来源的调用者，含 Java 侧 runtime-dex 产物；见 okhttp4Compat.ts）。
 import { OKHTTP4_COMPAT_JAR } from './okhttp4Compat';
@@ -64,9 +64,9 @@ interface PythonWheelSpec {
 }
 
 /**
- * ★ 转换产物格式版本（导出：单测与诊断用；**改变了「产物内容」就必须 +1**）。
+ * 转换产物格式版本（导出：单测与诊断用；**改变了「产物内容」就必须 +1**）。
  * 历史：
- * - v1：只写 dex2jar 输出（**丢掉了 assets/**，加固壳因此全废，第十二轮修复）
+ * - v1：只写 dex2jar 输出（**丢掉了 assets/**，加固壳因此全废，后续已修复）
  * - v2：补齐 raw jar 的非 dex 资源（assets/**、META-INF/** 等）
  * - v3：修补「super 调用被转成自递归 invokespecial」（classFix.ts）—— 旧产物里这些类
  *       一调用就 StackOverflowError（整族盘搜蜘蛛受影响），必须作废重转才生效
@@ -86,43 +86,43 @@ export interface JarBridgeOptions {
   /**
    * shell-shim（方案 A 影子类）的真实实现路径：一份含真实 Spider 的 jar/目录。
    * 非空即启用 shell-shim（把 shell-shim.jar 插到子进程 classpath 最前，
-   * 并透传 -Dtvbox.shellShimClasses）—— 见第十八轮结论。
+   * 并透传 -Dtvbox.shellShimClasses）。
    * 默认 undefined / 空 = 关闭，普通源行为完全不变。
    * 优先级高于环境变量 TVBOX_SHELL_SHIM_CLASSES（两者与 Java 影子类自身约定一致）。
    */
   shellShimClasses?: string;
   /**
-   * ★ 嵌入式 CPython（.py 蜘蛛运行时）按需下载落盘目录（需可写；安装版建议 userData）。
+   * 嵌入式 CPython（.py 蜘蛛运行时）按需下载落盘目录（需可写；安装版建议 userData）。
    * 首次遇到 .py 源时从内置镜像下载 python-3.11.6-embed 并解压第三方库到此处，
    * 联网即可用、离线降级为 PY_UNSUPPORTED。缺省未配置则 .py 源降级。
    */
   pyRuntimeDir?: string;
   /**
-   * ★ 2026-09-26：**ARM 原生桥**（unidbg）运行时按需下载落盘目录（需可写；安装版建议 userData）。
-   *   蜘蛛 jar 内含 ARM/AArch64 `.so`（摸鱼/fty 等加固壳）时，首次调用会下载 unidbg 运行期
+   * **ARM 原生桥**（unidbg）运行时按需下载落盘目录（需可写；安装版建议 userData）。
+   *   蜘蛛 jar 内含 ARM/AArch64 `.so`（加固壳）时，首次调用会下载 unidbg 运行期
    *   （约 39MB，18 个 jar）到 `<nativeRuntimeDir>/<ver>/`，由 SpiderRunner 在**同一个类加载器**里
    *   起 unidbg 会话，并把 jar 里的 native 方法改写成转发实现（见 resources/jvm/native-bridge/）。
    *   缺省未配置则含 .so 的源按旧行为降级（native 调用抛 UnsatisfiedLinkError）。
    */
   nativeRuntimeDir?: string;
   /**
-   * ★ 2026-09-25：**网络代理**注入点（由宿主提供，引擎保持平台无关）。
+   * **网络代理**注入点（由宿主提供，引擎保持平台无关）。
    *   返回 JVM 参数（`-Dhttp.proxyHost=…` 等）与子进程环境变量（`HTTP_PROXY` 等）；
    *   蜘蛛自己的 HTTP 请求走代理，才能访问被 DNS 污染 / TLS SNI 阻断的站点。
    *   每次调用现取（用户改了设置即时生效，无需重启）。
    */
   proxyProvider?: () => { jvmArgs: string[]; env: Record<string, string> };
   /**
-   * ★ 2026-09-25：机器总内存（字节）。缺省取 `os.totalmem()`；
+   * 机器总内存（字节）。缺省取 `os.totalmem()`；
    * 只用于换算 dex2jar 的堆上限（见 d2jHeapMb），单测注入以便稳定断言、不依赖跑测机器的内存。
    */
   totalMemBytes?: number;
 }
 
 /**
- * ★ 2026-09-25：dex2jar 转换失败的**抑制窗口**。
+ * dex2jar 转换失败的**抑制窗口**。
  *   大 jar 的一次失败要付几十秒~几分钟 CPU（实测 11.3MB dex 转换 4 分钟、OOM 也要 2 分钟），
- *   而 100+ 源的大配置（摸鱼 / 18 类）**每个源都会来要一次转换** —— 不抑制就是「搜一次卡几分钟、
+ *   而 100+ 源的大配置**每个源都会来要一次转换** —— 不抑制就是「搜一次卡几分钟、
  *   大部分源全报错」。窗口内重复请求直接复用上次的失败原因，过期后允许重试（网络抖动可自愈）。
  */
 const CONVERT_FAIL_TTL_MS = 120_000;
@@ -131,7 +131,7 @@ const CONVERT_FAIL_TTL_MS = 120_000;
 const D2J_TIMEOUT_MS = 600_000;
 
 /**
- * ★★ 2026-09-27「关软件也要转完 + 等待有感知」：dex2jar 转换**脱离 App 进程**，靠三个陪伴文件协调 ★★
+ * 「关软件也要转完 + 等待有感知」：dex2jar 转换**脱离 App 进程**，靠三个陪伴文件协调 
  *
  * 每个 jar（按 URL 的 md5 为 key）在转换缓存目录里有三个兄弟文件：
  *
@@ -141,7 +141,7 @@ const D2J_TIMEOUT_MS = 600_000;
  * | `<key>.lock`     | 正在跑的那次转换（JSON：`pid`/`startedAt`/`heapMb`）—— App 重启后凭它**接管等待**而不是重转 |
  * | `<key>.d2j.log`  | dex2jar 的 stdout/stderr **落盘**（不走管道：App 退出后管道断裂会让它抛 IOException，反而把转换带崩） |
  *
- * 为什么必须这样（2026-09-26 真机日志实录）：同一只加固 jar 一天内被重转 5 次、每次 3.5 分钟 ——
+ * 为什么必须这样（ 真机日志实录）：同一只加固 jar 一天内被重转 5 次、每次 3.5 分钟 ——
  * 用户的原话是「**每次打开软件都要等很久**」。根因不是 dex2jar 慢，而是转换**随 App 进程生死**：
  * 关窗口 / 重启 / 点「清理缓存」，3 分钟的转换白跑，下次进源从头再来。
  * 现在：转换由 **detached 子进程**跑完并落盘（App 关了也继续），下次启动**收编**产物（秒级），
@@ -177,7 +177,7 @@ export function formatDuration(ms: number): string {
 }
 
 /**
- * ★ 2026-09-27：**后台转换仍在进行**（不是失败）。
+ * **后台转换仍在进行**（不是失败）。
  *   与「转换失败」的区别：不计入失败抑制窗口（CONVERT_FAIL_TTL_MS），
  *   上层的自动重试/用户点一次就能立刻再问一次进度，而不是被窗口挡住两分钟。
  */
@@ -189,7 +189,7 @@ export class ConversionInFlightError extends Error {
 }
 
 /**
- * ★★ 2026-09-26：蜘蛛 JVM 内「宿主代理」端口（确定性分配，勿随意改公式）★★
+ * 蜘蛛 JVM 内「宿主代理」端口（确定性分配，勿随意改公式）
  *   背景：壳/蜘蛛用 `com.github.catvod.spider.ProxyOrigin.buildUrl(url, headers)` 把真实 url+请求头
  *   存进**本 JVM 的静态表**，再吐 `<host>/proxy?do=proxy&key=…`（见资源侧 `com.github.catvod.Proxy`）。
  *   key 只有本 JVM 能解 → 该 JVM 必须起一个小 HTTP 服务，并让宿主知道它的端口（播放期间把它钉住）。
@@ -203,16 +203,16 @@ export function spiderProxyPort(loadCp: string, base = 19970, span = 30): number
 }
 
 /**
- * ★ 2026-09-26：含 ARM `.so` 的加固壳源的**单次调用预算下限**（ms）。
+ * 含 ARM `.so` 的加固壳源的**单次调用预算下限**（ms）。
  *   守卫/加密要走 unidbg 模拟（同进程全局串行），实测 App88：home 53.9s、detail 295.5s
  *   （首调另付 ~10s 模拟器启动）。用默认 20s 预算 ⇒ 「守卫已通」也会被超时判死、用户看到的仍是失败。
  *   只对 nativeJars 非空的 jar 抬底；普通源（无 .so）行为完全不变。
- *   ★ 后续优化方向：减少壳内加密往返 / 缩短模拟器调用开销，届时可下调此值。
+ *   后续优化方向：减少壳内加密往返 / 缩短模拟器调用开销，届时可下调此值。
  */
 export const NATIVE_CALL_MIN_TIMEOUT_MS = 300_000;
 
 /**
- * ★ 2026-09-25：**dex2jar 转换堆（MB）按 dex 体积自适应**。
+ * **dex2jar 转换堆（MB）按 dex 体积自适应**。
  *
  *   事故：一个 11.3MB 的 `classes.dex`（Fish 系大 jar，1300+ 类）在写死的 `-Xmx256m` 下
  *   必然 `OutOfMemoryError`（dex2jar 的 IR 优化阶段 RemoveLocalFromSSA），
@@ -248,7 +248,7 @@ export function isOomOutput(output: string): boolean {
 }
 
 /**
- * ★ 2026-09-26（用户报「摸鱼/R18 的配置一个主页都加载不出来」）：
+ * 
  *   **转换产物有效性判定** —— 不能只看「文件存在且 size>0」。
  *
  *   dex2jar 带 `--force` 时**一启动就建输出流**，中途被杀（超时 / OOM / 用户关窗口 / 磁盘满）
@@ -278,24 +278,24 @@ export class JarSpiderBridge {
   private readonly callTimeoutMs: number;
   private readonly shellShimClasses?: string;
   private readonly pyRuntimeDir?: string;
-  /** ★ ARM 原生桥运行时目录（见 JarBridgeOptions.nativeRuntimeDir） */
+  /** ARM 原生桥运行时目录（见 JarBridgeOptions.nativeRuntimeDir） */
   private readonly nativeRuntimeDir?: string;
   /** ★ 2026-10-14：「原生桥 jar 缺失」只告警一次（见 nativeNeeded） */
   private nativeBridgeMissingWarned = false;
-  /** ★ 网络代理注入点（宿主提供；空 = 不走代理） */
+  /** 网络代理注入点（宿主提供；空 = 不走代理） */
   private readonly proxyProvider?: () => { jvmArgs: string[]; env: Record<string, string> };
-  /** ★ 机器总内存（dex2jar 堆上限的收口依据；见 d2jHeapMb） */
+  /** 机器总内存（dex2jar 堆上限的收口依据；见 d2jHeapMb） */
   private readonly totalMemBytes: number;
   /** jar URL → 转换后 jar 本地路径（进程内缓存） */
   private converted = new Map<string, string>();
   private convertLocks = new Map<string, Promise<string>>();
   /** 多个源共用一只 jar 时，后台预热只挂一条完成/失败日志。 */
   private warmupLocks = new Map<string, Promise<void>>();
-  /** ★ 转换失败抑制表（jar URL → 最近一次失败原因 + 时间；见 CONVERT_FAIL_TTL_MS） */
+  /** 转换失败抑制表（jar URL → 最近一次失败原因 + 时间；见 CONVERT_FAIL_TTL_MS） */
   private convertFailures = new Map<string, { at: number; message: string }>();
   /** 产物有效性缓存（路径 → `size:mtime`）：闸门判定每轮每源都要问一次，不能每次都重读整只 jar */
   private artifactOkCache = new Map<string, string>();
-  /** ★ 转换产物是否含 .so（= 需要原生桥）；按产物路径缓存，避免每次 spawn 重读 zip 目录 */
+  /** 转换产物是否含 .so（= 需要原生桥）；按产物路径缓存，避免每次 spawn 重读 zip 目录 */
   private nativeFlag = new Map<string, boolean>();
   private classIndexes = new Map<string, { stamp: string; entries: Set<string>; hash: string }>();
   private fallbackJars = new Map<string, { path: string; hash: string }>();
@@ -313,42 +313,42 @@ export class JarSpiderBridge {
   private serveLogTotal = 0;
   /** 已上屏过的原生桥消息（stderr 跨请求累积，去重防刷屏；见 noteBridgeLog） */
   private bridgeNotesSeen = new Set<string>();
-  /** ★ 2026-09-29：已切到 shell-shim 真实实现路线的壳 jar（守卫空 NPE 兜底后记住，后续调用/预热同口径） */
+  /** 已切到 shell-shim 真实实现路线的壳 jar（守卫空 NPE 兜底后记住，后续调用/预热同口径） */
   private readonly shimPreferred = new Set<string>();
   /** 当前存活的 JVM 子进程（退出时统一终止，防止残留） */
   private activeChildren = new Set<import('node:child_process').ChildProcess>();
-  /** ★ 本地代理端口 → 池 key（/proxy/<port> 被访问时据此钉住对应 JVM，见 spiderProxyPort） */
+  /** 本地代理端口 → 池 key（/proxy/<port> 被访问时据此钉住对应 JVM，见 spiderProxyPort） */
   private readonly proxyPortKeys = new Map<number, string>();
 
-  /** ★ 2026-10-09：源 key → 宿主代理端口（call(tag) 时登记；`proxyPortForTag` 供 jar 自解链改写） */
+  /** 源 key → 宿主代理端口（call(tag) 时登记；`proxyPortForTag` 供 jar 自解链改写） */
   private readonly proxyPortByTag = new Map<string, number>();
   /** 详情阶段保存分享会话的 JVM；首页/搜索完成不能改写它。 */
   private readonly detailProxyPortByTag = new Map<string, number>();
 
-  /** ★ 2026-10-09：按源 key 查宿主代理端口（未调用过 → null） */
+  /** 按源 key 查宿主代理端口（未调用过 → null） */
   proxyPortForTag(tag: string): number | null {
     const p = this.proxyPortByTag.get(tag);
     return Number.isInteger(p) ? (p as number) : null;
   }
-  /** ★ 子进程常驻复用池（--serve/-serve；进程复用加速首页/搜索；单测与显式关闭时禁用） */
+  /** 子进程常驻复用池（--serve/-serve；进程复用加速首页/搜索；单测与显式关闭时禁用） */
   private readonly pool: SpiderProcPool | null;
   private readonly poolReclaimTimer?: ReturnType<typeof setInterval>;
   /**
-   * ★ 2026-09-24：嵌入式 Python 运行时的**在途准备任务**（下载/解压/装依赖/放 runner）。
+   * 嵌入式 Python 运行时的**在途准备任务**（下载/解压/装依赖/放 runner）。
    * 作用有二：① 后台预热与首次调用共享同一份工作，绝不并发下载两份；
    *          ② 预热在用户进源前完成时，首次使用只需 spawn + init（去掉 11MB 下载与装包）。
    */
   private pyRuntimeTask: Promise<string> | null = null;
-  /** ★ 原生运行时（unidbg）在途准备任务：与 python 运行时同款「共享在途 + 幂等」 */
+  /** 原生运行时（unidbg）在途准备任务：与 python 运行时同款「共享在途 + 幂等」 */
   private nativeRuntimeTask: Promise<string[]> | null = null;
   /**
-   * ★ 2026-09-27：原生运行时就绪结果**内存缓存**。
+   * 原生运行时就绪结果**内存缓存**。
    *   此前每次 ensureNativeRuntime 都重新 stat 17 个 jar 并各落一条「已就绪」——
    *   真机日志一次会话刷 15+ 条同款噪音（且每次搜索/进源都走一遍这套 IO）。
    */
   private nativeRuntimeJars: string[] | null = null;
   /**
-   * ★ 2026-09-27：**转换进度表**（jar URL → 起转时间 + 是否「接管」上次会话的后台转换）。
+   * **转换进度表**（jar URL → 起转时间 + 是否「接管」上次会话的后台转换）。
    *   供上层在等待期显示「已等 X」——用户诉求「等待要有感知」（见 conversionProgress）。
    */
   private convProgress = new Map<string, { startedAt: number; attached: boolean; stage: 'download' | 'convert' }>();
@@ -363,7 +363,7 @@ export class JarSpiderBridge {
     this.proxyProvider = opts.proxyProvider;
     this.totalMemBytes = opts.totalMemBytes ?? totalmem();
     mkdirSync(this.cacheDir, { recursive: true });
-    // ★ 老版本留下的转换产物可能缺 assets（v1 格式）→ 必须作废重转，否则本轮修复不生效
+    // 老版本留下的转换产物可能缺 assets（v1 格式）→ 必须作废重转，否则修复不生效
     this.ensureCacheVersion();
     // 池默认启用（生产）；VITEST 或 TVBOX_DISABLE_SPIDER_POOL=1 关闭（单测走一次性路径，argv 断言零改动）
     if (poolEnabled()) {
@@ -400,7 +400,7 @@ export class JarSpiderBridge {
     this.serveLogTotal += chunk.length;
     this.serveLogTail = (this.serveLogTail + chunk).slice(-8192);
     this.noteBridgeLog(chunk);
-    // ★ 2026-09-28：只有「本次新增的 chunk 里出现了 SpiderLog」才更新失败原因。
+    // 只有「本次新增的 chunk 里出现了 SpiderLog」才更新失败原因。
     //   旧实现每次 chunk 都对**累积尾巴**重抽 → 上一请求留下的 SpiderLog 会被反复
     //   当成当前请求的原因（实测：AppYsV2 的一次 `ArrayStoreException` 让后续多个
     //   空结果源都报出 “java.lang.Object”）；而 call() 开头已清空原因，
@@ -446,7 +446,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 2026-09-26：丢弃全部常驻蜘蛛进程（下次调用按新参数重新拉起）。
+   * 丢弃全部常驻蜘蛛进程（下次调用按新参数重新拉起）。
    *   用于「池 key 感知不到的状态变化」——典型是**网盘凭据**：Cloud_* 系蜘蛛在 init 时读
    *   `<userData>/tvfan/Cloud-drive.txt`，文件内容变了但池 key（类名+ext）没变 →
    *   旧 cookie 会一直生效（表现为「刚绑定完还是播不了/取不到列表」）。
@@ -537,7 +537,7 @@ export class JarSpiderBridge {
    *   （见 driveCookieFiles.syncWexHostPrefs / SpiderHost.syncDriveFiles / docs/jvm-notes.md）。
    *   ⚠ jar 仍由 `scripts/build-main.mjs` 现场生成（无害，便于对照/将来切换），只是不参与加载。
    *
-   * ★ 2026-10-14：okhttp4 兼容 jar **必须排在 libs 之前** —— 它只影子 `okhttp3/RequestBody`
+   * okhttp4 兼容 jar **必须排在 libs 之前** —— 它只影子 `okhttp3/RequestBody`
    *   （= 3.14.9 原类 + 追加的 okhttp 4.x 参数序 `create` 重载，见 okhttp4Compat.ts）。
    *   父 cp 先命中者生效，排最前才能盖住 libs 里的原版；而问题调用发生在 **Java 侧
    *   runtime-dex 产物**里（Node 端改写 jar 够不到），只有「给宿主类补方法」这一条路能全覆盖。
@@ -573,7 +573,7 @@ export class JarSpiderBridge {
   /**
    * 下载 + 转换 jar（去重并发），返回转换后 jar 的本地路径。
    *
-   * ★ 入口统一规范化 URL：配置里 jar 常写成 `URL;md5;xxxx` 形态。
+   * 入口统一规范化 URL：配置里 jar 常写成 `URL;md5;xxxx` 形态。
    *   上游 TVBox 的 `jar` 字段以分号分隔，只有第一段是真正 URL，`;md5;` 是校验后缀。
    *   历史 bug：`SpiderHost.setSpiderJar()` 把**带后缀的完整串**传进 warmup，
    *   而 `JarSpider.jarUrls()` 在调用时已 `.split(';')[0]` 剥掉后缀 ——
@@ -586,7 +586,7 @@ export class JarSpiderBridge {
     if (!url) throw new Error(`jar URL 为空: ${jarUrl}`);
     const cached = this.converted.get(url);
     if (cached) return cached;
-    // ★ 失败抑制（见 CONVERT_FAIL_TTL_MS）：窗口内直接复用上次失败原因，不再重跑昂贵转换。
+    // 失败抑制（见 CONVERT_FAIL_TTL_MS）：窗口内直接复用上次失败原因，不再重跑昂贵转换。
     const failure = this.conversionFailure(url);
     if (failure) throw new Error(failure);
     let lock = this.convertLocks.get(url);
@@ -626,11 +626,11 @@ export class JarSpiderBridge {
 
   /** 版本不符时清空转换产物，强制重转。失败只警告，不影响主流程。 */
   private ensureCacheVersion(): void {
-    // ★ 2026-09-23 / 2026-09-24 修复「每次清缓存后首次进源要等 30s+」：
+    // 修复「每次清缓存后首次进源要等 30s+」：
     //   ① 首装/清缓存后 cacheDir 不存在 → 先建目录并写戳（老实现直接 return，导致戳从未写入）；
-    //   ② ★ **戳缺失不再当作「旧版本产物」**：缺失只可能是「清理缓存按钮/外部清理」而不是真升级，
+    //   ② **戳缺失不再当作「旧版本产物」**：缺失只可能是「清理缓存按钮/外部清理」而不是真升级，
     //      此时保留磁盘上已有的转换产物（它们本来就是当前版本的产物），只补写戳。
-    //      真升级（戳存在且值不同）才作废重转 —— 用户实测：清缓存后第一次进源要 37s
+    // 真升级（戳存在且值不同）才作废重转 —— 实测：清缓存后第一次进源要 37s
     //      （下载 + dex2jar + JVM 冷启动全在这一条请求里），进而被源超时打断成「加载失败」。
     const stamp = join(this.cacheDir, JarSpiderBridge.CACHE_STAMP);
     try {
@@ -667,7 +667,7 @@ export class JarSpiderBridge {
   private async doConvert(jarUrl: string): Promise<string> {
     const key = md5Hex(jarUrl);
     const target = join(this.cacheDir, `${key}.jar`);
-    // ★ 有效性判定（不是「文件存在且 size>0」）：见 isUsableConvertedJar —— 空 zip 残骸必须重转
+    // 有效性判定（不是「文件存在且 size>0」）：见 isUsableConvertedJar —— 空 zip 残骸必须重转
     if (this.artifactOk(target)) {
       this.converted.set(jarUrl, target);
       return target;
@@ -675,14 +675,14 @@ export class JarSpiderBridge {
     try {
       return await this.doConvertUncached(jarUrl, key, target);
     } catch (e) {
-      // ★ 残骸清理：target 只会由「校验过的 part 原子改名」产生，正常路径不存在残骸；
+      // 残骸清理：target 只会由「校验过的 part 原子改名」产生，正常路径不存在残骸；
       //   这里保留兜底（旧版本留下的 / 改名竞态），因为「文件存在就当缓存」的代价是整份配置的源全废。
       try {
         rmSync(target, { force: true });
       } catch { /* ignore */ }
-      // ★「后台仍在转换」不是失败：不写失败抑制，让重试能立刻再问一次进度（见 ConversionInFlightError）
+      // 「后台仍在转换」不是失败：不写失败抑制，让重试能立刻再问一次进度（见 ConversionInFlightError）
       if (!(e instanceof ConversionInFlightError)) {
-        // ★ 记录失败（见 CONVERT_FAIL_TTL_MS）：避免 100+ 源的大配置每个源都重跑一次昂贵转换。
+        // 记录失败（见 CONVERT_FAIL_TTL_MS）：避免 100+ 源的大配置每个源都重跑一次昂贵转换。
         this.convertFailures.set(jarUrl, { at: Date.now(), message: (e as Error).message });
       }
       throw e;
@@ -691,7 +691,7 @@ export class JarSpiderBridge {
 
   private async doConvertUncached(jarUrl: string, key: string, target: string): Promise<string> {
     if (!this.host) throw new Error('JarSpiderBridge 需要 EngineHost 才能下载 jar');
-    // ★ 写盘前确保目录存在（对齐上游 downloadJarAsync 的 cacheDir.mkdirs()）
+    // 写盘前确保目录存在（对齐上游 downloadJarAsync 的 cacheDir.mkdirs()）
     this.ensureCacheDir();
     // 下载也算在「用户等待」里：进度计时从这里开始（下载 + 转换是一条链）
     const startedAt = Date.now();
@@ -710,9 +710,9 @@ export class JarSpiderBridge {
     /**
      * 1) 下载 jar（含「按 UA 分流」兜底）
      *
-     * ★★ 2026-09-29：改用**统一伪装阶梯**（`fetchWithDisguise`，与订阅拉取同源，勿再各写一份）★★
+     * 改用**统一伪装阶梯**（`fetchWithDisguise`，与订阅拉取同源，勿再各写一份）
      *   实测 `http://47.120.41.246:8025/vip/jar/lubin.php`：按 UA 分流 —— 浏览器/默认 UA 得到
-     *   「影视仓 & OK影视 - 官方配置分发」HTML 页（17,307 B），只有 **okhttp UA** 才返回真 jar
+     *   「官方配置分发」HTML 页（17,307 B），只有 **okhttp UA** 才返回真 jar
      *   （2,081,666 B，PK 魔数、内含 classes.dex）。
      *   旧行为：订阅拉取有 UA 兜底、jar 下载没有 ⇒ 17KB HTML 被当成 jar 存盘 →
      *   dex2jar `The source file is not a .dex or .zip file` → 该配置**所有源**一起报
@@ -728,7 +728,7 @@ export class JarSpiderBridge {
     const got = await fetchWithDisguise(this.host!.http, jarUrl, {
       accept: (b) => isJarOrDex(b),
       attempts,
-      retryWithCookie: true, // jinenge：首次 403 种 Cookie，再用同一 UA 请求即返回真 jar
+      retryWithCookie: true, // 首次 403 种 Cookie，再用同一 UA 请求即返回真 jar
       timeoutMs: 60000,
       totalTimeoutMs: 120000,
       buffer: 2, // 沿用 jar 路径既有的 base64 语义（由 fetchWithDisguise 归一成 Buffer）
@@ -756,7 +756,7 @@ export class JarSpiderBridge {
     writeFileSync(rawJar, jarBytes);
 
     /**
-     * ★ 2026-09-29：**内容哈希复用**（用户报「摸鱼源还要经历大 jar 加载」的正面优化）。
+     * **内容哈希复用**（正面优化：免去大 jar 的重复加载）。
      *
      * 缓存键是 URL 的 md5，源站换域名/换文件名/加查询参数就会**重新转换**（大 jar 20s~3min），
      * 即便 jar 内容一字节没变。这里用「内容 md5 → 已有产物」的索引把这种白白重转直接省掉：
@@ -776,7 +776,7 @@ export class JarSpiderBridge {
       }
     }
 
-    // 2) ★★ 先「收编」上次会话遗留、已经跑完的后台转换（2026-09-27 新增，勿删）★★
+    // 2) 先「收编」上次会话遗留、已经跑完的后台转换（ 新增，勿删）
     //    场景：关窗/重启时 detached 的转换进程仍在跑并已写出完整产物 → 这里只需
     //    「合并 raw 资源 + 原子改名」，秒级完成，用户不必再等一次 dex2jar。
     if (await this.adoptFinishedPart(key, rawJar, target, false)) {
@@ -785,7 +785,7 @@ export class JarSpiderBridge {
       return target;
     }
 
-    // 3) ★★ 后台已有转换在跑 → **接管等待**，绝不另起第二个进程 ★★
+    // 3) 后台已有转换在跑 → **接管等待**，绝不另起第二个进程 
     //    （两个 dex2jar 写同一个 part 会把产物写坏；见 ConvertLock 注释）
     const lock = this.readConvertLock(key);
     if (this.converterAlive(lock)) {
@@ -807,7 +807,7 @@ export class JarSpiderBridge {
 
     // 4) dex2jar 转换（dex2jar 可直接读含 classes.dex 的 jar/apk/zip，无需先解压）
     //
-    //    ★★ 堆参数必须显式给、且**按 dex 体积自适应** —— 这是「多数 JAR 源无法显示」的头号原因 ★★
+    //    堆参数必须显式给、且**按 dex 体积自适应** —— 这是「多数 JAR 源无法显示」的头号原因 
     //
     //    ① GC：JRE17 默认 G1 会按「机器物理内存」推导堆上限。低可用内存机器上 G1 预留
     //       274MB 虚拟空间失败 → 转换进程直接崩溃（hs_err_pid*.log：
@@ -818,8 +818,8 @@ export class JarSpiderBridge {
     //       现按 `d2jHeapMb()` 估算（~128MB/1MB dex，按机器内存封顶），OOM 时再按 2× 重试一次。
     //    ③ `-XX:TieredStopAtLevel=1` 压低 JIT 线程/代码缓存开销（一次性任务，不需要 C2 峰值性能）。
     //    ④ **异步 spawn**（不再是 execFileSync）：大 jar 转换要几分钟，同步执行会把整个主进程
-    //       （含 IPC / 搜索）冻住 —— 用户观感就是「搜一次卡半天」。
-    //    ⑤ ★ 2026-09-27：**detached + 输出落文件**（见 runDex2jar 与 ConvertLock 注释）——
+    // （含 IPC / 搜索）冻住 —— 表现为「搜一次卡半天」。
+    // ⑤ **detached + 输出落文件**（见 runDex2jar 与 ConvertLock 注释）——
     //       关软件也转完；App 重启后走 2)/3) 收编或接管。
     const jdk = this.javaExe();
     // 真实 classpath（进 d2j 进程 argv）→ 平台分隔符：darwin 必须用 ':'，否则整串被当成一个路径。
@@ -827,7 +827,7 @@ export class JarSpiderBridge {
     const dexBytes = totalDexBytes(jarBytes);
     const memBytes = this.totalMemBytes;
     let heapMb = d2jHeapMb(dexBytes, memBytes);
-    // ★ 上次遗留的转换日志里有 OOM 证据（那次会话被杀/崩了）→ 本次直接按 2× 堆起步，别在同一个坑里再掉一次
+    // 上次遗留的转换日志里有 OOM 证据（那次会话被杀/崩了）→ 本次直接按 2× 堆起步，别在同一个坑里再掉一次
     if (isOomOutput(this.readConvLog(key))) {
       const next = d2jHeapMb(dexBytes, memBytes, 2);
       if (next > heapMb) {
@@ -835,7 +835,7 @@ export class JarSpiderBridge {
         heapMb = next;
       }
     }
-    // ★ 大 jar 首次转换要数分钟：起转前落一条日志，便于「用户在等、日志能看懂」的排查
+    // 大 jar 首次转换要数分钟：起转前落一条日志，便于「用户在等、日志能看懂」的排查
     this.host?.logger.i(
       `jvm-bridge dex2jar 开始转换：classes.dex ${(dexBytes / 1048576).toFixed(1)}MB，-Xmx${heapMb}m，raw ${(jarBytes.length / 1048576).toFixed(1)}MB`,
     );
@@ -872,11 +872,11 @@ export class JarSpiderBridge {
   /**
    * 转换成功后的统一收尾（含原生运行时预热 —— 见 jarNeedsNative）。
    *
-   * ★ 2026-09-29：同时把「jar 内容哈希 → 本次产物键」记进内容索引 —— 下次同内容的 jar
+   * 同时把「jar 内容哈希 → 本次产物键」记进内容索引 —— 下次同内容的 jar
    *   即使换了 URL（缓存键不同）也能直接复用产物、跳过 dex2jar（见 jarContentIndex.ts）。
    */
   private finishConvert(jarUrl: string, target: string, contentKey?: string): void {
-    // ★ 原生桥：产物内含 .so（加固壳）→ 后台预热 unidbg 运行时（首次约 39MB 下载），
+    // 原生桥：产物内含 .so（加固壳）→ 后台预热 unidbg 运行时（首次约 39MB 下载），
     //   把下载挪到「转换刚完成」这段用户已在等待的窗口，首次调用只需起桥。
     if (this.jarNeedsNative(target)) this.prewarmNativeRuntime();
     this.converted.set(jarUrl, target);
@@ -887,7 +887,7 @@ export class JarSpiderBridge {
 /**
    * 跑一次 dex2jar（**detached + 输出落文件**，见 ConvertLock 注释）。
    *
-   * ★ 2026-09-27（本函数是「关软件也要转完」的落地点，三条都别回退）：
+   * （本函数是「关软件也要转完」的落地点，三条都别回退）：
    *   ① `detached: true` —— 子进程自成进程组，**App 退出不带走它**（此前 App 一关，3 分钟转换白跑）；
    *   ② stdio 接**文件**而不是管道 —— App 死后管道断裂会让 dex2jar 写 stdout 抛 IOException
    *      （那等于亲手把「关窗也转完」这条链掐死）；顺带把日志留给下次会话做「收编/接管/堆判断」；
@@ -954,7 +954,7 @@ export class JarSpiderBridge {
       }
       if (fd >= 0) { try { closeSync(fd); } catch { /* ignore */ } }
       const startedAt = Date.now();
-      // ★ 锁先写（pid 已知）：App 崩在等结果的过程中，下次会话仍能凭它接管这次转换
+      // 锁先写（pid 已知）：App 崩在等结果的过程中，下次会话仍能凭它接管这次转换
       this.writeConvertLock(key, { pid: child.pid ?? 0, startedAt, heapMb });
       child.unref?.();
       // ③ 刻意不加入 activeChildren（dispose 会 kill —— 那正好和本设计相反）
@@ -1085,19 +1085,19 @@ export class JarSpiderBridge {
       if (strict) throw new Error('dex2jar 转换产物为空（只得到空 jar，未产出任何 class）');
       return false;
     }
-    // ★★ 把 raw jar 里 dex2jar「不认」的资源原样搬回转换产物 —— 加固/壳类蜘蛛的生死线 ★★
+    // 把 raw jar 里 dex2jar「不认」的资源原样搬回转换产物 —— 加固/壳类蜘蛛的生死线 
     //   见 copyJarResources 的详细说明（缺 assets/*.so 会让 DexNative.<clinit> 直接 NPE）。
     copyJarResources(rawJar, part, this.host);
     // R8 删除子类构造器后，dex2jar 会错误地 NEW 抽象祖先类。普通 JAR 与运行时载荷同样需要修复。
     await this.repairDexConstructors(rawJar, part);
-    // ★★ 修补 dex2jar 的「super 调用被转成自递归 invokespecial」—— 否则调用即 StackOverflowError ★★
+    // 修补 dex2jar 的「super 调用被转成自递归 invokespecial」—— 否则调用即 StackOverflowError 
     //   实测影响整族盘搜蜘蛛（sun.json 的 Pan/MiPan/PanSou/Baiku/KuLe/… 全部 init 就崩），
     //   见 classFix.ts 文件头。属于增强步骤：失败只记日志，不让「能用的产物」变成失败。
     fixSelfSuperCallsInJarFile(part, [join(this.jvmDir, 'stubs', 'stubs.jar'), ...this.libJars()], {
       i: (m) => this.host?.logger.i(m),
       w: (m) => this.host?.logger.w(m),
     });
-    // ★ 2026-10-14：补全 jar 自带的极简 `com.github.catvod.spider.Proxy`（补 `getProxyUrlDo`）——
+    // 补全 jar 自带的极简 `com.github.catvod.spider.Proxy`（补 `getProxyUrlDo`）——
     //   安卓端靠 App dex 的同名完整类兜住，桌面端没有 ⇒ 该类调用必 NoSuchMethodError（见 appProxyStub.ts）。
     //   同样属于增强步骤：失败只记日志，不让「能用的产物」变成失败。
     patchSpiderProxyInJarFile(part, {
@@ -1142,7 +1142,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 2026-09-27：某 jar 的转换进度（上层在「等待期」显示「已等 X」）。
+   * 某 jar 的转换进度（上层在「等待期」显示「已等 X」）。
    * @returns null = 当前没有转换在跑；attached = 正在接管上次会话遗留的后台转换
    */
   conversionProgress(jarUrl: string): { elapsedMs: number; attached: boolean; stage: 'download' | 'convert' } | null {
@@ -1240,14 +1240,14 @@ export class JarSpiderBridge {
   /**
    * URL → 已转换的本地 jar 路径（须先 ensureConverted）。传入值同样规范化，避免键不匹配。
    *
-   * ★ 只返回**磁盘上真实存在**的路径。
+   * 只返回**磁盘上真实存在**的路径。
    *   原因：缓存目录可能被外部清理（杀软/磁盘清理/用户手动），此时内存里的
    *   converted 映射就变成了**失效条目**。若原样交给 SpiderRunner，它会拿到一个
    *   指向不存在文件的 jar 参数 → 所有蜘蛛类都报
    *   `ClassNotFoundException: com.github.catvod.spider.Xxx`，
    *   而这类报错极易被误读成"桌面版缺接口"（实测整套配置 95 个源集体报这句）。
    *   这里顺手把失效条目清掉，下次调用会重新下载转换，即自动恢复。
-   * ★ 2026-09-26：另外要求产物**有效**（见 artifactOk）—— 存在但只是个空 jar 的残骸同样清掉。
+   * 另外要求产物**有效**（见 artifactOk）—— 存在但只是个空 jar 的残骸同样清掉。
    */
   resolvePaths(urls: string[]): string[] {
     const out: string[] = [];
@@ -1266,7 +1266,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 预热候选解析：jar URL → **磁盘上已存在的**转换产物路径（空串 = 还没转换过）。
+   * 预热候选解析：jar URL → **磁盘上已存在的**转换产物路径（空串 = 还没转换过）。
    * 与 resolvePaths 的区别：不下载、不转换 —— 预热是启动路径上的"锦上添花"，
    * 绝不能把 jar 下载 + dex2jar 的重活压到启动阶段（真机启动体验优先）。
    */
@@ -1276,12 +1276,12 @@ export class JarSpiderBridge {
     const cached = this.converted.get(url);
     if (cached && existsSync(cached) && this.artifactOk(cached)) return cached;
     const p = join(this.cacheDir, `${md5Hex(url)}.jar`);
-    // ★ 残骸（空 zip）不算「已转换」：否则闸门会把该源标成 ready，实际一调就类找不到
+    // 残骸（空 zip）不算「已转换」：否则闸门会把该源标成 ready，实际一调就类找不到
     return this.artifactOk(p) ? p : '';
   }
 
   /**
-   * ★ 预热：提前 spawn `count` 个常驻 SpiderRunner --serve，并发 `__warm__` 探针
+   * 预热：提前 spawn `count` 个常驻 SpiderRunner --serve，并发 `__warm__` 探针
    * （把「加载蜘蛛类 + 预建实例（含 init(ext)）」也提前做掉，见 SpiderRunner.serve）。
    *
    * @param ext 该源的 init ext（预热实例与真实调用同键 —— 同 ext 才会被复用）
@@ -1289,11 +1289,11 @@ export class JarSpiderBridge {
    */
   prewarmJar(jarPaths: string[], className: string, count = 1, ext = ''): number {
     if (!this.pool || jarPaths.length === 0 || !jarPaths.every((p) => existsSync(p))) return 0;
-    // ★★ 2026-09-27（实测「订阅里每个源都空」的 App 侧根因，勿回退）★★
+    // （实测「订阅里每个源都空」的 App 侧根因，勿回退）
     //   此前预热 argv 用 `classpathJars()`（**不含原生桥/ undibg**）且不带 `-Dtvbox.native.*`，
     //   于是预热出来的常驻 JVM 里壳的 DexNative 是**未改写**的：`Init.init` 走原始
     //   `System.load(ARM .so)` → UnsatisfiedLinkError → Init 崩 → **该进程上所有请求恒空**，
-    //   而池按 key 长期复用它（用户侧就是「装完第一次进源，每个源都提示蜘蛛返回空结果」）。
+    // 而池按 key 长期复用它（表现为「装完第一次进源，每个源都提示蜘蛛返回空结果」）。
     //   现在：与 callJar **同口径**拼 argv（原生 jar + native props），且**运行时未就绪就不预热**
     //   —— 预热绝不生产「没有桥」的僵尸进程。
     const shimClasses = this.shimWithFoni(className, this.shellShimClassesPath() || this.autoShellShim(jarPaths));
@@ -1303,7 +1303,7 @@ export class JarSpiderBridge {
     const needsNative = !preferShim && this.nativeNeeded(jarPaths);
     const nativeJars = needsNative ? (this.nativeRuntimeJars ?? []) : [];
     if (needsNative && nativeJars.length === 0) return 0;
-    // ★ 与 callJar 同口径：-cp 只放运行时（stubs/libs/桥/unidbg），蜘蛛 jar/shim jar 只走加载器参数 ——
+    // 与 callJar 同口径：-cp 只放运行时（stubs/libs/桥/unidbg），蜘蛛 jar/shim jar 只走加载器参数 ——
     //   否则父加载器抢占原始类，native 改写产物（子加载器最前）不生效。
     // 真实 classpath（进 -cp / --serve argv）→ 平台分隔符：`classpathJars()` 在 darwin 内部已用 ':'
     // 拼好，这里若再用 ';' 与 nativeJars 拼会得到混用分隔符的串 → JVM 只认作一个路径 → 桥整体失效。
@@ -1325,7 +1325,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 预热：提前 spawn 常驻 Python runner（-serve）并发 `__warm__` 探针（预建实例进缓存）。
+   * 预热：提前 spawn 常驻 Python runner（-serve）并发 `__warm__` 探针（预建实例进缓存）。
    * 运行时/脚本任一未落盘 → 直接 0：预热**绝不触发**嵌入式 Python 下载（那是 11MB 级重活）。
    */
   prewarmPython(pyPath: string, clsName: string, count = 1, ext = '', siteKey = ''): number {
@@ -1408,12 +1408,12 @@ export class JarSpiderBridge {
     return w;
   }
 
-  /** ★ 2026-10-17（B1）：播放期收缩 —— 布防常驻池在「整体空闲 30s」后收敛到 1 个热进程 */
+  /** （B1）：播放期收缩 —— 布防常驻池在「整体空闲 30s」后收敛到 1 个热进程 */
   armPoolShrink(): void {
     this.pool?.armPlaybackShrink();
   }
 
-  /** ★ 嵌入式 Python 运行时是否已落盘（同步判定，全源搜索就绪闸门用；**绝不触发下载**） */
+  /** 嵌入式 Python 运行时是否已落盘（同步判定，全源搜索就绪闸门用；**绝不触发下载**） */
   pyRuntimeReady(): boolean {
     if (!this.pyRuntimeDir) return false;
     const dir = join(this.pyRuntimeDir, JarSpiderBridge.PY_VER);
@@ -1424,7 +1424,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 正在进行的转换/下载（未完成时返回 promise；已就绪或从未启动返回 null）。
+   * 正在进行的转换/下载（未完成时返回 promise；已就绪或从未启动返回 null）。
    * 全源搜索的「预备等待」用它：等一等正在转换的 jar（而不是直接跳过 → 空结果）。
    */
   pendingConvert(jarUrl: string): Promise<string> | null {
@@ -1461,7 +1461,7 @@ export class JarSpiderBridge {
     return join(this.jvmDir, 'stubs', 'shell-shim.jar');
   }
 
-  /** 识别壳 jar：返回 `assets/<X>.guard` 的壳名（如 ftyshinidie），非壳返回 null。 */
+  /** 识别壳 jar：返回 `assets/<X>.guard` 的壳名，非壳返回 null。 */
   private detectShellGuard(jarPath: string): string | null {
     try {
       const buf = readFileSync(jarPath);
@@ -1499,17 +1499,17 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 2026-09-16 按蜘蛛类分派额外真实实现（foni-spider.jar 优先加载）。
+   * 按蜘蛛类分派额外真实实现（完整构建 jar 优先加载）。
    *
-   *   背景：饭太硬官方版内置的 `spider.jar`（转成 `foni-spider.jar`）是**完整构建**
-   *   （short[] 数组齐全，AppSx/AppTT/AppSK 自带 blob ext 解密 tX.i），而历史抢收的
-   *   `ftyshinidie.jar` 是残缺构建（Rc short[] 越界）。但两套构建的混淆类**同名不同
+   *   背景：某第三方源官方版内置的 `spider.jar`（转成完整构建 jar）是**完整构建**
+   *   （short[] 数组齐全，壳族变体自带 blob ext 解密 tX.i），而历史抢收的
+   *   另一套是残缺构建（Rc short[] 越界）。但两套构建的混淆类**同名不同
    *   结构**（Windows 大小写不敏感下 `rC`/`Rc` 甚至无法合并进同一 jar），全局混载会
    *   互相遮蔽导致大量源退化（实测 46 源仅 19 OK）。
    *
-   *   对策：只对 **AppSx/AppTT/AppSK**（blob ext 源：咕咕/播客/剧圈/神车/热播/港迷等）
-   *   追加 foni-spider.jar 并排在最前，让完整构建的解密/数组生效；其余源保持
-   *   ftyshinidie.jar 单实现，行为完全不变。
+   *   对策：只对 **壳族变体**（blob ext 源）
+   *   追加完整构建 jar 并排在最前，让完整构建的解密/数组生效；其余源保持
+   *   原构建单实现，行为完全不变。
    */
   private shimWithFoni(className: string, baseShim: string): string {
     if (!baseShim) return baseShim;
@@ -1520,7 +1520,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * 调用蜘蛛方法（jarPaths 为转换后的本地 jar 路径；className 形如 com.github.catvod.spider.Doll）。
+   * 调用蜘蛛方法（jarPaths 为转换后的本地 jar 路径；className 形如 com.github.catvod.spider.Xxx）。
    *
    * 入口类缺失时只使用唯一包含该类的缓存构建；不能混载所有订阅 jar。
    * 不同构建的同名混淆依赖不兼容，多个不同候选时诚实报配置不匹配。
@@ -1546,8 +1546,8 @@ export class JarSpiderBridge {
     this.fallbackJars.delete(fallbackKey);
     const out = await this.callImpl(jarPaths, className, method, args, timeoutMs, tag);
     if (out.trim()) return out; // 成功结果不能受其它并发调用的共享诊断字段影响。
-    // ★★ 2026-09-29（设备实证「切换部分源 NPE」的兜底，勿删）★★
-    //   现象：加固壳的守卫类（csp_DouDouGuard / csp_T4Guard …）报
+    // （「切换部分源 NPE」的兜底，勿删）
+    //   现象：加固壳的守卫类（csp_XxxGuard …）报
     //   `NullPointerException: Cannot invoke "com.github.catvod.crawler.Spider.init(android.content.Context, String)"`
     //   —— 根因是 `BaseSpiderGuard.<init>` 里 `Init.getSpider(类名)` 没拿到真实蜘蛛（原生解密这一环
     //   没产出加载器 / 运行时 dex 产物异常），字段留 null，随后首个 init() 必崩。
@@ -1593,27 +1593,27 @@ export class JarSpiderBridge {
     timeoutMs?: number,
     tag?: string,
   ): Promise<string> {
-    // ★ shell-shim（方案 A 影子类，见 stubs-src/shell-shim/DexNative.java）——
+    // shell-shim（方案 A 影子类，见 stubs-src/shell-shim/DexNative.java）——
     //   遇到加固/壳 jar（内含 native 版 DexNative）时，把 shell-shim.jar 排在
     //   classpath **最前**，靠类加载顺序覆盖壳里那个 native 版本，从而绕过
-    //   ARM .so 加载（第十八轮结论 §六的应用侧接入）。
+    //   ARM .so 加载。
     //   默认关闭：只有拿到"真实实现 jar"路径（shellShimClasses 参数或
     //   TVBOX_SHELL_SHIM_CLASSES 环境变量）时才启用，普通源行为完全不变。
     const shimClasses0 = this.shellShimClassesPath() || this.autoShellShim(jarPaths);
-    // ★ AppSx/AppTT/AppSK 系追加完整构建 foni-spider.jar（优先加载，见 shimWithFoni 注释）
+    // 壳族变体追加完整构建 jar（优先加载，见 shimWithFoni 注释）
     const shimClasses = this.shimWithFoni(className, shimClasses0);
     const shimJar = this.shellShimJarPath();
-    // ★★ 2026-09-29（守卫空 NPE 兜底，见 call()）：本 jar 已切到 shell-shim 路线后**不再启用原生桥** ——
+    // （守卫空 NPE 兜底，见 call()）：本 jar 已切到 shell-shim 路线后**不再启用原生桥** ——
     //   只要原生桥被启用，SpiderRunner 会把「改写产物目录」排在子加载器**最前**（实测 -verbose:class：
     //   DexNative 来自 *.jar.patched/），shell-shim.jar 里的影子 DexNative 永远抢不到 → 「有真实实现
     //   却仍走原生解密」。跳过原生桥（不传 -Dtvbox.native.*）后加载顺序回到 [shell-shim.jar, 蜘蛛 jar]，
     //   影子生效、无需 ARM 模拟，启动更快也更稳。
     const preferShim = shimClasses !== '' && this.shimPreferred.has(this.keyJoin(jarPaths)); // 缓存身份键：永久 ';'，见 keyJoin
-    // ★ 2026-09-26 原生桥（ARM .so）：jar 内含 .so 时按需准备 unidbg 运行时，
+    //  原生桥（ARM .so）：jar 内含 .so 时按需准备 unidbg 运行时，
     //   并把桥 jar + 运行时 jar 拼进 classpath；工作/改写目录经 -Dtvbox.native.* 透传给运行器。
     //   普通源 nativeJars 为空 → classpath/argv 与历史完全一致。
     const nativeJars = !preferShim && this.nativeNeeded(jarPaths) ? await this.ensureNativeRuntime() : [];
-    // ★★ 2026-09-26 修复（壳「守卫握手 / 加密路径」总闸，勿回退）★★
+    //  修复（壳「守卫握手 / 加密路径」总闸，勿回退）
     //   此前 `cpParts = [stubs+libs, ...jarPaths, …]` 被**同时**喂给 `-cp`（父加载器 = 应用加载器）
     //   和 SpiderRunner 的加载器参数。父加载器先于子加载器解析 → jar 里的**原始类**永远赢，
     //   SpiderRunner 子加载器 URL 里排最前的「native 改写产物目录」形同虚设 →
@@ -1632,7 +1632,7 @@ export class JarSpiderBridge {
     }
     // 加载器参数同样是真实 classpath（供子加载器解析 jar）→ 平台分隔符。
     const loadCp = this.cpJoin(loadParts);
-    // ★★ 2026-10-09（孤儿端口场景修复，勿回退）★★：tag → 端口映射**只信 serve 信封自报的 `pp`**
+    // （孤儿端口场景修复，勿回退）：tag → 端口映射**只信 serve 信封自报的 `pp`**
     //   （见下方 r.proxyPort），不再在调用前预登记确定性散列端口 —— 确定性端口（19970~19999）
     //   只是「期望值」：被上一会话残留 JVM（孤儿）或同 key 并存 JVM 占用时，本 JVM 会退化临时
     //   端口，预登记的猜测值会把播放地址改写到**别的 JVM**（旧 stubs / 无状态），白等预检超时
@@ -1640,37 +1640,37 @@ export class JarSpiderBridge {
     const nativeArgs = this.nativeProps(nativeJars);
     const argv = [
       ...this.jvmPrefix(runtimeCp, false, loadCp),
-      // ★ shell-shim 启用时，把"真实实现路径"透传给子进程（Java 影子类
+      // shell-shim 启用时，把"真实实现路径"透传给子进程（Java 影子类
       //   DexNative 优先读系统属性 tvbox.shellShimClasses，其次环境变量）。
       //   仅在 shimClasses 非空时追加，默认关闭下 argv 形态与历史完全一致。
       ...(shimClasses ? [`-Dtvbox.shellShimClasses=${shimClasses}`] : []),
       ...nativeArgs,
       'SpiderRunner', loadCp, className, method, ...args,
     ];
-    // ★ 进程池：常驻 JVM（--serve）跨请求复用 → 二次调用跳过冷启动。
+    // 进程池：常驻 JVM（--serve）跨请求复用 → 二次调用跳过冷启动。
     //   serve argv = javaPrefix + [SpiderRunner, --serve, loadCp]（loadCp 已含 shim jar + 蜘蛛 jar）。
-    //   ★ 仅**传输层失败**（进程崩溃/超时/写入失败）才回退一次性保底；
+    //   仅**传输层失败**（进程崩溃/超时/写入失败）才回退一次性保底；
     //     蜘蛛合法返回空串（空搜索）不再误判失败去多打一次冷启动。
     if (this.pool) {
       const serveArgv = [...this.jvmPrefix(runtimeCp, true, loadCp), ...(shimClasses ? [`-Dtvbox.shellShimClasses=${shimClasses}`] : []), ...nativeArgs, 'SpiderRunner', '--serve', loadCp];
       const key = servePoolKey(this.javaExe(), serveArgv);
       // 本地代理端口 → 池 key：/proxy/<port> 被访问时据此把该 JVM 钉住（播放期间不回收）
       this.proxyPortKeys.set(spiderProxyPort(loadCp), key);
-      // ★ 2026-09-26：**含 .so 的加固壳源要更长的预算** —— 守卫/加密走 unidbg 模拟（全局串行），
+      // **含 .so 的加固壳源要更长的预算** —— 守卫/加密走 unidbg 模拟（全局串行），
       //   实测 App88：home ~54s、detail ~295s（首调还要付 ~10s 模拟器启动）；20s 默认预算下
       //   「守卫已通」也会被超时判死。只对这类 jar 抬底，普通源行为不变。
       const tmo = nativeJars.length ? Math.max(timeoutMs ?? this.callTimeoutMs, NATIVE_CALL_MIN_TIMEOUT_MS) : timeoutMs ?? this.callTimeoutMs;
       try {
         const preferredPort = tag && method === 'playerContent' ? this.detailProxyPortByTag.get(tag) : undefined;
         const r = await this.poolSubmit(this.javaExe(), key, serveArgv, className, method, args, this.proxyProvider?.().env ?? {}, tmo, preferredPort);
-        // ★ 2026-09-28：信封 ok=false（蜘蛛自己抛）→ 传输层成功、不回退一次性，但必须
+        // 信封 ok=false（蜘蛛自己抛）→ 传输层成功、不回退一次性，但必须
         //   ①把错误落进 lastSpiderReason（翻译后上屏，代替笼统的「蜘蛛返回空结果」）
         //   ②让 call() 的「类缺失 → 缓存 jar 并集兜底重试」重新生效
         //   （旧行为把错误串当正常 data 直接返回，两条路都断了；见 PoolResult.error）。
         if (r.ok) {
-          // ★ 2026-10-09：以**该 serve 进程自报**的宿主代理端口为准（多 JVM 时 -Dtvbox.proxy.port
+          // 以**该 serve 进程自报**的宿主代理端口为准（多 JVM 时 -Dtvbox.proxy.port
           //   只有第一只能绑到）—— 改写必须打到「真正服务过调用的这一只」，Pan.proxy 状态在它内存。
-          //   ★ 孤儿端口场景补：实际端口（含退化临时端口）也登记进 port→key 表 ——
+          //   孤儿端口场景补：实际端口（含退化临时端口）也登记进 port→key 表 ——
           //     /proxy/<临时端口> 被访问时的「钉住防回收」此前查不到 key 而失效（播放中
           //     可能被池额度压力 LRU 回收 → 断流）。
           if (tag && r.proxyPort) {
@@ -1686,21 +1686,21 @@ export class JarSpiderBridge {
           if (r.error) {
             const raw = String(r.error);
             this.lastSpiderReason = translateSpiderLog(raw);
-            // ★ 2026-10-08：人话旁边**并记原始报错** —— 人话规则命中（如「接口缺失」）会把「具体缺哪个
-            //   类/方法」吞掉，没有原始串就无法定位该补哪个桩（用户报「配置中心」源时日志里只有一句中文）。
+            // 人话旁边**并记原始报错** —— 人话规则命中（如「接口缺失」）会把「具体缺哪个
+            // 类/方法」吞掉，没有原始串就无法定位该补哪个桩（此前日志里只有一句中文）。
             this.host?.logger.i(`jvm-bridge ${className}.${method} 失败原因: ${this.lastSpiderReason}｜原始: ${raw.slice(0, 300)}`);
           }
           return r.data;
         }
-        // ★ 2026-09-23：**执行超时不回退一次性** —— 超时说明蜘蛛/源站卡住，
+        // **执行超时不回退一次性** —— 超时说明蜘蛛/源站卡住，
         //   立刻再跑一遍一次性只会再等一个满超时（实测死源从 15s 变 30s，全源搜索因此翻倍慢）。
         if (r.reason === 'timeout') {
           this.lastSpiderReason = `蜘蛛调用超时（>${Math.round(tmo / 1000)}s），源站可能无响应`;
           this.host?.logger.i(`jvm-bridge ${className}.${method} 失败原因: ${this.lastSpiderReason}`);
           return '';
         }
-        // ★ 2026-09-23 三轮：**排队超时也不回退一次性** —— 排队长说明「同时查询的源太多」，
-        //   再 spawn 一个冷启动 JVM 只会让队列更长（用户侧表现为「越搜越慢」）。
+        // **排队超时也不回退一次性** —— 排队长说明「同时查询的源太多」，
+        // 再 spawn 一个冷启动 JVM 只会让队列更长（表现为「越搜越慢」）。
         //   直接按「本源本次未取到」返回，并记下可读原因（健康调度会把该源排序到队尾+短预算）。
         if (r.reason === 'queue-timeout') {
           this.lastSpiderReason = '并发排队超时（同时查询的源太多），稍后重试该源即可';
@@ -1732,7 +1732,7 @@ export class JarSpiderBridge {
     const argv = [runner, pyPath, clsName, method, ...args];
     const pyEnv = { PYTHONIOENCODING: 'utf-8', ...(this.proxyProvider?.().env ?? {}), ...this.pyEnvExtra(dir),
       ...(siteKey ? { WINBOX_PY_PROXY: `${LOCAL_PROXY_BASE}/proxy?do=py&key=${encodeURIComponent(siteKey)}` } : {}) };
-    // ★ 进程池：常驻 Python（-serve）跨请求复用（服务端循环；env 带 PYTHONIOENCODING）
+    // 进程池：常驻 Python（-serve）跨请求复用（服务端循环；env 带 PYTHONIOENCODING）
     //   语义同 JVM：仅传输层失败回退一次性，空结果是合法结果。
     if (this.pool) {
       const serveArgv = [runner, '-serve', pyPath, clsName];
@@ -1774,12 +1774,12 @@ export class JarSpiderBridge {
   /** PY_VER 的主次版本（3.11.6 → '3.11'），darwin 的 `lib/python<x.y>/site-packages` 用它 */
   private static readonly PY_MINOR = JarSpiderBridge.PY_VER.split('.').slice(0, 2).join('.');
   /**
-   * ★ 2026-09-26 原生桥运行期：unidbg（Windows x64 上模拟 AArch64/ARM32）+ ASM（改写字节码）。
+   *  原生桥运行期：unidbg（Windows x64 上模拟 AArch64/ARM32）+ ASM（改写字节码）。
    *
    * 依赖树依据 unidbg 0.9.9 的 POM 实拉核对：
    *   unidbg-android → unidbg-api → unicorn（含 natives/windows_64/unicorn_java.dll）、capstone、keystone、
    *   demumble、commons-io 等 commons 系列与 fastjson；另需显式补 unidbg-unicorn2（POM 里是 test scope，
-   *   但它是运行后端）、unidbg-dynarmic（2026-09-28 起为默认后端）、JNA 与 native-lib-loader（原生库加载）、
+   * 但它是运行后端）、unidbg-dynarmic（ 起为默认后端）、JNA 与 native-lib-loader（原生库加载）、
    *   slf4j（日志）。共 18 个包约 39MB。
    */
   private static readonly NATIVE_VER = 'unidbg-0.9.9';
@@ -1789,8 +1789,8 @@ export class JarSpiderBridge {
     { file: 'unidbg-android-0.9.9.jar', path: 'com/github/zhkl0228/unidbg-android/0.9.9/unidbg-android-0.9.9.jar' },
     { file: 'unidbg-api-0.9.9.jar', path: 'com/github/zhkl0228/unidbg-api/0.9.9/unidbg-api-0.9.9.jar' },
     { file: 'unidbg-unicorn2-0.9.9.jar', path: 'com/github/zhkl0228/unidbg-unicorn2/0.9.9/unidbg-unicorn2-0.9.9.jar' },
-    // ★ 2026-09-28 FishGuard 壳性能专项：Dynarmic 后端（A64/ARM32 的 JIT）比 Unicorn2 快 15~20 倍，
-    //   实测 FishGuard 壳 AES 单次 0.7~1.7s、NiuLai home 20~30s（Unicorn2 单次 12~30s、home 200s+）。
+    //  某加固壳性能专项：Dynarmic 后端（A64/ARM32 的 JIT）比 Unicorn2 快 15~20 倍，
+    //   实测 某加固壳 AES 单次 0.7~1.7s、NiuLai home 20~30s（Unicorn2 单次 12~30s、home 200s+）。
     //   已定为桥的默认后端；保留 unicorn2（-Dtvbox.native.backend=unicorn2）逃生。
     { file: 'unidbg-dynarmic-0.9.9.jar', path: 'com/github/zhkl0228/unidbg-dynarmic/0.9.9/unidbg-dynarmic-0.9.9.jar' },
     { file: 'unicorn-1.0.15.jar', path: 'com/github/zhkl0228/unicorn/1.0.15/unicorn-1.0.15.jar' },
@@ -1824,7 +1824,7 @@ export class JarSpiderBridge {
   /**
    * 第三方库 wheel（win_amd64，cp311）。lxml 为 C 扩展 wheel（已静态捆绑 libxml2 .pyd）；requests 族纯 py。
    *
-   * ★ 2026-09-30（用户报「部分 py 蜘蛛报 ImportError 第三方库缺失」）：按**实测**补齐 —— 扫描用户
+   * 按**实测**补齐 —— 扫描用户
    *   本地包 211 个 py 蜘蛛的 import，缺失最多的是 Crypto(51)/bs4(47)/pyquery(26)，其后
    *   cryptography、PIL、chardet、cloudscraper、curl_cffi。
    *   `name` = **导入名**（也是 wheel 解压后的顶层目录名，用于「是否已装」判定）；
@@ -1906,7 +1906,7 @@ export class JarSpiderBridge {
   ];
 
   /**
-   * ★ 2026-09-24 后台预热嵌入式 Python 运行时（不阻塞、幂等）：
+   *  后台预热嵌入式 Python 运行时（不阻塞、幂等）：
    * 由 SpiderHost 在配置就绪/清缓存后调用 —— 把「11MB embed 下载 + 解压 + wheel 安装」提前到
    * 用户第一次进 .py 源之前完成，首次加载只剩「spawn 进程 + 蜘蛛 init」。
    * 失败静默（首次正常调用时会重试并上屏真实原因）。
@@ -1916,7 +1916,7 @@ export class JarSpiderBridge {
   }
 
   private async ensurePythonRuntime(): Promise<string> {
-    // ★ 在途任务共享：预热与调用并发时不再下载两份运行时
+    // 在途任务共享：预热与调用并发时不再下载两份运行时
     if (this.pyRuntimeTask) {
       const d = await this.pyRuntimeTask;
       if (d && this.pyExeReady(d)) return d;
@@ -1990,7 +1990,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 2026-09-26：**是否需要原生桥**（同步判定，避免在普通路径上引入 await —— 
+   * **是否需要原生桥**（同步判定，避免在普通路径上引入 await —— 
    * 否则 spawn 会被推迟到微任务，调用方「紧接着断言子进程」的既有行为会被打破）。
    * 条件：宿主配置了运行时目录 + 桥 jar 在 + 至少一只 jar 含 `.so` 或 native 声明。
    */
@@ -2057,7 +2057,7 @@ export class JarSpiderBridge {
   }
 
   private async ensureNativeRuntime(): Promise<string[]> {
-    // ★ 就绪结果内存缓存（见 nativeRuntimeJars）：一次会话只校验一次，也不再把「已就绪」刷满日志
+    // 就绪结果内存缓存（见 nativeRuntimeJars）：一次会话只校验一次，也不再把「已就绪」刷满日志
     if (this.nativeRuntimeJars) return this.nativeRuntimeJars;
     // 在途任务共享：并发调用不重复下载
     if (this.nativeRuntimeTask) {
@@ -2143,7 +2143,7 @@ export class JarSpiderBridge {
   }
 
   /** 解压各 wheel 到 site-packages；lxml 失败仅警告，requests 族失败抛错。
-   *  ★ 2026-09-24：**分波并行**（每波 3 个）—— wheel 之间互不依赖，此前 6 个串行
+   * **分波并行**（每波 3 个）—— wheel 之间互不依赖，此前 6 个串行
    *  （每包「索引页 + 包体」两次往返）是首次加载时间的大头之一。 */
   private async ensureRuntimeLibs(dir: string): Promise<void> {
     const sp = this.pySitePackages(dir);
@@ -2182,7 +2182,7 @@ export class JarSpiderBridge {
    * wheel URL 不做假设：先从 PyPI simple 索引页（PEP 503）读取该文件名的 href，
    * 由 href（形如 `../../packages/<hash>/<file>`）按 simple 页基址解析出真实地址；
    * 依次尝试各镜像，全部失败抛错（保底提示）。
-   * ★ 2026-09-30：索引页按 **PyPI 项目名**（`pkg`，缺省取 `name`）访问；首选文件名缺失时
+   * 索引页按 **PyPI 项目名**（`pkg`，缺省取 `name`）访问；首选文件名缺失时
    *   只接受**同平台标签**的 wheel（`platform`）—— 否则二进制包会退化成别的平台（解压出用不了的 .pyd）。
    */
   private async downloadWheel(dir: string, w: { name: string; pkg?: string; file: string; platform?: string }): Promise<boolean> {
@@ -2228,7 +2228,7 @@ export class JarSpiderBridge {
   }
 
   /** 把随包的 runner.py + base/ 拷贝进运行时目录（幂等）。
-   *  ★ 2026-09-24：**内容未变则跳过**——此前每次 callPython 都会递归复制一遍 base/，
+   * **内容未变则跳过**——此前每次 callPython 都会递归复制一遍 base/，
    *  属于「已就绪」路径上的无谓 IO（预热后每次调用都会走这里）。 */
   private placeRunnerFiles(dir: string): void {
     try {
@@ -2261,7 +2261,7 @@ export class JarSpiderBridge {
 
   /** 生成 JVM 子进程的公共前置参数（旗标 + classpath），jar/python 模式共用。 */
   private jvmPrefix(cp: string, serve = false, portKey = cp): string[] {
-    // ★ 蜘蛛 JVM 内的「宿主代理」端口与对外入口（见 spiderProxyPort / 资源侧 com.github.catvod.Proxy）：
+    // 蜘蛛 JVM 内的「宿主代理」端口与对外入口（见 spiderProxyPort / 资源侧 com.github.catvod.Proxy）：
     //   端口按 **加载器参数**（= 这只 jar / 这批 jar）确定性分配；入口 = 本机 9978 的 /proxy/<port>
     //   （TS 侧收到后转发回该 JVM，并在每次转发时把该 JVM 钉住，避免播放中段被回收 → 断流）。
     const proxyPort = spiderProxyPort(portKey);
@@ -2269,7 +2269,7 @@ export class JarSpiderBridge {
       `-Dtvbox.proxy.port=${proxyPort}`,
       `-Dtvbox.proxy.entry=${LOCAL_PROXY_BASE}/proxy/${proxyPort}`,
     ];
-    // ★ 蜘蛛数据沙箱：与 converted 同级的兄弟目录。
+    // 蜘蛛数据沙箱：与 converted 同级的兄弟目录。
     //   蜘蛛的清理/写临时文件都限制在这里，绝不会碰到 converted 里的转换产物。
     const sandboxDir = join(this.cacheDir, '..', 'sandbox');
     try {
@@ -2277,15 +2277,15 @@ export class JarSpiderBridge {
     } catch {
       /* 建不了就交给 runner 用默认目录 */
     }
-    // ★★ 2026-10-14（用户指令：**不允许给用户系统建盘符**）★★
+    // （**不允许给用户系统建盘符**）
     //   此前这里用 `subst` 建过「蜘蛛沙箱盘」（V:\ → <数据目录>\spider-jail），目的是让第三方 jar
     //   写的**安卓绝对路径**（`/data/data/…`、`/data/user/0/<pkg>/…`）别落到盘根目录。
-    //   但那会在用户机器上凭空多出一个盘符（资源管理器/其它程序都可见）= 改人家系统，用户明确拒绝。
+    //   但那会在用户机器上凭空多出一个盘符（资源管理器/其它程序都可见）= 改人家系统。
     //   ⇒ **该机制已整条删除**（含 util/jailDrive.ts）。现在蜘蛛对 /data/… 的写入按 Windows 原语义
     //   解析到「当前盘根」；我们只保留**不碰系统**的收容手段：`-Dtvbox.spiderCacheDir=<沙箱目录>`
     //   （把 Android Context 的 getCacheDir/getFilesDir 收进数据目录，见下方参数）。
     return [
-      // ★ 关闭字节码校验（-noverify）。原因：jar(dex) 经 dex2jar 转换后，
+      // 关闭字节码校验（-noverify）。原因：jar(dex) 经 dex2jar 转换后，
       //   分支处的 StackMapTable 帧往往不完整；Android 的 ART 不依赖这些帧，
       //   但桌面 HotSpot 在 Java7+ 会做类型校验并抛
       //   `VerifyError: Expecting a stackmap frame at branch target N`，
@@ -2293,19 +2293,19 @@ export class JarSpiderBridge {
       //   关闭校验的收益（可用性）远大于风险。JDK13+ 会打印一条 deprecation
       //   warning，属预期噪声（下面在 stderr 处理里过滤）。
       '-noverify',
-      // ★ 限定堆上限，理由同 doConvert()：JRE17 默认 G1 会按物理内存推导堆，
+      // 限定堆上限，理由同 doConvert()：JRE17 默认 G1 会按物理内存推导堆，
       //   在低可用内存机器上直接 mmap 失败 → JVM 崩溃（hs_err_pid*.log）、
       //   蜘蛛表现为「空结果」。蜘蛛本身是轻量反射调用（实测单次约 590ms，
       //   常驻内存 <100MB），256m 足够且远离崩溃边界。
-      //   ★ 三轮：常驻 serve 进程现在要**并发承接整轮搜索（24 线程）**，堆给到 384m
+      //   三轮：常驻 serve 进程现在要**并发承接整轮搜索（24 线程）**，堆给到 384m
       //   （后出现的 -Xmx 覆盖前者）；一次性路径仍是 256m。
       serve ? '-Xmx384m' : '-Xmx256m',
       '-XX:+UseSerialGC',
-      // ★ 指定蜘蛛数据沙箱（见上方 sandboxDir 说明）：把蜘蛛可见的
+      // 指定蜘蛛数据沙箱（见上方 sandboxDir 说明）：把蜘蛛可见的
       //   getCacheDir/getFilesDir 全部收进这个目录，避免其清理逻辑误伤
       //   converted 下的 jar 转换产物。
       `-Dtvbox.spiderCacheDir=${sandboxDir}`,
-      // ★★ JDK 模块封装放行（--add-opens，2026-09-26 壳类取证新增，勿删）★★
+      // JDK 模块封装放行（--add-opens，勿删）
       //   现象：加固壳的混淆 VM 用**反射**做对象深拷贝 / 取类内部状态，目标包括
       //   `java.lang.Object.clone()`（protected native）等 JDK 内部成员。
       //   Android(ART)/Java8 无模块封装 → 反射成功；JDK17 默认 `java.base` 不 open，
@@ -2324,19 +2324,19 @@ export class JarSpiderBridge {
       '--add-opens=java.base/java.nio=ALL-UNNAMED',
       '--add-opens=java.base/java.security=ALL-UNNAMED',
       '--add-opens=java.base/java.text=ALL-UNNAMED',
-      //   ★ 2026-09-27 壳通解新增：壳的 native 会 `close()` 那个 `ClassLoader.getResourceAsStream`
+      //  壳通解新增：壳的 native 会 `close()` 那个 `ClassLoader.getResourceAsStream`
       //   返回的 JarURLInputStream（JDK 内部类），unidbg 的反射代理对它 setAccessible →
       //   必须放行 `sun.net.www.protocol.jar`，否则 `InaccessibleObjectException` 把守卫握手带崩
-      //   （wex 实测：getResourceAsStream 读 assets/xxx.guard 后 close 处失败）。
+      //   （实测：getResourceAsStream 读 assets/xxx.guard 后 close 处失败）。
       '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED',
       '-Dfile.encoding=UTF-8',
       '-Dsun.stdout.encoding=UTF-8',
       '-Dsun.stderr.encoding=UTF-8',
-      // ★ 网络代理（用户设置；空则不追加，argv 与历史完全一致）
+      // 网络代理（用户设置；空则不追加，argv 与历史完全一致）
       ...(this.proxyProvider?.().jvmArgs ?? []),
-      // ★ 宿主代理端口/入口（见方法头注释）：壳与蜘蛛的 `<entry>?do=proxy&key=…` 播放地址靠它
+      // 宿主代理端口/入口（见方法头注释）：壳与蜘蛛的 `<entry>?do=proxy&key=…` 播放地址靠它
       ...proxyProps,
-      // ★★ 2026-09-27「壳通解」：dex 加载器 stub（dalvik.system.DexClassLoader）在**运行时**把
+      // 「壳通解」：dex 加载器 stub（dalvik.system.DexClassLoader）在**运行时**把
       //   壳 native 解密出来的裸 dex 转成 jar 再加载 —— 这里把 dex2jar 工具链与缓存目录透传给子进程。
       //   缺任一项 → stub 退回「可解释失败」（不静默）。
       `-Dtvbox.d2j.java=${this.javaExe()}`,
@@ -2348,7 +2348,7 @@ export class JarSpiderBridge {
   }
 
   /**
-   * ★ 2026-09-26：TS 侧本地代理收到 `/proxy/<port>` 时调用 —— 把该 port 对应的蜘蛛 JVM 钉住，
+   * TS 侧本地代理收到 `/proxy/<port>` 时调用 —— 把该 port 对应的蜘蛛 JVM 钉住，
    * 避免播放中段被池回收（回收器跳过钉住的进程；到期自动失效）。
    */
   pinSpiderProxy(port: number, ttlMs = 10 * 60_000): void {
@@ -2366,7 +2366,7 @@ export class JarSpiderBridge {
     env?: Record<string, string>,
   ): Promise<string> {
     return new Promise<string>((resolve) => {
-      // ★ 网络代理环境变量（Python 蜘蛛/子进程的 requests 等会读它；JVM 侧另由 -D 参数负责）
+      // 网络代理环境变量（Python 蜘蛛/子进程的 requests 等会读它；JVM 侧另由 -D 参数负责）
       const proxyEnv = this.proxyProvider?.().env ?? {};
       // ⚠ 2026-10-14 合并裁定：上游已删除「蜘蛛沙箱盘」（`subst` 建盘符 + 子进程 cwd 覆盖），
       //   本仓跟随删除（理由见上方 jvmPrefix 内同段说明）→ 这里不再有任何 cwd 覆盖。
@@ -2392,7 +2392,7 @@ export class JarSpiderBridge {
         if (signal === 'SIGTERM') timedOut = true;
       });
       child.on('close', (code) => {
-        // ★ 记录本次调用的"失败原因"，供上层在结果为空时给出精确提示。
+        // 记录本次调用的"失败原因"，供上层在结果为空时给出精确提示。
         //   优先级：进程级问题（超时/非零退出）> 蜘蛛自身日志（SpiderLog）> 空输出。
         //   蜘蛛的 catch 分支会把真实原因打到日志（如 "Connect timed out" / "JSONObject
         //   text must begin with..."），但默认只在 logger 里、UI 看不到 —— 用户因此只看到
@@ -2410,7 +2410,7 @@ export class JarSpiderBridge {
           this.lastSpiderReason = translateSpiderLog(spiderLog);
           reasonFromSpiderLog = true;
         } else if (runnerErr) {
-          // ★ 运行器异常同样要过一遍"说人话"翻译：这里的报错常是
+          // 运行器异常同样要过一遍"说人话"翻译：这里的报错常是
           //   UnsatisfiedLinkError / ExceptionInInitializerError / dalvik 相关类缺失 ——
           //   全是"这个源在桌面端不成立"的信号，原样抛出用户完全看不懂。（也用同款
           //   标签承接 PythonRunner 的 .py 错误 —— SyntaxError / ImportError 等。）
@@ -2448,7 +2448,7 @@ export class JarSpiderBridge {
           else if (m) this.host?.logger.w(`jvm-bridge ${className}.${method} (退出0但有日志): ${line}`);
         }
         if (this.lastSpiderReason) {
-          // ★ 2026-10-08：人话原因旁并记**原始 SpiderLog 行**（含 ` :: 异常` 尾巴）—— 翻译规则会把
+          // 人话原因旁并记**原始 SpiderLog 行**（含 ` ： 异常` 尾巴）—— 翻译规则会把
           //   「缺哪个类/方法」这类可行动信息吞掉；只在本次原因确实来自 SpiderLog 时附加，避免串台。
           const rawSuffix = reasonFromSpiderLog && spiderLogRaw ? `｜原始: ${spiderLogRaw}` : '';
           this.host?.logger.i(`jvm-bridge ${className}.${method} 失败原因: ${this.lastSpiderReason}${rawSuffix}`);
@@ -2521,22 +2521,22 @@ export class JarSpiderBridge {
 /**
  * 把 **raw jar 里的非 dex 资源**（assets/**、lib/**、META-INF/** 等）搬进 dex2jar 的转换产物。
  *
- * ★★ 为什么必须有这一步（第十二轮定位到的真实根因）★★
+ * 为什么必须有这一步（定位到的真实根因）
  *
  * 加固/壳型 jar 的形态是：
  * ```
  * classes.dex                  ← 只是壳
- * assets/wexguard_v7.so        ← ARM 原生库（密钥在里面）
- * assets/wexshinidie.guard     ← 加密的真正代码（930KB）
+ * assets/<native>.so            ← ARM 原生库（密钥在里面）
+ * assets/<encrypted>.guard     ← 加密的真正代码（930KB）
  * ```
  * 壳的 `DexNative.<clinit>` 是这样取原生库的：
  * ```java
- * File so = new File(Init.context().getCacheDir(), ".wexfnw" + random());
- * InputStream in = Init.classLoader().getResourceAsStream("assets/" + name); // name = wexguard_v7.so
+ * File so = new File(Init.context().getCacheDir(), ".<tmp>" + random());
+ * InputStream in = Init.classLoader().getResourceAsStream("assets/" + name); // name = <native>.so
  * // 把 in 拷进 so，然后 System.load(so.getAbsolutePath())
  * ```
  * `Init.classLoader()` 是**加载 `Init` 的那个 ClassLoader**，也就是我们为这只 jar 建的
- * URLClassLoader —— 所以 `assets/wexguard_v7.so` 必须在**这只 jar 里**才读得到。
+ * URLClassLoader —— 所以 `assets/<native>.so` 必须在**这只 jar 里**才读得到。
  *
  * **而 dex2jar 只输出 `.class`，会把 `assets/`、`classes.dex` 统统丢掉。**
  * 于是 `getResourceAsStream()` 返回 null → 紧接着 `in.read(buf)` 抛
@@ -2548,7 +2548,7 @@ export class JarSpiderBridge {
  * `DexNative` 的类初始化一旦失败就被 JVM 标记为 erroneous → **该 jar 全部源同时报废**
  * （实测一套配置 95 个源同一报错）。
  *
- * 第十一轮曾把这类报错定性为「安卓加固/壳，架构限制，无解」—— **那个定性是错的**：
+ * 此前曾把这类报错定性为「安卓加固/壳，架构限制，无解」—— **那个定性是错的**：
  * 连"读 assets"这一步都没走到，报的 NPE 与 ARM/x86 架构毫无关系。
  * 真正的原因是移植侧把资源丢了。补齐资源后同一条链的报错变成
  * `UnsatisfiedLinkError: Can't load this .dll (machine code=0x34) on a AMD 64-bit platform`
@@ -2634,10 +2634,10 @@ export function translateSpiderLog(log: string): string {
     [/bound must be positive/i, '蜘蛛内部参数异常，通常需要为该源补充 ext 配置'],
     [/Index \d+ out of bounds/i, '源站返回的数据结构与蜘蛛预期不符（站点可能已改版）'],
     [/SSLHandshake|PKIX|certificate/i, '与源站建立安全连接失败（证书问题或站点异常）'],
-    // ---- ★ .py 蜘蛛（嵌入式 CPython3）专属 ----
+    // ---- .py 蜘蛛（嵌入式 CPython3）专属 ----
     [/SyntaxError|invalid syntax|f-string|EOL while scanning|unexpected EOF|IndentationError/i,
       'python 蜘蛛脚本本身有语法/编码错误（Python3 解析失败），请检查源脚本'],
-    // ★ 2026-09-30：报错必须**点出缺哪个库**（此前一律给同一句泛泛的说明，用户无法判断该不该反馈）。
+    // 报错必须**点出缺哪个库**（此前一律给同一句泛泛的说明，用户无法判断该不该反馈）。
     //   内置库清单见 JarSpiderBridge.PY_WHEELS（首次用到会自动从 PyPI 镜像补齐）。
     [/No module named\s+'?"?([A-Za-z_][\w.]*)/i,
       (m) => `该 python 蜘蛛缺少第三方库「${m[1]}」—— 常用库（requests/urllib3/lxml/bs4/pyquery/Crypto/PIL…）会在首次使用时自动补齐，若持续报此错请反馈该库名`],
@@ -2646,7 +2646,7 @@ export function translateSpiderLog(log: string): string {
     // 这一类必须排在通用的 ClassNotFound/NoSuchField 规则之前，否则会被后者吞掉，
     // 用户拿到的是一句"依赖缺失请反馈"，看不出「这个源在桌面端根本不成立」。
     //
-    // ★ 第十二轮校正：加固壳的真实报错**不是**"找不到原生库"，而是
+    // 校正：加固壳的真实报错**不是**"找不到原生库"，而是
     //   `UnsatisfiedLinkError: <path>: Can't load this .dll (machine code=0x34) on a AMD 64-bit platform`
     //   —— 资源已经找对了（见 copyJarResources 补齐 assets 的说明），卡在 CPU 架构上。
     //   所以「原生库 ABI 不匹配」必须自成一条，且排在「找不到原生库」之前。
@@ -2659,7 +2659,7 @@ export function translateSpiderLog(log: string): string {
     // DEX 头部魔数：加载器把 dex 当类文件读时会给出这个字节序列
     [/dex\n?035|invalid dex|DexFile/i,
       '该源携带 dalvik 字节码（dex），桌面 JVM 无法执行（架构限制）'],
-    // ---- ★ 蜘蛛"自身类"找不到 ≠ 桌面版缺接口 ----
+    // ---- 蜘蛛"自身类"找不到 ≠ 桌面版缺接口 ----
     //   `com.github.catvod.spider.Xxx` 是蜘蛛 jar 里的类，找不到它只可能是
     //   "这只 jar 没加载成功"（缓存丢失/下载失败/配置里的 jar 与 api 不匹配），
     //   跟"桌面版缺 android.* 接口"完全是两回事。这条必须排在通用的
@@ -2668,8 +2668,8 @@ export function translateSpiderLog(log: string): string {
     //   95 个源全部报这一句）。
     [/ClassNotFoundException: ?com\.github\.catvod\.spider\./i,
       '蜘蛛类未找到：该源指向的 jar 没有加载成功（配置与 jar 不匹配，或 jar 资源已失效）'],
-    // ★ 2026-10-08（用户报「配置中心」源）：这类报错**具体缺哪个类/方法/字段**才是可行动信息 ——
-    //   旧文案一律「请反馈」，且调用处只落人话、原始异常被吞（用户日志里拿不到符号名，无法定位该补哪个桩）。
+    // 这类报错**具体缺哪个类/方法/字段**才是可行动信息 ——
+    // 旧文案一律「请反馈」，且调用处只落人话、原始异常被吞（日志里拿不到符号名，无法定位该补哪个桩）。
     //   这里把符号名抠出来上屏；调用处已同步补「原始: …」落日志（见 call() 两处）。
     //   注意保留「桌面版缺失」「请反馈」措辞 —— 既有测试与用户认知都按这句对齐。
     [/NoSuchMethodError: ?'?([\w.$<>\[\]]+)/,
@@ -2682,7 +2682,7 @@ export function translateSpiderLog(log: string): string {
       '蜘蛛依赖的接口在桌面版缺失（属兼容性问题，请反馈）'],
     [/ExceptionInInitializerError/i,
       '蜘蛛静态初始化失败（内部依赖在桌面版缺失，请反馈此源）'],
-    // ★ 2026-09-29：加固壳「守卫内层蜘蛛为空」（`BaseSpiderGuard.<init>` → `Init.getSpider` 拿到 null）
+    // 加固壳「守卫内层蜘蛛为空」（`BaseSpiderGuard.<init>` → `Init.getSpider` 拿到 null）
     //   的原始报错是 `NullPointerException: Cannot invoke "…Spider.init(Context, String)"`，
     //   必须**排在通用规则之后**才不抢别人的匹配，但排在原样兜底之前 —— 否则用户只看到一句截断的英文 NPE。
     [/crawler\.Spider\.init\(android\.content\.Context|守卫内层蜘蛛为空|加固壳内部蜘蛛未就绪/,
@@ -2697,7 +2697,7 @@ export function translateSpiderLog(log: string): string {
 }
 
 /**
- * ★★ 2026-09-29（设备实证）：判断失败原因是不是「守卫壳的内层蜘蛛为空」。
+ * 判断失败原因是不是「守卫壳的内层蜘蛛为空」。
  *
  * 加固壳的 `BaseSpiderGuard.<init>` 会调 `Init.getSpider(this.getClass().getName())`，把返回的真实
  * 蜘蛛存进字段；任何一环没接上（原生桥 `DexNative.getLoader` 没返回加载器 / 运行时 dex 产物异常 /
@@ -2759,7 +2759,7 @@ export function extractSpiderReason(stderr: string): string {
 }
 
 /**
- * ★ 2026-10-08：取同一条 SpiderLog 的**原文**（含 ` :: 异常` 尾巴，截断 300）。
+ * 取同一条 SpiderLog 的**原文**（含 ` ： 异常` 尾巴，截断 300）。
  * 人话翻译会把尾巴里的关键信息吞掉（如 NoSuchMethodError 缺的具体符号），
  * 供「失败原因」日志旁并记原始串，便于定位该补哪个桩 / 该反馈什么。
  */
@@ -2781,7 +2781,7 @@ function lastFailureSpiderLog(stderr: string): { raw: string; msg: string } | nu
     // 去掉 " :: <异常类>: <详细>" 尾巴，只留人可读的前半句
     const sep = msg.indexOf(' :: ');
     if (sep > 0) msg = msg.slice(0, sep).trim();
-    // ★ 只保留「真正的失败原因」。以下日志前缀属蜘蛛成功路径/启动路径的提示，不是失败：
+    // 只保留「真正的失败原因」。以下日志前缀属蜘蛛成功路径/启动路径的提示，不是失败：
     //   - `自定义爬虫代码加载成功`（简/繁两种写法都有，繁体曾漏过滤导致 28 条假失败）
     //   - `获取到源码--> ...`（蜘蛛已成功取到源站正文，随后解析，属成功日志）
     if (msg && !/^(自定义爬虫代码加载成功|自定義爬蟲代碼載入成功|获取到源码-->)/.test(msg)) return { raw, msg };
@@ -2840,18 +2840,18 @@ export function extractBridgeNotes(stderr: string): string[] {
     if (!t) continue;
     if (t.startsWith('[native-bridge]')) out.push(t);
     else if (t.startsWith('[SpiderRunner]') && /原生桥|改写|注册 native/.test(t)) out.push(t);
-    // ★ 2026-09-27（载荷层排障）：这三类前缀此前被过滤掉，导致「载荷解密/运行时转换/壳 Init」
+    // （载荷层排障）：这三类前缀此前被过滤掉，导致「载荷解密/运行时转换/壳 Init」
     //   的失败在应用日志里完全不可见（用户只看到「蜘蛛返回空结果」）——一律保留。
     //   注：`[SpiderRunner.ERROR]` 不在此列（一次性路径已单独提取上屏，池路径由 extractSpiderReason 兜），
     //   避免同一条错误重复上屏。
     else if (t.startsWith('[runtime-dex]') || t.startsWith('[dexjar-repair]') || t.startsWith('[Init]')) out.push(t);
-    // ★ 2026-09-29：shell-shim 影子 DexNative 的说话行（真实实现加载失败/命中与否）——此前只在
+    // shell-shim 影子 DexNative 的说话行（真实实现加载失败/命中与否）——此前只在
     //   -Dtvbox.shellShim.debug=true 时才打印，设备上「守卫内层蜘蛛为空」时拿不到任何线索，一并上屏。
     else if (t.startsWith('[ShellShim]')) out.push(t);
     else if (t.startsWith('[SpiderRunner] 警告')) out.push(t);
-    // ★ 2026-10-09（.8 探针「无输出」真因，勿删）：宿主代理与 baidu-state 探针的说话行不在
+    // （.8 探针「无输出」真因，勿删）：宿主代理与 baidu-state 探针的说话行不在
     //   白名单里，serve 进程 stderr 中被静默丢弃 —— 本地直跑 stubs.jar 能看到探针输出、
-    //   真机上却「无 [baidu-state]」，第十轮日志因此误判为孤儿 JVM。池/一次性两条路径都经
+    //   真机上却「无 [baidu-state]」，当时日志因此误判为孤儿 JVM。池/一次性两条路径都经
     //   本函数，加白名单即全覆盖（noteBridgeLog 有整行去重，高频「请求处理失败」不会刷屏）。
     else if (t.startsWith('[host-proxy]')) out.push(t);
     else if (t.startsWith('[baidu-state]')) out.push(t);

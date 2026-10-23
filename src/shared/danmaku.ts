@@ -19,7 +19,7 @@ export interface DanmakuApiEndpoint {
   enabled: boolean;
 }
 
-/** ★ 2026-09-26：内置接口清单 —— 默认只启用「炊烟袅袅」（其余可在播放器「弹幕源」面板按需开启） */
+/** 内置接口清单 —— 默认只启用「炊烟袅袅」（其余可在播放器「弹幕源」面板按需开启） */
 export const DEFAULT_DANMAKU_ENDPOINTS: readonly DanmakuApiEndpoint[] = [
   { name: '炊烟袅袅', url: 'https://danmu.cynn.top/cynnsq', enabled: true },
   { name: 'LogVar', url: 'https://dm.abai.ccwu.cc/abai', enabled: false },
@@ -77,7 +77,7 @@ export interface DanmakuCandidate {
   /** 剧集标题（如 第1话 / 01） */
   episodeTitle?: string;
   /**
-   * ★ 2026-09-29：接口给的**集号字段**（`episodeNumber`，实测炊烟/腾讯系条目为 "1"/"2"…）。
+   * 接口给的**集号字段**（`episodeNumber`，实测部分条目为 "1"/"2"…）。
    *   部分来源（tencent）的 `episodeTitle` 不含「第N集」字样或为空 ⇒ 只靠标题提不出集号
    *   → 候选列表看不出是第几集、也排不了序；此字段作显示/排序/匹配的一手依据。
    */
@@ -99,7 +99,7 @@ export interface DanmakuAnime {
   /** 类型（tvseries / movie / ova 等） */
   kind?: string;
   /**
-   * ★ 2026-09-26：条目集数（聚合源 `episodeCount`）。用于同季条目里优选「真剧集」：
+   * 条目集数（聚合源 `episodeCount`）。用于同季条目里优选「真剧集」：
    * 实测同一部剧的 "花絮/颁奖礼" 条目为 1 集，而真季集为 7~16 集。
    */
   episodeCount?: number;

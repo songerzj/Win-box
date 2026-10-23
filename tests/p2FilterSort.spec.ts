@@ -36,7 +36,7 @@ describe('parseSortJson — class[].filters 解析', () => {
     expect('filters' in c).toBe(false);
   });
 
-  // ★★ 2026-10-15（用户报「你还是没拿到源的分类」）：真源的 filters 形态 —— 顶层按 type_id 键控 + **组是数组**
+  // 真源的 filters 形态 —— 顶层按 type_id 键控 + **组是数组**
   //   样本取自真实 drpy 源（txsp）homeContent 原文（见日志 / .tmp/cat-probe3-result.json）。
   it('真源形态：顶层 filters[type_id] = [{key,name,value}]（数组）→ 解析出 类型/地区/年份/排序', () => {
     const json = JSON.stringify({
@@ -129,7 +129,7 @@ describe('parseSortJson — class[].filters 解析', () => {
     expect(c.filters!.map((g) => g.key)).toEqual(['inner']);
   });
 
-  // ★ 2026-10-15（用户报「有的源应该有分类，但点播页没有分类」）：class 形态兜底
+  // class 形态兜底
   describe('class 形态兜底（normalizeClassList）', () => {
     it('标准数组 → 原样（非对象元素丢弃）', () => {
       expect(normalizeClassList([{ type_id: '1', type_name: '电影' }])).toEqual([{ type_id: '1', type_name: '电影' }]);

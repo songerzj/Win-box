@@ -1,13 +1,13 @@
-param([string]$Root = 'E:\WorkBuddy\tvbox2\tvbox-win')
+param([string]$Root = (Split-Path -Parent $PSScriptRoot))
 # pack-1.1.0.ps1 -- Win-Box 1.1.0 / release1.1.0 packaging helper.
 #   1st run: MINOR bump 1.0.0 -> 1.1.0 (payload-layer round).
-#   2nd run (2026-09-28, version unchanged / same-name overwrite): re-pack AFTER the 09-28 fixes
+#  2nd run (version unchanged / same-name overwrite): re-pack AFTER the 09-28 fixes
 #     (wexproxy payload skip / pool envelope ok / lenient subscribe JSON / jar okhttp-UA fallback)
-#     and the FishGuard performance fix (unidbg dynarmic backend by default).
+#     and the 某加固壳 performance fix (unidbg dynarmic backend by default).
 #   pre-flight -> quality gate -> build-main -> vite build -> electron-builder -> incremental -> copy to Desktop -> self-check
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File "E:\WorkBuddy\tvbox2\tvbox-win\scripts\pack-1.1.0.ps1"
+#   powershell -ExecutionPolicy Bypass -File "<repo>\scripts\pack-1.1.0.ps1"
 #
 # Scope (project rules):
 #   * nsis Setup only -- portable is on-demand and was NOT requested, so it is not built
@@ -91,10 +91,9 @@ node scripts\make-incremental.mjs --old $oldDir --new $newDir --out $incrName
 if ($LASTEXITCODE -ne 0) { Fail "make-incremental failed (exit $LASTEXITCODE)" }
 
 Step 8 'copy artifacts to Desktop (docs 2.2 rule)'
-$desk = 'C:\Users\WXJ2\Desktop'
+$desk = Join-Path $env:USERPROFILE 'Desktop'
 if (-not (Test-Path $desk)) {
-  $desk = Join-Path $env:USERPROFILE 'Desktop'
-  Write-Host "  C:\Users\WXJ2\Desktop not found, using $desk" -ForegroundColor Yellow
+  Write-Host "  Desktop not found, using $desk" -ForegroundColor Yellow
 }
 foreach ($f in @($setup, $incrExe, $incrZip)) {
   if (Test-Path $f) {
@@ -115,7 +114,7 @@ Write-Host ("  asar contains watchdog.cjs (must be False, win7-only file): {0}" 
 if ($hasWd) { Fail 'win7-only dist/watchdog.cjs leaked into the main asar' }
 # this round's changes must all be present in the shipped bundle:
 #   09-28 fixes 3-4 (lenient JSON / jar UA fallback) + fix 2 (pool serve-log reason)
-#   + FishGuard perf fix (dynarmic runtime jar name in the native jar list)
+#   + 某加固壳 perf fix (dynarmic runtime jar name in the native jar list)
 #   (fix 1 = wexproxy payload skip lives in native-bridge.jar, checked by hash below)
 $m1 = $txt.Contains('stripTrailingCommas')
 $m2 = $txt.Contains('isJarOrDex')

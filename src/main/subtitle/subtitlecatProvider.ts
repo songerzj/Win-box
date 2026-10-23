@@ -1,7 +1,7 @@
 // src/main/subtitle/subtitlecatProvider.ts
-// ★ 2026-09-28：SubtitleCat（subtitlecat.com）字幕源 —— **免 token 的网页源**，本环境已实测可达。
+// SubtitleCat（subtitlecat.com）字幕源 —— **免 token 的网页源**，本环境已实测可达。
 //
-// 站点结构（2026-09-28 实测）：
+// 站点结构（实测）：
 //   search  GET https://www.subtitlecat.com/index.php?search=<kw>
 //           → 结果表格，每行一个 `<a href="/subs/<id>/<name>.html">`（name 为影片/片源名），
 //             同行含 `Size 143 KB` / `Downloads 7 downloads` / `Languages 7 languages`。
@@ -45,7 +45,7 @@ export function parseCatSearch(html: string): CatRow[] {
   if (!html) return [];
   const $ = cheerio.load(html);
   const out: CatRow[] = [];
-  // ★ 实测（2026-09-28 线上页面）：搜索结果的 href 是**不带前导斜杠**的相对路径 —— `href="subs/1594/xxx.html"`，
+  // 实测（线上页面）：搜索结果的 href 是**不带前导斜杠**的相对路径 —— `href="subs/1594/xxx.html"`，
   //   因此选择器必须用 `subs/`（不能写 `/subs/`），abs() 负责补成绝对地址。
   $('a[href*="subs/"]').each((_, el) => {
     const href = String($(el).attr('href') || '').trim();
@@ -55,7 +55,7 @@ export function parseCatSearch(html: string): CatRow[] {
     const url = abs(href);
     if (out.some((r) => r.url === url)) return;
     const row = $(el).closest('tr');
-    // ★ 实测：统计信息与链接**同在一行**（`<td>…Size</span><span>143 KB</span>` 相邻，text() 拼接后为 "Size143 KB"）
+    // 实测：统计信息与链接**同在一行**（`<td>…Size</span><span>143 KB</span>` 相邻，text() 拼接后为 "Size143 KB"）
     const rowText = row.length ? row.text().replace(/\s+/g, ' ') : '';
     const dl = /Downloads?\s*(\d+)/i.exec(rowText);
     const lg = /Languages?\s*(\d+)/i.exec(rowText);

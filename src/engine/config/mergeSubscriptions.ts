@@ -1,5 +1,5 @@
 // src/engine/config/mergeSubscriptions.ts
-// ★ 多份订阅合并：去重 + 保留各源关键字段与原始 SourceBean 结构。
+// 多份订阅合并：去重 + 保留各源关键字段与原始 SourceBean 结构。
 // 纯 TS、零依赖、可单测。只读输入 → 返回新结构，绝不修改入参/原文件。
 import { parseSiteConfig } from './ApiConfigParser';
 import type { LiveBean, ParseBean, SourceBean } from '../../shared/types';
@@ -101,9 +101,9 @@ export function mergeSubscriptions(inputs: MergeInput[]): MergeOutcome {
 }
 
 // ---------------------------------------------------------------------------
-// ★ 2026-09-29（通解）：多档案 → 单份「自包含」订阅导出。
+// （通解）：多档案 → 单份「自包含」订阅导出。
 //
-// 背景（用户实测）：旧导出把顶层 `spider` 硬编码为空、`flags` 为空、`parses` 整份丢弃，
+// 背景：旧导出把顶层 `spider` 硬编码为空、`flags` 为空、`parses` 整份丢弃，
 // 于是「多配置合并导出 → 再导入」后：
 //   · 所有 csp_ jar 源都拿不到全局 jar（「该源未指定 jar 地址」/ ClassNotFoundException）；
 //   · VIP 解析 flags、解析接口（parses）全丢 → 播放/解析报「暂不支持」。

@@ -1,0 +1,143 @@
+// src/renderer/components/DriveBindPanel.tsx
+// **网盘绑定面板** —— 从 DriveBindModal 抽出的可复用主体。
+//   两处复用：① 配置页「凭据」tab 的常驻卡片（软件内统一配置入口）；
+//             ② 播放时自动弹出的绑定窗口（DriveBindModal 包一层 scrim/标题）。
+//   写盘事实（与 jar 侧对齐，见 docs/design/源内绑定_设计方案.md 与 driveExt.ts）：
+//     · 夸克/UC → 应用凭据（DriveStore，DPAPI 加密）+ 部分源约定配置文件
+//       `<userData>/tvfan/Cloud-drive.txt` 的 `quarkCookie`/`ucCookie`；
+//     · 其余网盘（百度/阿里/115/哔哩）→ 应用凭据 + 注入蜘蛛 ext（ext.baidu/ali/bili…）。
+//   保存后主进程会丢弃常驻蜘蛛进程 → 下次请求按新 cookie 重新 init（否则仍用旧 cookie）。
+import { useEffect, useMemo, useState } from 'react';
+import { client } from '../api/client';
+import { checkDriveCookie } from '../../shared/driveCookie';
+import { driveProviderLabel } from '../../shared/driveProvider';
+import DriveLogin from './DriveLogin';
+import UcTvBind from './UcTvBind';
+
+/** 可绑定网盘（key = DriveStore provider 键；与部分源绑定页的「夸克/百度/阿里/哔哩」菜单口径一致） */
+const PROVIDERS: ReadonlyArray<{ key: string; label: string }> = [
+  { key: 'quark', label: '夸克网盘' },
+  { key: 'uc', label: 'UC 网盘' },
+  { key: 'baidu', label: '百度网盘' },
+  { key: 'ali', label: '阿里云盘' },
+  { key: '115', label: '115 网盘' },
+  { key: 'bili', label: '哔哩哔哩' },
+];
+
+interface Props {
+  /**
+   * **预选网盘**（解析到某网盘专用链接、但未绑定时自动弹窗时传入）——
+   *   直接把用户要绑的那家选中，省掉"自己找是哪一家"。
+   */
+  initialProvider?: string;
+  /** 保存/解绑/登录成功后的回调（外层刷新源主页或重播用） */
+  onSaved?: () => void;
+}
+
+export default function DriveBindPanel({ initialProvider, onSaved }: Props) {
+  const [tokens, setTokens] = useState<Record<string, string>>({});
+  const initProv = (initialProvider || '').trim().toLowerCase();
+  const [provider, setProvider] = useState(PROVIDERS.some((p) => p.key === initProv) ? initProv : 'quark');
+  const [cookie, setCookie] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const refresh = (): void => {
+    void client.driveGet().then(setTokens).catch(() => undefined);
+  };
+  useEffect(refresh, []);
+
+  const check = useMemo(() => checkDriveCookie(provider, cookie), [provider, cookie]);
+  const bound = !!tokens[provider];
+
+  async function save(): Promise<void> {
+    const ck = cookie.trim();
+    if (!ck) { setMsg('请先粘贴 Cookie'); return; }
+    setBusy(true);
+    setMsg('');
+    try {
+      await client.driveSet(provider, ck); // 主进程：写凭据 + Cloud-drive 配置 + 重置蜘蛛进程
+      setCookie('');
+      refresh();
+      setMsg(`✓ 已保存「${driveProviderLabel(provider)}」Cookie。重新进一次网盘源即可生效（蜘蛛进程已重置）。`);
+      onSaved?.();
+    } catch (e) {
+      setMsg(`保存失败：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unbind(): Promise<void> {
+    setBusy(true);
+    setMsg('');
+    try {
+      await client.driveRemove(provider);
+      refresh();
+      setMsg(`已解绑「${driveProviderLabel(provider)}」`);
+      onSaved?.();
+    } catch (e) {
+      setMsg(`解绑失败：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+        {PROVIDERS.map((p) => (
+          <button
+            key={p.key}
+            className={`tag ${provider === p.key ? 'active' : ''}`}
+            onClick={() => { setProvider(p.key); setMsg(''); }}
+          >
+            {p.label}{tokens[p.key] ? ' ✓' : ''}
+          </button>
+        ))}
+      </div>
+
+      <div className="row" style={{ gap: 8, alignItems: 'center', marginBottom: 6 }}>
+        <span className="muted" style={{ fontSize: 12 }}>
+          {bound ? `当前已绑定（${driveProviderLabel(provider)}，凭据长度 ${tokens[provider].length}）` : '当前未绑定'}
+        </span>
+        {bound && (
+          <button className="linkbtn" style={{ marginLeft: 'auto' }} disabled={busy} onClick={() => void unbind()}>
+            解绑
+          </button>
+        )}
+      </div>
+
+      <textarea
+        value={cookie}
+        onChange={(e) => setCookie(e.target.value)}
+        placeholder={`粘贴「${driveProviderLabel(provider)}」的完整 Cookie（形如 __pus=…; __puus=…）\n获取：浏览器打开网盘网页并登录 → F12 → Network → 任意请求 → 复制 Request Headers 里的完整 cookie`}
+        style={{ width: '100%', height: 110, boxSizing: 'border-box', resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+      />
+
+      {!!cookie.trim() && !check.ok && (
+        <div className="banner" style={{ borderLeftColor: 'var(--warn)', marginTop: 8, fontSize: 12, lineHeight: 1.7 }}>
+          ⚠ {check.message}
+        </div>
+      )}
+
+      <div className="row" style={{ gap: 10, marginTop: 12, alignItems: 'center' }}>
+        <button className="primary" disabled={busy || !cookie.trim()} onClick={() => void save()}>
+          {busy ? '保存中…' : '保存绑定'}
+        </button>
+        <span className="muted" style={{ fontSize: 11 }}>不知道去哪拿 Cookie？用下面的「网页扫码登录」自动抓取完整 Cookie</span>
+      </div>
+
+      {/* 网页登录（主进程抓取完整凭据落盘） */}
+      <DriveLogin
+        provider={provider}
+        onBound={() => { refresh(); onSaved?.(); }}
+      />
+
+      {/* UC 专属 —— non-VIP（NORMAL）的「UC原画」走 TV Token 而非 cookie */}
+      {provider === 'uc' && <UcTvBind cookieBound={bound} onBound={() => { refresh(); onSaved?.(); }} />}
+
+      {msg && <div className="muted" style={{ fontSize: 12, marginTop: 8, lineHeight: 1.7 }}>{msg}</div>}
+    </>
+  );
+}

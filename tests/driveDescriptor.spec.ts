@@ -1,5 +1,5 @@
 // tests/driveDescriptor.spec.ts — 「盘搜/免转存」家族 `<provider>@<base64(JSON)>` episode id 映射
-// 实测来源：.tmp/netdisk-probe.cjs 跑 8 订阅（嗷呜 csp_WoggAmns 等）时发现——id 形如
+// 实测来源：.tmp/netdisk-probe.cjs 跑 8 订阅（嗷呜 csp_某壳源Amns 等）时发现——id 形如
 //   quark@eyJmaWxlSWQiOi… {fileId,fileToken,shareId,stoken,format}
 //   uc@…（同构）· baidu@eyJzaGFyZUlkIjo… {shareId,fileId,uk,randsk,format}
 // 此前应用不认 → 原样交给蜘蛛 → 蜘蛛鉴权链失败（「未登录」）。本 spec 守住解码与三条映射。
@@ -72,7 +72,7 @@ describe('三条原生通道的映射（免转存凭据来自描述符）', () =
   });
 });
 
-// ★ 2026-10-14（用户报 wex/立播「夸克原画」播不了）：**嵌套信封** ——
+// （某第三方源「夸克原画」播不了）：**嵌套信封** ——
 //   `base64(JSON{a:<网盘商>, b:<内层 JSON 字符串>, c,d})`，真实凭据在内层短键（实测解码确认）。
 const NESTED_QUARK = {
   a: 'quark',

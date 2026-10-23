@@ -21,7 +21,7 @@ import okhttp3.OkHttpClient;
  * NoSuchMethodError（比 ClassNotFoundException 更隐蔽，往往表现为蜘蛛内部
  * 莫名的 NPE）。
  *
- * <p>★ 本类此前由基线 jar 直接提供、没有源码，导致 {@code initApi(SpiderApi)}
+ * <p>本类此前由基线 jar 直接提供、没有源码，导致 {@code initApi(SpiderApi)}
  * 缺失 → XBPQ 等新版蜘蛛一启动就 ClassNotFoundException/NoSuchMethodError。
  * 现在纳入源码统一管理，与 TVBoxOS(q215613905) 的 Spider.java 保持签名一致。
  */

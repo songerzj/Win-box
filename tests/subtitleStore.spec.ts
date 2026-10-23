@@ -58,7 +58,7 @@ describe('SubtitleStore', () => {
     const store = new JsonStore(join(dir, 'subtitle.json'));
     store.setObject('settings', { enabled: true, assrtToken: 'legacy-plain' });
     store.flush();
-    // ★ 先落盘再构造 SubtitleStore（JsonStore 为内存态，新实例需重新 load 才看得到）
+    // 先落盘再构造 SubtitleStore（JsonStore 为内存态，新实例需重新 load 才看得到）
     const s = new SubtitleStore(join(dir, 'subtitle.json'), NullLogger, fakeCodec());
     expect(s.settings.assrtToken).toBe('legacy-plain');
     // 迁移后再次写入应以密文落盘（不再明文）
@@ -73,7 +73,7 @@ describe('SubtitleStore', () => {
     const store = new JsonStore(join(dir, 'subtitle.json'));
     store.setObject('settings', { enabled: false, assrtToken: 'enc:%%%invalid%%%' });
     store.flush();
-    // ★ 先落盘再构造 SubtitleStore（JsonStore 为内存态，新实例需重新 load 才看得到）
+    // 先落盘再构造 SubtitleStore（JsonStore 为内存态，新实例需重新 load 才看得到）
     const s = new SubtitleStore(join(dir, 'subtitle.json'), NullLogger, fakeCodec());
     expect(s.settings.assrtToken).toBe('');
   });

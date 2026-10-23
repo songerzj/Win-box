@@ -64,7 +64,7 @@ describe('DanmakuBitmapCache', () => {
 
   it('字节预算：条目数没超、字节超预算也淘汰最旧的', () => {
     const { rasterizer, released } = fakeRasterizer();
-    // ★ 显式给足 skipBytes（默认 = maxBytes/8，此处预算故意压小 ⇒ 必须显式放开单图门槛）
+    // 显式给足 skipBytes（默认 = maxBytes/8，此处预算故意压小 ⇒ 必须显式放开单图门槛）
     const c = new DanmakuBitmapCache(rasterizer, { maxEntries: 100, maxBytes: 2500, skipBytes: 1_000_000 });
     c.get('aa', 10, '#fff', 1); // 2000 字节
     expect(c.bytes).toBe(2000);

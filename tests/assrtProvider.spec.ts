@@ -51,7 +51,7 @@ describe('decodeSubtitle（S3：UTF-8 / GBK 判别）', () => {
     const buf = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(s, 'utf16le')]);
     expect(decodeSubtitle(buf)).toBe(s);
   });
-  it('★ GBK 混 ASCII（纯 ASCII 段往返相等）不再被误判为 UTF-8 → 走 GB18030 解出中文', () => {
+  it('GBK 混 ASCII（纯 ASCII 段往返相等）不再被误判为 UTF-8 → 走 GB18030 解出中文', () => {
     // "Hello 中文" 的 GBK 字节：Hello 是 ASCII，中文 GB2312 双字节；
     // 中=D6D0、文=CEC4（注意 0xD6D0/0xCEC4 作为 UTF-8 双字节序列也是合法的，
     // 旧实现会误判为 UTF-8 解成拉丁乱码——新实现打分选优走 GB18030）
@@ -71,7 +71,7 @@ describe('decodeSubtitle（S3：UTF-8 / GBK 判别）', () => {
     const out = decodeSubtitle(buf);
     expect(typeof out).toBe('string');
   });
-  it('★ 2026-09-24 修复：GBK 字幕（必然含换行）不再被解成空串', () => {
+  it('修复：GBK 字幕（必然含换行）不再被解成空串', () => {
     // 真因：textScore 把 \r\n\t（≤0x1F）一律判 -Infinity → GBK 严格 UTF-8 解码失败得空串、
     //      两边同为 -Infinity → 选空串 → 表现为「字幕下载为空 / 挂不上」。
     const srt = '1\r\n00:00:01,000 --> 00:00:02,000\r\n中文字幕测试\r\n';
@@ -100,7 +100,7 @@ describe('isArchive（S6：压缩/归档魔数）', () => {
   });
 });
 
-// ---- ★ 2026-09-24：压缩包 → 解压 → 挑条目 → 解码（此前压缩包直接返回空串 = 100% 挂不上）----
+// ---- 压缩包 → 解压 → 挑条目 → 解码（此前压缩包直接返回空串 = 100% 挂不上）----
 describe('subtitleFromBytes（压缩包字幕可用化）', () => {
   const ASS_TEXT = '[Script Info]\nDialogue: 0,0:00:01.00,0:00:03.00,Default,,0,0,0,,你好世界';
   it('zip 内含 ASS + readme → 自动挑出 ASS（含真实文件名/格式/条目数）', async () => {

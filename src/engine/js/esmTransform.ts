@@ -16,13 +16,13 @@ import { ID_SRC } from './esmHeadImports';
 const HAS_MODULE_SYNTAX = /(^|[\n;])\s*(import|export)\b/;
 
 /**
- * ★ 2026-09-29：标识符必须认 **Unicode 字母** —— drpy2 引擎（`drpy2.min.js`）头部就是
+ * 标识符必须认 **Unicode 字母** —— drpy2 引擎（`drpy2.min.js`）头部就是
  *   `import 模板 from "../js/模板.js";`。旧正则只写 `[A-Za-z_$][\w$]*` ⇒ 该行不被转换 ⇒
  *   `SyntaxError: Cannot use import statement outside a module` ⇒ 整个 drpy2 源降级
- *   （用户口径「drpy JS 源桌面端不支持」的真根因之一）。ID_SRC 与 esmHeadImports 同一来源。
+ * （这是「drpy JS 源桌面端不支持」的真根因之一）。ID_SRC 与 esmHeadImports 同一来源。
  */
 
-/** 进口/导出语句模式（`u` 旗标 + Unicode 标识符；★ `import\s*\{` / `export\s+default\s*` 必须容忍
+/** 进口/导出语句模式（`u` 旗标 + Unicode 标识符；`import\s*\{` / `export\s+default\s*` 必须容忍
  *  **minify 无空格写法** —— 真实 `drpy2.min.js` 就是 `import{gbkTool}from"./gbk.js"` 与 `export default{…}`，
  *  旧版用 `\s+` 会漏转 → SyntaxError → 整源降级） */
 const RE_IMPORT_DEFAULT_NAMED = new RegExp(String.raw`import\s+(${ID_SRC})\s*,\s*\{([\s\S]*?)\}\s*from\s*['"]([^'"]+)['"]\s*;?`, 'gu');

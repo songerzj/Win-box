@@ -2,14 +2,14 @@
 import { build, context } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-// ★ 2026-10-14：okhttp 4.x 兼容 jar（`resources/jvm/okhttp4-compat/winbox-okhttp4-compat.jar`）是
+// okhttp 4.x 兼容 jar（`resources/jvm/okhttp4-compat/winbox-okhttp4-compat.jar`）是
 //   **派生生成物**且 `resources/jvm/**/*.jar` 不进仓库 ⇒ 随构建现场产出，否则打包后该 jar 缺失、
 //   蜘蛛里 okhttp 4.x 参数序的 `RequestBody.create(String, MediaType)` 调用会退回 NoSuchMethodError。
 //   上游 jar 未 provision 时静默跳过（不阻断构建）。
 import { generateOkHttp4Compat } from './gen-okhttp-compat.mjs';
-// ★ 2026-10-14：prefs 影子 jar（`resources/jvm/prefs-shim/winbox-prefs-shim.jar`）同样是**派生生成物**
+// prefs 影子 jar（`resources/jvm/prefs-shim/winbox-prefs-shim.jar`）同样是**派生生成物**
 //   且 `resources/jvm/**/*.jar` 不进仓库 ⇒ 随构建现场产出；缺失时 stubs.jar 里那个纯内存的
-//   `android/content/SharedPreferences$Mem` 会让 wex 族永远读到空 cookie。
+//   `android/content/SharedPreferences$Mem` 会让 某第三方源族永远读到空 cookie。
 import { generatePrefsShim } from './gen-prefs-shim.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -36,7 +36,7 @@ const opts = {
   format: 'cjs',
   target: 'node20',
   sourcemap: true,
-  // ★ 2026-09-24：wasm 解压库（字幕压缩包）走 external，运行时从 node_modules 加载，
+  // wasm 解压库（字幕压缩包）走 external，运行时从 node_modules 加载，
   //   wasm 二进制由代码内 `wasmBinary` 显式传入（不依赖库内部的 __dirname 路径解析）。
   external: ['electron', 'iconv-lite', 'fast-xml-parser', 'node-unrar-js', '7z-wasm'],
   logLevel: 'info',
@@ -46,12 +46,12 @@ const opts = {
 const entries = [
   { in: resolve(src, 'src/main/index.ts'), out: 'main' },
   { in: resolve(src, 'src/main/preload.ts'), out: 'preload' },
-  // ★ 2026-09-29（用户要求）本地包网页源窗口的 preload（注入 window.fm 桥）
+  // 本地包网页源窗口的 preload（注入 window.fm 桥）
   { in: resolve(src, 'src/main/webbridge/webhomePreload.ts'), out: 'webhome-preload' },
 ];
 
 /**
- * ★★ 2026-09-30：JS 蜘蛛 worker 产物（`dist/js-worker.cjs`）。
+ * JS 蜘蛛 worker 产物（`dist/js-worker.cjs`）。
  *   主进程用 `new Worker(代码, { eval: true })` 启动它（见 engine/js/worker/JsWorkerPool.ts）——
  *   eval 方式不依赖模块路径解析，asar 内也能跑。**必须整包 bundle**（cheerio/crypto-js/iconv-lite
  *   都要内联）：eval 出来的 worker 没有自己的目录，运行时 `require('cheerio')` 会解析不到。
@@ -68,7 +68,7 @@ const workerOpts = {
 };
 
 /**
- * ★★ 2026-10-18（R10）：L4 插件沙箱 worker 产物（`dist/plugin-worker.cjs`）。
+ * （R10）：L4 插件沙箱 worker 产物（`dist/plugin-worker.cjs`）。
  *   同 js-worker 口径：主进程 `new Worker(code, { eval: true, workerData })` 启动（见
  *   plugin/sandbox/PluginSandbox.ts）。**整包 bundle** —— 只依赖 node 内建 + 本仓代码，
  *   不 import electron（第三方代码绝不能进主进程，worker 内也没有 electron）。
@@ -90,7 +90,7 @@ if (watch) {
     outfile: workerFile,
   });
   await wctx.watch();
-  // ★ R10：L4 插件沙箱 worker 也进 watch
+  // R10：L4 插件沙箱 worker 也进 watch
   const pctx = await context({
     ...workerOpts,
     entryPoints: [resolve(src, 'src/main/plugin/sandbox/pluginWorkerEntry.ts')],
@@ -102,9 +102,9 @@ if (watch) {
   for (const e of entries) {
     await build({ ...opts, entryPoints: [e.in], outfile: resolve(src, `dist/${e.out}.cjs`) });
   }
-  // ★ JS 蜘蛛 worker（独立 bundle，见上面 workerOpts 注释）
+  // JS 蜘蛛 worker（独立 bundle，见上面 workerOpts 注释）
   await build({ ...workerOpts, entryPoints: [resolve(src, 'src/engine/js/worker/entry.ts')], outfile: workerFile });
-  // ★ R10：L4 插件沙箱 worker（独立 bundle，见上面 pluginWorkerFile 注释）
+  // R10：L4 插件沙箱 worker（独立 bundle，见上面 pluginWorkerFile 注释）
   await build({ ...workerOpts, entryPoints: [resolve(src, 'src/main/plugin/sandbox/pluginWorkerEntry.ts')], outfile: pluginWorkerFile });
   console.log('[main] build done');
 }

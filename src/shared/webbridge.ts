@@ -1,7 +1,7 @@
 // src/shared/webbridge.ts
-// ★ 2026-09-29（用户要求）：本地包「网页源」的 `window.fm` 桥契约（三处共用同一份类型）。
+// 本地包「网页源」的 `window.fm` 桥契约（三处共用同一份类型）。
 //
-// 上游形态（影视壳/FongMi 的 Web UI 协议）：页面通过 `window.fm` 与宿主交互 ——
+// 上游形态（FongMi 的 Web UI 协议）：页面通过 `window.fm` 与宿主交互 ——
 //   fm.req(url, {method, headers, body, timeout(秒), credentials}) → { ok, status, body, error }
 //   fm.res(url, {headers})    → 可直接塞给 <img src>/<audio src> 的中继地址（字符串，同步）
 //   fm.play(url, title)       → 起宿主播放器

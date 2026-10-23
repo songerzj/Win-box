@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { matchDriveCookieProvider, wrapPlayUrl, driveUrlHost, wrapImageUrlForRelay, driveBindProviderFromText, looksLikeDriveBindFailure, driveProviderKeyFromHint } from '../src/shared/driveProvider';
 
-// ★ 2026-09-23：源封面防盗链/DNS 污染兜底 —— 源图经本地 /img 中继（DoH + Referer 重试链）
+// 源封面防盗链/DNS 污染兜底 —— 源图经本地 /img 中继（DoH + Referer 重试链）
 describe('wrapImageUrlForRelay', () => {
   it('http(s) 源图 → /img 中继（u + ref=同源 Referer）', () => {
     const r = wrapImageUrlForRelay('http://wim.xzjykj.com/upload/vod/a.jpg');
@@ -70,7 +70,7 @@ describe('wrapPlayUrl', () => {
     expect(w).toContain(encodeURIComponent('https://pan.quark.cn/s/1'));
   });
 });
-// ★ 2026-09-28：诊断实测发现的一类「能播不出来」——蜘蛛把「未登录网盘」当成空地址 + 一句提示返回
+// 诊断实测发现的一类「能播不出来」——蜘蛛把「未登录网盘」当成空地址 + 一句提示返回
 //   实测原话（至臻源 · 百度线路）：`还未登录百度账号,请前往【配置中心】登录`
 describe('driveBindProviderFromText / looksLikeDriveBindFailure — 登录提示 → 归属网盘', () => {
   it('识别各网盘的「请登录/授权」提示', () => {
@@ -92,13 +92,13 @@ describe('driveBindProviderFromText / looksLikeDriveBindFailure — 登录提示
     expect(looksLikeDriveBindFailure('普通站点 404')).toBe(false);
   });
 
-  it('★ 2026-10-14：泛化「网盘授权」文案也算（不含网盘名），由调用方用该源 provider 补位', () => {
+  it('泛化「网盘授权」文案也算（不含网盘名），由调用方用该源 provider 补位', () => {
     expect(looksLikeDriveBindFailure('请先完成网盘授权')).toBe(true);
     expect(driveBindProviderFromText('请先完成网盘授权')).toBeNull(); // 无网盘名 → 需 SpiderHost 用自己的 map 补位
   });
 });
 
-// ★ 2026-10-14（日志 app-2026-10-13.log）：泛化授权文案「请先完成网盘授权」不含网盘名 →
+// （日志 运行日志）：泛化授权文案「请先完成网盘授权」不含网盘名 →
 //   driveBindProviderFromText 返回 null → 用 detail() 学到的该源 provider 补位
 describe('driveProviderKeyFromHint — 命中词（中文标签/键）→ provider 键', () => {
   it('中文标签与英文键都归一', () => {

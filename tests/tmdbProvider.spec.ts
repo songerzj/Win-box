@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTmdbSearch, metaCacheKey, metaQueryName, metaQueryVariants, truncAtYear, parseTmdbExtras, toDiscoverItems, parseGenreList, parseGenrePage, titleMatches, parseTmdbImages } from '../src/main/meta/tmdbProvider';
 
-// ★ 2026-09-24：发现页 Hero「横版剧照轮播」的图片解析（过滤 + 中文优先 + 评分排序 + 上限）
+// 发现页 Hero「横版剧照轮播」的图片解析（过滤 + 中文优先 + 评分排序 + 上限）
 describe('parseTmdbImages', () => {
   const img = (file_path: string, width: number, vote: number, iso?: string): Record<string, unknown> => ({
     file_path,
@@ -42,7 +42,7 @@ describe('parseTmdbImages', () => {
     expect(parseTmdbImages({ backdrops: 'x', posters: null })).toEqual({ backdrops: [], posters: [] });
   });
 
-  // ★ 2026-09-25（用户报「竖版图被裁剪」）：backdrops 里混有竖版图（上传时标错类型）
+  // backdrops 里混有竖版图（上传时标错类型）
   //   → 横版用途必须按 宽/高 过滤，否则铺满横向区域时被裁得只剩中间一条。
   it('竖版图（宽/高 < 1.3）被过滤掉，只留横版', () => {
     const r = parseTmdbImages({
@@ -60,7 +60,7 @@ describe('parseTmdbImages', () => {
   });
 });
 
-// ★ 2026-09-25：`backdrop_path` 是**保证横版**的剧照 —— 详情页背景取不到 backdrops 时用它兜底
+// `backdrop_path` 是**保证横版**的剧照 —— 详情页背景取不到 backdrops 时用它兜底
 describe('parseTmdbSearch / toDiscoverItems — 带出横版剧照', () => {
   it('results[].backdrop_path → MetaHit.backdrop（w1280，基址去尺寸后缀）', () => {
     const hits = parseTmdbSearch(
@@ -86,7 +86,7 @@ describe('parseTmdbSearch / toDiscoverItems — 带出横版剧照', () => {
   });
 });
 
-// ★ 2026-09-24：TMDb 命中「实质同名」校验（防误匹配 → 补出来的封面/演职员全是错的）
+// TMDb 命中「实质同名」校验（防误匹配 → 补出来的封面/演职员全是错的）
 describe('titleMatches', () => {
   it('同名（含季/集噪声、空格与标点差异）→ 命中', () => {
     expect(titleMatches('狂飙', '狂飙')).toBe(true);
@@ -114,7 +114,7 @@ describe('titleMatches', () => {
   });
 });
 
-// ★ 2026-09-24：发现页「分类」（TMDB 类型清单 + 按类型分页）
+// 发现页「分类」（TMDB 类型清单 + 按类型分页）
 describe('parseGenreList / parseGenrePage', () => {
   it('类型清单：id/name 合法项保留，非法项跳过', () => {
     const g = parseGenreList({ genres: [{ id: 28, name: '动作' }, { id: 'x', name: '坏ID' }, { id: 35, name: '' }, { id: 12, name: '冒险' }] });
@@ -147,7 +147,7 @@ describe('parseGenreList / parseGenrePage', () => {
   });
 });
 
-// ★ 2026-09-24：TMDB id 随搜索结果带出（详情页「演职员/相关推荐」需要它再查一次详情）
+// TMDB id 随搜索结果带出（详情页「演职员/相关推荐」需要它再查一次详情）
 describe('parseTmdbSearch — tmdbId', () => {
   it('带 id 的条目 → tmdbId 透出；无 id/非法 id → 不产出该字段', () => {
     const r = parseTmdbSearch(
@@ -166,7 +166,7 @@ describe('parseTmdbSearch — tmdbId', () => {
   });
 });
 
-// ★ 2026-09-24：详情页增强（演职员/类型/相关推荐）解析
+// 详情页增强（演职员/类型/相关推荐）解析
 describe('parseTmdbExtras', () => {
   const sample = {
     genres: [{ id: 18, name: '剧情' }, { id: 80, name: '犯罪' }, { id: 18, name: '剧情' }],
@@ -215,7 +215,7 @@ describe('parseTmdbExtras', () => {
   });
 });
 
-// ★ 2026-09-24：发现页（无源默认主页）条目映射
+// 发现页（无源默认主页）条目映射
 describe('toDiscoverItems', () => {
   it('列表项 → 发现页条目（封面包装为本地 /img 中继，无图条目跳过）', () => {
     const items = toDiscoverItems(
@@ -289,7 +289,7 @@ describe('metaCacheKey / metaQueryName', () => {
   });
 });
 
-// ★ 2026-09-23：查询名变体 —— 「封面总有几个补不上」的治因之一
+// 查询名变体 —— 「封面总有几个补不上」的治因之一
 //   （源站把「第1季/更新至N集/4K」等标记拼进片名时，原名查 TMDB/豆瓣必然 miss）
 describe('metaQueryVariants', () => {
   it('原名优先，且首个变体与 metaQueryName 一致', () => {
@@ -321,7 +321,7 @@ describe('metaQueryVariants', () => {
     expect(metaQueryVariants('A')).toEqual([]);
   });
 
-  // ★ 2026-09-23 二轮：真机实测 miss 的三个名字（中文数字季号 / 版本语言标签 / 年份+演员串）
+  // 实测 miss 的三个名字（中文数字季号 / 版本语言标签 / 年份+演员串）
   it('中文数字季号（此前 NOISE 只认阿拉伯数字 → 「第一季」查不到）', () => {
     expect(metaQueryVariants('权力的游戏第一季')).toContain('权力的游戏');
     expect(metaQueryVariants('无耻之徒美版第一季')).toContain('无耻之徒');

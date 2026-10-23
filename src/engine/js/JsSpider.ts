@@ -23,11 +23,11 @@ export class JsSpider extends Spider {
 
   constructor(init: SpiderInit) {
     super(init);
-    // ★ 网盘绑定凭据并入 ext（与 JarSpider.enrichedExt 同一实现）：
+    // 网盘绑定凭据并入 ext（与 JarSpider.enrichedExt 同一实现）：
     //   JS 蜘蛛的 ext 仅在沙箱首次加载时经 init 转发给蜘蛛（JsSandbox.forwardInit），
     //   不并入则"扫码绑定网盘 → JS 源调盘内资源"链路断裂（任务 #17 缺口①）。
     this.ext = enrichExt(this.ext || '', init.host?.driveTokens?.());
-    // ★★ 2026-09-30：执行侧可插拔 —— 主进程注入 worker 池（同步 req 不再冻主进程，
+    // 执行侧可插拔 —— 主进程注入 worker 池（同步 req 不再冻主进程，
     //   死循环/超时直接 terminate）；单测与降级路径不注入 → 进程内 node:vm（行为与旧版一致）。
     const make = init.host.jsSandboxFactory;
     if (make) {
@@ -58,7 +58,7 @@ export class JsSpider extends Spider {
       await this.sandbox.ensureLoaded();
       return this.sandbox;
     } catch (e) {
-      // ★ 2026-09-29：UnsupportedSourceError 的 (message, reason) 是「错误码 + 细节」——
+      // UnsupportedSourceError 的 (message, reason) 是「错误码 + 细节」——
       //   旧写法只记 message，细节（脚本执行失败原因）丢了，drpy/壳类源排障时只剩一个 SCRIPT_ERROR。
       const err = e as { name?: string; message?: string; reason?: string };
       this.failure = `${err.name || 'Error'}: ${err.message || String(e)}${err.reason ? `（${err.reason}）` : ''}`;

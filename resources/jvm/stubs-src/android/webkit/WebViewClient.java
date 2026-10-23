@@ -8,7 +8,7 @@ import android.view.KeyEvent;
 /**
  * WebViewClient stub —— WebView 的页面生命周期/请求拦截回调。
  *
- * <p>★ 本类在基线 jar 里已存在（只有 shouldOverrideUrlLoading / onPageFinished
+ * <p>本类在基线 jar 里已存在（只有 shouldOverrideUrlLoading / onPageFinished
  * 两个方法），但内嵌 WebView 库（merge/h1/j/g）覆写了更多回调 → 触发
  * "does not override" VerifyError。这里做**超集重写**：保留原有两个方法签名
  * 不变，补齐安卓 API 28 的回调全集。

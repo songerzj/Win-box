@@ -1,5 +1,5 @@
 // tests/sourceKind.spec.ts
-// ★ 源形态归类：确保设置页「按形态显示字段」的判定稳定。
+// 源形态归类：确保设置页「按形态显示字段」的判定稳定。
 // 这是 Task「整理 ext 配置界面」的回归护栏 —— 分类错了会把 ext 框藏起来或误留给 CMS 源。
 import { describe, it, expect } from 'vitest';
 import { sourceKindOf, sourceKindInfo, sourceKindLabel, extRelevant, isDoubanLikeSource, detailIsEmpty, configCenterHintOf } from '../src/engine/config/sourceKind';
@@ -69,7 +69,7 @@ describe('sourceKindLabel / extRelevant 便捷函数', () => {
   });
 });
 
-// ★ 2026-09-29（用户要求）：豆瓣类源「无详情」→ 点封面直接走全源聚合搜索
+// 豆瓣类源「无详情」→ 点封面直接走全源聚合搜索
 describe('isDoubanLikeSource / detailIsEmpty（无详情源判据）', () => {
   const site = (o: Partial<{ key: string; name: string; api: string; ext: string }>) => ({
     key: o.key ?? 'k',
@@ -87,7 +87,7 @@ describe('isDoubanLikeSource / detailIsEmpty（无详情源判据）', () => {
     expect(isDoubanLikeSource(null)).toBe(false);
   });
 
-  it('★ 2026-09-30 fty/饭太硬 的豆瓣片单源（豆豆 / DouDou）同样判是', () => {
+  it('某壳源 的豆瓣片单源（豆豆 / DouDou）同样判是', () => {
     // 实测配置原样：key=点我切源 / name=豆豆┃片单 / api=csp_DouDouGuard（三字段都无「豆瓣/douban」）
     const fty = { key: '点我切源', name: '豆豆┃片单', api: 'csp_DouDouGuard', ext: '' };
     expect(isDoubanLikeSource(fty)).toBe(true);

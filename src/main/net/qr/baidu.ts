@@ -1,6 +1,6 @@
 // src/main/net/qr/baidu.ts — 百度网盘扫码适配器（passport 协议）。
 //
-// 协议（与 cookie-butler config/platforms.json 的 baidu 段一致，本机已实测取码/轮询连通）：
+// 协议（与 cookie-butler config/platforms.json 的 baidu 段一致，实测确认取码/轮询连通）：
 //   1) 取码： GET  https://passport.baidu.com/v2/api/getqrcode?lp=pc&qrloginfrom=pc&gid={gid}&apiver=v3…
 //             → { errno:0, sign, imgurl }
 //      二维码是**服务端直接出的 PNG**：`https://{imgurl}`（载荷不是可重绘的文字 URL，

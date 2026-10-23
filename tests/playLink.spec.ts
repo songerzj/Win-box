@@ -1,6 +1,6 @@
 // tests/playLink.spec.ts — 播放链接协议识别（磁力 / 迅雷 / 电驴 / FTP）纯函数回归。
 //
-// ★ 背景（2026-09-29 用户选定「先做 A：协议解析 + 链路识别」）：
+// 背景（「先做 A：协议解析 + 链路识别」）：
 //   这些地址此前原样交给 <video> ⇒ 黑屏无提示。现在：thunder:// 解出内层 http(s) 直接播；
 //   magnet/ed2k/ftp 给「人话原因」上屏 + 原始链接（主进程复制剪贴板，可粘进 BT 工具）。
 import { describe, it, expect, vi } from 'vitest';
@@ -88,7 +88,7 @@ describe('classifyPlayLink — 协议识别结论', () => {
     expect(r.externalLink).toBeUndefined();
   });
 
-  // ★ 2026-09-30（用户报「包里的直播源播不了」）：rtmp/rtsp 直播流此前原样透传 ⇒ `<video>` 黑屏无提示
+  // rtmp/rtsp 直播流此前原样透传 ⇒ `<video>` 黑屏无提示
   it('rtmp / rtsp / mms → 上屏原因 + 复制链接（Chromium 无载体）', () => {
     for (const raw of [
       'rtmp://live.test/app/stream',
@@ -183,7 +183,7 @@ describe('SpiderHost.playInner 接线（经 play() 全链）', () => {
     }
   });
 
-  // ★ 2026-09-29（磁力 B）：注入 BT 引擎后的三种出口接线
+  // （磁力 B）：注入 BT 引擎后的三种出口接线
   const magVm = (url: string) => ({ play: async () => ({ parse: 0, url, playUrl: '', flag: '', jx: 0 }) });
   const MAG = 'magnet:?xt=urn:btih:DEADBEEF&dn=Test';
 

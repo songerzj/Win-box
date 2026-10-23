@@ -10,7 +10,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fx = join(here, 'fixtures');
 const read = (f: string) => readFileSync(join(fx, f), 'utf-8');
 
-describe('m3u — 频道名提取（★2026-09-20 用户授权修复：含逗号频道名不再截断）', () => {
+describe('m3u — 频道名提取（修复：含逗号频道名不再截断）', () => {
   it('普通 EXTINF 行 → 逗号后的频道名', () => {
     const m3u = '#EXTM3U\n#EXTINF:-1 tvg-id="1" tvg-name="CCTV1" group-title="央视",CCTV1\nhttp://a/1\n';
     const g = parseToJsonArray(m3u);

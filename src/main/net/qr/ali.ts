@@ -1,5 +1,5 @@
 // src/main/net/qr/ali.ts — 阿里云盘族适配器：包装现有 easy-token 通道（src/main/net/QrLogin.ts）。
-// ★ 对外行为与文案完全保持不变：qrCreate→{content,uuid}；qrPoll→state 0/10/20/30/40，
+// 对外行为与文案完全保持不变：qrCreate→{content,uuid}；qrPoll→state 0/10/20/30/40，
 //   state=20 且带 user.refresh_token 时回传 refresh_token。sid 即原 uuid。
 import type { HttpClient, Logger } from '../../../shared/types';
 import { qrCreate as aliQrCreate, qrPoll as aliQrPoll } from '../QrLogin';

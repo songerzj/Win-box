@@ -11,7 +11,7 @@ import java.util.Map;
  * <p>真实调用面（扫描确认）：内部枚举 {@code LayoutAlgorithm} / {@code PluginState} /
  * {@code RenderPriority}，以及大量 {@code setXxx} / {@code getXxx}。
  *
- * <p>★ 枚举**必须把常量补齐**：蜘蛛字节码里是
+ * <p>枚举**必须把常量补齐**：蜘蛛字节码里是
  * {@code getstatic WebSettings$LayoutAlgorithm.NARROW_COLUMNS}，
  * 少一个常量就是 NoSuchFieldError（在类初始化阶段直接炸，连方法体都进不去）。
  * 这里按安卓 API 28 的真实枚举成员全量声明。

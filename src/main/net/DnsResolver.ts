@@ -1,7 +1,7 @@
 // src/main/net/DnsResolver.ts — DoH（DNS-over-HTTPS）解析 + 带 DoH 的 undici Agent 工厂
 // 用途：TMDB 等海外 API 在本机常被 DNS 污染（api.themoviedb.org 直连解析失败）。
 //       本模块用 DoH 拿真实 A 记录，再经 Agent.connect.lookup 直连；DoH 全部失败回退系统 DNS。
-// 实测（2026-09-18）：api.themoviedb.org 经 doh.pub 解析后可达（401=仅缺 key），直连被污染（000）。
+// 实测确认：api.themoviedb.org 经 doh.pub 解析后可达（401=仅缺 key），直连被污染（000）。
 import { request as undiciRequest } from 'undici';
 import { lookup as dnsLookup } from 'node:dns';
 import { Agent } from 'undici';
@@ -55,7 +55,7 @@ export type DnsLookup = (
  * 构造 lookup 回调：先 DoH（超时 6s），失败或本地回环域名回退 node:dns.lookup。
  * hosts 文件仍由系统 DNS 层生效；DoH 只影响海外被污染域名的解析。
  *
- * ★★ 2026-09-23 修复「TMDB/豆瓣封面链路整条失效」★★
+ * 修复「TMDB/豆瓣封面链路整条失效」
  *   undici 7 调用 connect.lookup 的形态是 `lookup(host, { hints, all: true }, cb)`，
  *   并且**要求 cb(null, [{address, family}, …]) 数组**；老实现一律 `cb(null, ip, 4)` →
  *   undici 报 `Invalid IP address: undefined` → 所有走 DoH Agent 的请求（TMDB 搜索、豆瓣搜索、
@@ -110,7 +110,7 @@ export function createDnsLookup(): DnsLookup {
 export function createDohAgent(): Agent {
   return new Agent({
     connect: {
-      // ★ 2026-10-09（用户报「解析超时」/日志实证）：原 30000 —— 当 DoH 失败回落系统 DNS 拿到
+      // （原 30000）当 DoH 失败回落系统 DNS 拿到
       //   **污染 IP**（如 api.themoviedb.org → 108.160.167.159，DROP 型墙）时，TCP 连接要**白等 30s**
       //   才抛 ETIMEDOUT（headersTimeout 不覆盖连接阶段）→ 发现页/封面「长时间解析不出」。
       //   收紧到 10s：正常海外连通（DoH 已解析真实 IP）实测 <2s，10s 足够；被墙 IP 10s 快速失败

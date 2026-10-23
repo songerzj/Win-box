@@ -25,19 +25,19 @@ import java.util.zip.ZipFile;
  *   BaseSpiderGuard.&lt;init&gt;() → Init.getSpider() → DexNative.proxyInvoke(...)
  * </pre>
  *
- * <p><b>★★ 2026-09-27「壳通解」：裸 .dex 现在能真正加载了（勿回退）★★</b>
+ * <p><b>「壳通解」：裸 .dex 现在能真正加载了（勿回退）</b>
  * <p>壳把 {@code assets/<X>.guard} 交给随包的 ARM {@code .so} 解密，得到明文 dex
  * （在 x64 上这一步由 unidbg 原生桥代跑，见 resources/jvm/native-bridge/），
  * 随后走 {@code new DexClassLoader(dexPath, …)}。
  * 本类对**裸 .dex**（以及「只含 classes.dex 的归档」）就地做一次
  * <b>运行时 dex2jar</b>（与宿主 JarSpiderBridge 同一条 d2j 链，按 dex 内容 md5 缓存），
  * 再用 {@link URLClassLoader} 加载 —— 于是任何「native 解密自己 dex」的壳都不再需要
- * 逐壳真机取证。
- * <p><b>★ 2026-09-27：转换「代价只付一次」</b> —— 产物写 `&lt;md5&gt;.part.jar` 后原子改名，
+ * 逐壳实测。
+ * <p><b>转换「代价只付一次」</b> —— 产物写 `&lt;md5&gt;.part.jar` 后原子改名，
  * 输出落日志文件（不走管道）；本 JVM 被宿主 kill 后，子进程写完的 part 会在下次进源时
  * 直接**收编**（见 {@link #dexToJar} 的注释），不会再让用户对着「首次加载」等第二遍。
  *
- * <p><b>★★ 2026-09-27（新订阅 96 源全空）「产物收尾」两步（勿删）★★</b>
+ * <p><b>（新订阅 96 源全空）「产物收尾」两步（勿删）</b>
  * 实测解密产物是 **zip**（`classes.dex` + `assets/libwex_v7.so` + `assets/libwex_v8.so`），
  * 而 dex2jar 只产出 .class ⇒ 载荷类 `<clinit>` 里
  * {@code InitOrigin.classLoader().getResourceAsStream("assets/libwex_v8.so")} 恒为 null（NPE），
@@ -82,8 +82,8 @@ public class BaseDexClassLoader extends ClassLoader {
         this.optimizedDirectory = optimizedDirectory;
         this.librarySearchPath = librarySearchPath;
         this.delegate = buildDelegate(this.dexPath, parent);
-        // ★ 2026-09-27（壳通解）：把本加载器登记给原生桥 —— 壳的 native 会用 JNI 调用「解密 dex 里的
-        //   真实蜘蛛类」的静态方法（实测 wex：`InitOrigin.init(Context)`），而 unidbg 的反射代理按类名
+        // （壳通解）：把本加载器登记给原生桥 —— 壳的 native 会用 JNI 调用「解密 dex 里的
+        //   真实蜘蛛类」的静态方法（实测 某第三方源：`InitOrigin.init(Context)`），而 unidbg 的反射代理按类名
         //   只在壳加载器里找 → CNFE。登记后桥的类工厂会兜底来这里找（原生桥不在时静默跳过）。
         registerWithBridge(this.delegate);
     }
@@ -99,7 +99,7 @@ public class BaseDexClassLoader extends ClassLoader {
     }
 
     /**
-     * ★ 2026-09-27（壳通解·载荷层）：给运行时转换产物打载荷补丁（反射调用，避免编译期耦合）。
+     * （壳通解·载荷层）：给运行时转换产物打载荷补丁（反射调用，避免编译期耦合）。
      * 桥不在 classpath / 产物无需补丁 / 打补丁失败 → 一律返回 null（原样加载，行为与补丁前一致）。
      */
     private static File patchRuntime(File jar) {
@@ -124,8 +124,8 @@ public class BaseDexClassLoader extends ClassLoader {
      * 把路径里「JVM 能直接读的归档」抽出来交给 URLClassLoader；
      * **裸 .dex（与只含 classes.dex 的归档）就地运行时转换成 jar**（见类注释）。
      *
-     * ★ 2026-09-27：**按内容判型，不再只看扩展名**。壳把解密产物落盘时常起名叫
-     *   `config.db` / `xxx.bin`（实测 wex：`…/cache/code_cache/sharedb/config.db`），
+     * **按内容判型，不再只看扩展名**。壳把解密产物落盘时常起名叫
+     *   `config.db` / `xxx.bin`（实测 某第三方源：`…/cache/code_cache/sharedb/config.db`），
      *   按扩展名判型会把真实 dex 记成 unsupported → 壳里所有 loadClass 全 CNFE。
      */
     private URLClassLoader buildDelegate(String path, ClassLoader parent) {
@@ -157,8 +157,8 @@ public class BaseDexClassLoader extends ClassLoader {
             File jar = dexToJar(src);
             if (jar != null) {
                 try {
-                    // ★ 2026-09-27（壳通解·载荷层）：解密 dex 里的 real 蜘蛛类自带 ARM native
-                    //   （wex：LoadNiMa/MyCrypto/GoProxy），其 `<clinit>` 会 `System.load` 自己拷出来的 .so
+                    // （壳通解·载荷层）：解密 dex 里的 real 蜘蛛类自带 ARM native
+                    //   （某第三方源：LoadNiMa/MyCrypto/GoProxy），其 `<clinit>` 会 `System.load` 自己拷出来的 .so
                     //   → x64 宿主 UnsatisfiedLinkError → ExceptionInInitializerError → 主页全空。
                     //   先给产物打「载荷补丁」（native → 32 位模拟器；System.load → bridgeLoad），
                     //   并把补丁目录排在**原 jar 之前**（类加载顺序覆盖原类）；无需补丁时为 null。
@@ -256,7 +256,7 @@ public class BaseDexClassLoader extends ClassLoader {
      * 裸 dex / dex 归档 → jar（运行时 dex2jar，按内容 md5 缓存）。
      * 失败（工具缺失、超时、产物为空）返回 null，调用方按「不可加载」记录并在 loadClass 时报准确原因。
      *
-     * ★ 2026-09-27（「代价只付一次」）：两条与宿主侧同口径的纪律 ——
+     * （「代价只付一次」）：两条与宿主侧同口径的纪律 ——
      *   ① **输出写 `<md5>.part.jar` 并重定向到日志文件**（不再读管道）：本 JVM 被宿主 kill 时管道断裂，
      *      子进程往已断的 stdout 写会抛 IOException，反而把「其实还在跑的转换」带崩；
      *   ② **收编上次会话跑完的 part**：JVM 虽然被杀，但 dex2jar 子进程在 Windows 上不会跟着死，
@@ -281,7 +281,7 @@ public class BaseDexClassLoader extends ClassLoader {
         }
 
         File tmp = new File(cache, key + ".part.jar");
-        // ★ 收编「上一次会话已经跑完」的转换产物（见方法注释 ②）：省掉整次 dex2jar
+        // 收编「上一次会话已经跑完」的转换产物（见方法注释 ②）：省掉整次 dex2jar
         if (isCompleteProduct(tmp) && adoptProduct(tmp, out)) {
             finalizeProduct(src, out);
             return out;
@@ -306,7 +306,7 @@ public class BaseDexClassLoader extends ClassLoader {
         try {
             ProcessBuilder pb = new ProcessBuilder(argv);
             pb.redirectErrorStream(true);
-            // ★ 输出重定向到日志文件（见方法注释 ①）：宿主 kill 本 JVM 后管道必断，落文件才安全；
+            // 输出重定向到日志文件（见方法注释 ①）：宿主 kill 本 JVM 后管道必断，落文件才安全；
             //   顺带把 dex2jar 的报错留档（此前只在内存里，JVM 一死就没了）。
             boolean toFile = false;
             try {
@@ -346,7 +346,7 @@ public class BaseDexClassLoader extends ClassLoader {
     }
 
     /**
-     * ★ 2026-09-27（新订阅 96 源全空）**产物收尾**：补 assets + 修 NEW 抽象类（见类注释）。
+     * （新订阅 96 源全空）**产物收尾**：补 assets + 修 NEW 抽象类（见类注释）。
      * 用标记文件 `&lt;产物&gt;.fix.ok` 保证只做一次；任一步失败都只记日志，不影响产物可用性。
      */
     private static void finalizeProduct(File src, File out) {
@@ -368,7 +368,7 @@ public class BaseDexClassLoader extends ClassLoader {
     }
 
     /**
-     * 把源归档里**非 class 条目**补进转换产物（实测 wex 载荷：`assets/libwex_v7.so` /
+     * 把源归档里**非 class 条目**补进转换产物（实测 某第三方源载荷：`assets/libwex_v7.so` /
      * `assets/libwex_v8.so` —— 载荷类 `<clinit>` 会 `getResourceAsStream("assets/libwex_v8.so")`
      * 把 .so 拷出来再 `System.load`，dex2jar 只产 .class ⇒ 不补就恒 null → NPE → 主页全空）。
      * 幂等：产物里已有的条目跳过；有条目缺失时写临时文件再原子替换。

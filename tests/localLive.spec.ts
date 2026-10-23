@@ -1,5 +1,5 @@
 // tests/localLive.spec.ts
-// ★ 2026-09-30：本地 TXT / M3U 直播源导入的纯函数（形态校验 / 取流地址 / 文件名清洗）。
+// 本地 TXT / M3U 直播源导入的纯函数（形态校验 / 取流地址 / 文件名清洗）。
 import { describe, it, expect } from 'vitest';
 import { localLiveUrl, looksLikeLiveSourceText, sanitizeLiveFileName, isLocalLiveUrl } from '../src/engine/live/localLive';
 
@@ -43,7 +43,7 @@ describe('localLive — localLiveUrl / sanitizeLiveFileName', () => {
     expect(sanitizeLiveFileName('  ')).toBe('live.txt');
   });
 
-  // ★ 2026-10-15（用户报「导入的 TXT 直播源重启后消失」）：本机线路判定必须与 localLiveUrl 产物一一对应
+  // 本机线路判定必须与 localLiveUrl 产物一一对应
   it('isLocalLiveUrl：localLiveUrl 产物为正；远端订阅 / 邻近路径为负', () => {
     expect(isLocalLiveUrl(localLiveUrl('http://127.0.0.1:9978', '我的 直播.m3u'))).toBe(true);
     expect(isLocalLiveUrl('http://127.0.0.1:9978/file/local-live/x.txt')).toBe(true);

@@ -1,5 +1,5 @@
 // tests/searchHistory.spec.ts
-// ★ 2026-09-29（用户要求）：搜索历史 —— 最多 10 条，第 11 条顶掉第 1 条；可逐条删/清空。
+// 搜索历史 —— 最多 10 条，第 11 条顶掉第 1 条；可逐条删/清空。
 import { describe, it, expect } from 'vitest';
 import { pushSearchTerm, removeSearchTerm, SEARCH_HISTORY_MAX } from '../src/renderer/lib/searchHistory';
 
@@ -12,7 +12,7 @@ describe('pushSearchTerm — 搜索历史（FIFO 上限 10）', () => {
     expect(pushSearchTerm(['c', 'b', 'a'], 'a')).toEqual(['a', 'c', 'b']);
   });
 
-  it('★ 第 11 条顶掉第 1 条（上限 10）', () => {
+  it('第 11 条顶掉第 1 条（上限 10）', () => {
     let list: string[] = [];
     for (let i = 1; i <= 11; i++) list = pushSearchTerm(list, `词${i}`);
     expect(list.length).toBe(SEARCH_HISTORY_MAX);

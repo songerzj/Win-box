@@ -28,7 +28,7 @@ const scroll = (time: number, text = '这是一条很长的弹幕内容'): Danma
 const base = { width: 800, height: 450, fontSize: 24, speed: 110, density: 1, offsetSec: 0 };
 
 /**
- * ★ 独立几何校验（**故意不复用引擎里的 willHitScroll**，以免实现有错时测试跟着错）：
+ * 独立几何校验（**故意不复用引擎里的 willHitScroll**，以免实现有错时测试跟着错）：
  * 同轨「后车 a」（更晚入场）与「前车 b」在共存期间的最小间隙（a 左缘 − b 右缘；< 0 = 追尾叠字）。
  */
 const minGap = (a: PlacedDanmaku, b: PlacedDanmaku): number => {
@@ -40,7 +40,7 @@ const minGap = (a: PlacedDanmaku, b: PlacedDanmaku): number => {
 };
 
 /** 同轨**全对**校验（不只看相邻两条：恒定行程时长下「后车追上前车」可能跨过中间车）。
- *  ★ 只做纯算术、最后断言一次 —— 高密度用例单轨可有上万条，逐对调 `expect` 会卡死（≈5×10⁷ 次）。 */
+ *  只做纯算术、最后断言一次 —— 高密度用例单轨可有上万条，逐对调 `expect` 会卡死（≈5×10⁷ 次）。 */
 const expectNoHitPerRow = (placed: PlacedDanmaku[]) => {
   const byRow = new Map<number, PlacedDanmaku[]>();
   for (const p of placed) byRow.set(p.row, [...(byRow.get(p.row) ?? []), p]);
@@ -97,7 +97,7 @@ describe('layoutDanmaku', () => {
     const { scroll: s } = layoutDanmaku(items, { ...base, region: 'full' });
     expect(s.length).toBeGreaterThan(0);
     expectNoHitPerRow(s);
-    // ★ 新模型下同轨确实会「共存多车」（旧口径要求前车完全出屏 ⇒ 每轨只会 1 条）
+    // 新模型下同轨确实会「共存多车」（旧口径要求前车完全出屏 ⇒ 每轨只会 1 条）
     const rows = [...new Set(s.map((p) => p.row))];
     expect(Math.max(...rows.map((r) => s.filter((p) => p.row === r).length))).toBeGreaterThan(1);
   });
@@ -181,7 +181,7 @@ describe('layoutDanmaku', () => {
   it('D1 抽稀不破排序与轨道不追尾', () => {
     const items = Array.from({ length: 12000 }, (_, i) => scroll(i * 0.1)); // 触发 >MAX_ITEMS 均匀抽稀
     const out = layoutDanmaku(items, { ...base, region: 'full' });
-    // ★ 上万条时逐对全量校验是 O(n²)（实测拖到 ~5s，会扰动套件里其它时序用例）⇒ 每轨抽查前 40 条；
+    // 上万条时逐对全量校验是 O(n²)（实测拖到 ~5s，会扰动套件里其它时序用例）⇒ 每轨抽查前 40 条；
     //   全量逐对校验由「同轨不追尾（几何不变量）」与新增的密度/追赶用例覆盖。
     const byRow = new Map<number, PlacedDanmaku[]>();
     for (const p of out.scroll) byRow.set(p.row, [...(byRow.get(p.row) ?? []), p]);
@@ -189,7 +189,7 @@ describe('layoutDanmaku', () => {
   });
 });
 
-// ---- ★ 2026-10-18 速度模型变更（用户拍板）：恒定行程时长 + willHit 追赶判定 ----
+// ---- 速度模型变更：恒定行程时长 + willHit 追赶判定 ----
 describe('恒定行程时长 + willHit 排轨', () => {
   // 单轨场景（滚动区恰好 1 行）：不放过就只能丢弃 ⇒ 便于断言「放行 / 不放行」
   const oneRow = { width: 800, height: 10, fontSize: 40, speed: 110, density: 1, region: 'quarter' as DanmakuRegion, offsetSec: 0 };
@@ -238,14 +238,14 @@ describe('measureWidth', () => {
   });
 });
 
-// ---- ★ 2026-09-26 真 bug 回归：滚动弹幕"逐帧重绘"（旧实现每条只画一帧 → 平时看不到弹幕） ----
+// ---- 真 bug 回归：滚动弹幕"逐帧重绘"（旧实现每条只画一帧 → 平时看不到弹幕） ----
 describe('scrollDrawStart / scrollDrawList（逐帧在屏集合）', () => {
   const opts = { ...base, width: 800, region: 'full' as DanmakuRegion };
   const one = (text: string, time = 0) => layoutDanmaku([scroll(time, text)], opts).scroll;
 
   it('一条滚动弹幕在其存活期内**每一帧都出现在绘制列表**（旧实现只画入界那一帧）', () => {
     const placed = one('测试弹幕');
-    const v = placed[0].velocity; // ★ 恒定行程时长 ⇒ 速度随文本宽变化，不再等于 opts.speed
+    const v = placed[0].velocity; // 恒定行程时长 ⇒ 速度随文本宽变化，不再等于 opts.speed
     let start = 0;
     const frames = [0.1, 1, 2, 3, 4, 5];
     for (const t of frames) {
@@ -258,7 +258,7 @@ describe('scrollDrawStart / scrollDrawList（逐帧在屏集合）', () => {
 
   it('彻底出左界后起点前移、不再重复绘制', () => {
     const placed = one('短');
-    const exit = placed[0].duration; // ★ 恒定行程时长 ⇒「出左界」时刻 = duration（与文本宽无关）
+    const exit = placed[0].duration; // 恒定行程时长 ⇒「出左界」时刻 = duration（与文本宽无关）
     expect(scrollDrawStart(placed, exit + 0.01, opts.width, opts.fontSize, 0)).toBe(1);
     expect(scrollDrawList(placed, exit + 0.01, opts.width, 1)).toEqual([]);
   });
@@ -301,7 +301,7 @@ describe('danmakuArea（绘制区：contain 避让宽银幕黑边）', () => {
   });
 });
 
-// ---- ★ P0-1：渲染层注入真实测量（canvas measureText）+ 宽度 memo ----
+// ---- P0-1：渲染层注入真实测量（canvas measureText）+ 宽度 memo ----
 describe('setTextMeasurer / 宽度 memo（P0：不再逐帧重测文本宽）', () => {
   afterEach(() => setTextMeasurer(null)); // 防泄漏（后续 measureWidth 断言依赖估算兜底）
 
@@ -325,14 +325,14 @@ describe('setTextMeasurer / 宽度 memo（P0：不再逐帧重测文本宽）', 
     expect(placed).toHaveLength(1);
     expect(placed[0].width).toBe(1000);
     expect(placed[0].displayText).toBe('x');
-    const exit = placed[0].duration; // ★ 出左界时刻 = 屏宽/速度（与文本宽无关）
+    const exit = placed[0].duration; // 出左界时刻 = 屏宽/速度（与文本宽无关）
     expect(exit).toBeCloseTo(base.width / base.speed, 6);
     expect(scrollDrawStart(placed, exit - 0.01, base.width, base.fontSize, 0)).toBe(0);
     expect(scrollDrawStart(placed, exit + 0.01, base.width, base.fontSize, 0)).toBe(1);
   });
 });
 
-// ---- ★ P0-2：重复弹幕合并（仿 DFM DuplicateMergingFilter） ----
+// ---- P0-2：重复弹幕合并（仿 DFM DuplicateMergingFilter） ----
 describe('layoutDanmaku · mergeDuplicates', () => {
   const opts = { ...base, region: 'full' as DanmakuRegion, mergeDuplicates: true };
   const text = (time: number, t: DanmakuItem['type'], s = '233'): DanmakuItem => ({ time, type: t, text: s, size: 25, color: '#fff' });
@@ -365,7 +365,7 @@ describe('layoutDanmaku · mergeDuplicates', () => {
   });
 });
 
-// ---- ★ P0-4：零分配遍历（eachScrollDraw）+ 缓冲复用 ----
+// ---- P0-4：零分配遍历（eachScrollDraw）+ 缓冲复用 ----
 describe('eachScrollDraw / scrollDrawList（复用缓冲）', () => {
   const opts = { ...base, region: 'full' as DanmakuRegion };
   const placed = layoutDanmaku([scroll(0, '测试弹幕')], opts).scroll;

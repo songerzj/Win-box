@@ -133,7 +133,7 @@ describe('真实样本 — X.json（// 注释 + 多段拼接）', () => {
   });
 });
 
-describe('真实样本 — ZY.json（影视仓变体 sites 为对象）', () => {
+describe('真实样本 — ZY.json（某壳源变体 sites 为对象）', () => {
   it('sites 非数组 → 抛错（与安卓一致）', () => {
     expect(() => parseSiteConfig(read('ZY.json'))).toThrow();
   });

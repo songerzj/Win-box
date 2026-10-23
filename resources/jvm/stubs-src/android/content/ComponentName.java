@@ -6,7 +6,7 @@ import android.os.Parcelable;
 /**
  * ComponentName stub —— 组件标识（包名 + 类名）。
  *
- * ★ 2026-09-10 第四轮修复：此前只有 `(String,String)` 构造器，
+ * 修复：此前只有 `(String,String)` 构造器，
  *   而混淆库/AIDL 会用 `(Context, Class)` / `(Context, String)`。
  *   这里按真实调用面补齐，并保证 getPackageName/getClassName/getShortClassName 可用。
  */

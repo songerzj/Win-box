@@ -3,7 +3,7 @@
 // 提供应用级持久化入口。蜘蛛侧读取方式由各 jar 决定（多数需用户在源配置 ext 或 jar 自身 OAuth）。
 // 存储文件：<userData>/drive-tokens.json。
 //
-// ★ 安全：token 落盘前经 DriveCodec.encode 加密（宿主注入 Electron safeStorage=DPAPI），
+// 安全：token 落盘前经 DriveCodec.encode 加密（宿主注入 Electron safeStorage=DPAPI），
 //   读取时 decode 回明文（仅存在于内存）。DriveCodec 可缺省 → 保持明文（单测/无 Electron 场景）。
 import type { JsonStore } from './JsonStore';
 import type { Logger } from '../../shared/types';
@@ -27,8 +27,8 @@ export class DriveStore {
   /** 落盘形态（值可能是 `enc:` 密文或旧明文） */
   private data: DriveTokens = {};
   /**
-   * ★ 明文解码缓存（2026-09-24）：list() 被引擎在**每次蜘蛛调用**里读取（enrichExt 注入网盘 token），
-   * 而每次都要对每个 provider 走一遍 DPAPI 解密 —— 实测用户日志里同一秒刷 20+ 条
+   * 明文解码缓存：list() 被引擎在**每次蜘蛛调用**里读取（enrichExt 注入网盘 token），
+   * 而每次都要对每个 provider 走一遍 DPAPI 解密 —— 实测日志里同一秒刷 20+ 条
    * 「drive-tokens: 解密失败」告警（708/1108 行），主进程被白白占着。
    * 现在：解码一次缓存住，直到 set/remove/import 才失效；失败告警每个 provider 只打一次。
    */

@@ -1,6 +1,6 @@
 // src/main/net/cookieMerge.ts — 上游响应 `Set-Cookie` → 中继播放会话 Cookie 的合并（纯函数，可单测）。
 //
-// 场景（2026-09-26 用户报「UC 没会员播放似乎要两个 cookie」）：
+// 场景（「UC 没会员播放似乎要两个 cookie」）
 //   网盘直链/清单请求的响应常下发**刷新后的 `__puus`**（quarkTransfer 已按此把新 `__puus` 用于直链，
 //   见 quarkTransfer 第 6 步），而播放中继（/play）此前**忽略 Set-Cookie** →
 //   后续分片仍带旧 cookie，中途 401/403 断流。

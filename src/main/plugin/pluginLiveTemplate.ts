@@ -1,10 +1,10 @@
 // src/main/plugin/pluginLiveTemplate.ts
 // 插件直播输出模板适配层：把 `contributes.live.template`（L2 **声明式输出**）适配为宿主「导出模板」。
 //
-// ★ 形态说明（★ 与前四个 provider **根本不同**）：本类型**不发网络请求、不取数、不解析** ——
+// 形态说明（与前四个 provider **根本不同**）：本类型**不发网络请求、不取数、不解析** ——
 //   它把宿主**已解析**的直播频道（`LiveGroup[]`）按插件的「每行格式串」**格式化输出**成文本文件
 //   （TXT / M3U），供外部播放器 / 其它设备使用。插件只给格式串，宿主负责取数与写盘。
-//   ★ 红线③：绝不触碰 `TxtSubscribe` / `LiveConfigParser`（那是引擎的解析行为，1:1 复刻）。
+//   红线③：绝不触碰 `TxtSubscribe` / `LiveConfigParser`（那是引擎的解析行为，1:1 复刻）。
 // 事实源：docs/design/插件制作规范.md §5.8；机器契约见 src/shared/plugin.ts。
 
 import { LIVE_TEMPLATE_EOL, liveTemplateExt, type LiveTemplateContribute } from '../../shared/plugin';
@@ -53,12 +53,12 @@ function varsOf(group: string, ch: LiveChannel, index: number, url: string): Rec
 /**
  * 渲染导出文本（纯函数）。
  * 行序：`header` 各项 → 逐分组 → 组内逐频道 → 该频道**每条 url** 各一行。
- * ★ 跳过**无频道的分组**、跳过**无 urls 的频道**（不产出坏行）。
+ * 跳过**无频道的分组**、跳过**无 urls 的频道**（不产出坏行）。
  * 行连接符 `\r\n`，末尾补一个。
  */
 function renderGroups(spec: LiveTemplateSpec, groups: LiveGroup[]): string {
   const lines: string[] = [];
-  /** ★ 展开后的行内换行一律归一为 `\r\n`（模板里的 `\n` 如 m3u 的 EXTINF+URL 也统一为 CRLF） */
+  /** 展开后的行内换行一律归一为 `\r\n`（模板里的 `\n` 如 m3u 的 EXTINF+URL 也统一为 CRLF） */
   const push = (s: string) => lines.push(s.replace(/\r/g, '').replace(/\n/g, LIVE_TEMPLATE_EOL));
   for (const h of spec.header ?? []) push(h);
   for (const g of groups ?? []) {
@@ -99,7 +99,7 @@ export function liveTemplateFromContribute(c: LiveTemplateContribute): LiveTempl
 
 /**
  * 内置默认模板（2 个；**无插件时保证导出可用**）。
- * ★ `builtin:txt` 的产物能被宿主既有 `TxtSubscribe` 解析回频道（`分组,#genre#` + `名称,url` 是它认的形态）。
+ * `builtin:txt` 的产物能被宿主既有 `TxtSubscribe` 解析回频道（`分组,#genre#` + `名称,url` 是它认的形态）。
  */
 export function builtinLiveTemplates(): LiveTemplate[] {
   const txt: LiveTemplateSpec = {

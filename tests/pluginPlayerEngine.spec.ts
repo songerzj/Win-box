@@ -1,5 +1,5 @@
 // tests/pluginPlayerEngine.spec.ts
-// ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`）单元回归：
+// （R11）第三方播放内核（`contributes.player.engine`）单元回归：
 //   ① 契约校验（**按协议分支**的必需 / 禁止占位符 / binary 形态 / capabilities / 顶层字段）
 //   ② 参数模板展开（可选占位符缺省 → **整项丢弃**）
 //   ③ 通用 `json-lines` 族：下行命令行 / 起播 load 行 / 上行事件归约（归一到 `MpvKernelState`）
@@ -124,7 +124,7 @@ describe('player.engine 契约 — 结构边界', () => {
     }
   });
 
-  it('★ 按协议校验占位符：mpv-ipc 必需 {wid}/{url}/{pipe}；json-lines 不得带 {pipe}', () => {
+  it('按协议校验占位符：mpv-ipc 必需 {wid}/{url}/{pipe}；json-lines 不得带 {pipe}', () => {
     // mpv-ipc 缺任一必需 → BAD_ENGINE_ARGS
     expect(validatePlayerEngineContribute(mpv({ args: ['--wid={wid}', '{url}'] }))).toMatchObject({ ok: false, reasonCode: 'BAD_ENGINE_ARGS' });
     expect(validatePlayerEngineContribute(mpv({ args: ['{url}', '--input-ipc-server={pipe}'] }))).toMatchObject({ ok: false, reasonCode: 'BAD_ENGINE_ARGS' });
@@ -166,14 +166,14 @@ describe('engineLines · expandEngineArgs（参数模板展开）', () => {
     })).toEqual(['--wid=123456', '--input-ipc-server=\\\\.\\pipe\\x', 'https://v.test/a.mkv']);
   });
 
-  it('★ 可选占位符缺省 → 该参数项**整项丢弃**（避免传空串导致内核报错）', () => {
+  it('可选占位符缺省 → 该参数项**整项丢弃**（避免传空串导致内核报错）', () => {
     const args = ['--wid={wid}', '{url}', '--start={start}', '--volume={volume}', '--speed={rate}', '--panscan={fit}'];
     // 都给值 → 全保留
     expect(expandEngineArgs(args, { wid: '1', url: 'u', start: 12, volume: 100, rate: 1.5, fit: 'cover' }))
       .toEqual(['--wid=1', 'u', '--start=12', '--volume=100', '--speed=1.5', '--panscan=cover']);
     // 都没给 → 只剩必需项
     expect(expandEngineArgs(args, { wid: '1', url: 'u' })).toEqual(['--wid=1', 'u']);
-    // ★ `0` 是**显式值**（音量 0 = 静音有意义）→ 保留；只有「缺省/空串」才整项丢弃
+    // `0` 是**显式值**（音量 0 = 静音有意义）→ 保留；只有「缺省/空串」才整项丢弃
     expect(expandEngineArgs(args, { wid: '1', url: 'u', rate: 0, fit: 'contain' }))
       .toEqual(['--wid=1', 'u', '--speed=0', '--panscan=contain']);
   });

@@ -1,5 +1,5 @@
 // tests/localPkg.spec.ts
-// ★ 2026-09-29（用户要求）本地包（影视壳/影视仓 目录包）：
+// 本地包（某影视壳类源/某影视壳 目录包）
 //   ① 包根登记 / 下标 / `pkg://<i>/<rel>` 订阅地址（档案 apiUrl 记录它）；
 //   ② 包内相对引用展开（`./py/x.py` → file:// 就地运行；其余 → `/pkg/<i>/…`）；
 //   ③ `/pkg/<i>/<rel>` 资源路由（真 HTTP：中文/emoji 路径、穿越防护、未登记包）。
@@ -98,7 +98,7 @@ describe('encodePkgRel / resolvePkgFile', () => {
   });
 
   it('pkgHttpUrl：/pkg 中继地址（与展开口径同一转义；proxyBase 尾斜杠归一）', () => {
-    // ★ 网页源窗口用它把 `pkg://<i>/<rel>` 转成 Chromium 能加载的地址（pkg:// scheme 浏览器不认）
+    // 网页源窗口用它把 `pkg://<i>/<rel>` 转成 Chromium 能加载的地址（pkg:// scheme 浏览器不认）
     expect(pkgHttpUrl('http://127.0.0.1:9978', 0, 'html/音乐满血.html')).toBe(
       'http://127.0.0.1:9978/pkg/0/html/%E9%9F%B3%E4%B9%90%E6%BB%A1%E8%A1%80.html',
     );
@@ -186,7 +186,7 @@ describe('rewritePkgPaths — 包内相对引用展开', () => {
     expect(out).toContain('"http://127.0.0.1:9978/pkg/0/js/%E5%8F%AF%E5%8F%AF%E5%BD%B1%E8%A7%86.js"');
     expect(out).toContain('"http://127.0.0.1:9978/pkg/0/jar/%E6%BC%AB%E9%97%AA.jar"');
     expect(out).toContain('"http://127.0.0.1:9978/pkg/0/xbpq/%E5%93%86%E5%95%A6%E6%96%B0%E7%95%AA%E7%A4%BE.json"');
-    // ★ `$分组` 尾巴原样保留（spider 自己 split('$') 取站点分组，见 open/wanpan.js）
+    // `$分组` 尾巴原样保留（spider 自己 split('$') 取站点分组，见 open/wanpan.js）
     expect(out).toContain('"http://127.0.0.1:9978/pkg/0/config/env.json$闪电"');
     expect(out).toContain('"http://127.0.0.1:9978/pkg/0/html/%E9%9F%B3%E4%B9%90%E6%BB%A1%E8%A1%80.html"');
   });

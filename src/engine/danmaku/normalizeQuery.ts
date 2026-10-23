@@ -47,7 +47,7 @@ export function danmakuQueryCandidates(raw: string): string[] {
   return out.slice(0, 6);
 }
 
-// ---- ★ 2026-09-27（用户要求）：弹幕面板把「剧名 / 集」拆成两个独立输入框 ----
+// ---- 弹幕面板把「剧名 / 集」拆成两个独立输入框 ----
 //   资源名里的集号五花八门（S01E10 / 第10集 / 10 / 更新至10），用户手动改写时也需要
 //   同等的宽容度；下面两个函数负责「回填初值」与「解析用户输入」两个方向。
 export interface EpisodeInput {
@@ -100,7 +100,7 @@ export function episodeFieldFromName(name: string): string {
   return tail ? stripEp(tail[1]) : '';
 }
 
-// ---- ★ 2026-09-28（用户要求）：弹幕候选**显示压缩** ----
+// ---- 弹幕候选**显示压缩** ----
 //   接口返回的 title/episodeTitle 常带长尾（「年度/更新至N/第N话」等），列表里读不全 →
 //   提炼成「剧名（年份）· 第N季 · 第M集」；取不到的段自动省略，提不到剧名时原样返回。
 
@@ -124,8 +124,8 @@ function epNumberOf(s: string): string {
  * `斗罗大陆系列小剧场(2026)【动漫】from tencent` → `斗罗大陆系列小剧场 · 第1集`。
  * 年份取标题里的 `(19|20)xx`（带不带括号都认，纯净化为全角括号展示）；
  * 季号沿用 {@link seasonOf}；集号优先取 `episodeTitle`，其次接口的 `episodeNumber`，最后退回标题。
- * ★ 2026-09-29：净化「平台/类型」噪声（`【动漫】` / `from tencent` 等）——它们会把
- *   `· 第N集` 挤到第二行或截断，用户反映「tencent 的条目看不到是第几集」。
+ * 净化「平台/类型」噪声（`【动漫】` / `from tencent` 等）——它们会把
+ *   `· 第N集` 挤到第二行或截断（tencent 的条目常看不到是第几集）。
  */
 export function formatCandidateLabel(title?: string, episodeTitle?: string, episodeNumber?: string): string {
   const raw = full2half((title || '').trim());

@@ -61,7 +61,7 @@ describe('extractParseResult', () => {
   it('协议相对地址补 https', () => {
     expect(extractParseResult('{"url":"//cdn.com/a.m3u8"}')?.url).toBe('https://cdn.com/a.m3u8');
   });
-  it('★ 只有页面地址 → 判为未解析出（交给嗅探兜底）', () => {
+  it('只有页面地址 → 判为未解析出（交给嗅探兜底）', () => {
     expect(extractParseResult('{"url":"https://v.qq.com/x/cover/abc.html"}')).toBeNull();
   });
   it('非 JSON / 空 / 无 url → null', () => {

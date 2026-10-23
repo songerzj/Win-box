@@ -44,7 +44,7 @@ afterEach(() => {
   clearUiMemory();
 });
 
-describe('sameEpProgress — 外部播放器续播位置（★ 2026-09-30）', () => {
+describe('sameEpProgress — 外部播放器续播位置', () => {
   it('同一集：取已记录的进度（用于拉起第三方播放器时带位置）', () => {
     seed({ url: 'ep1', rawUrl: 'ep1', name: '某剧 第1集', sourceKey: 's1', vodId: 'v1', time: 723 });
     expect(sameEpProgress('s1', 'v1', 'ep1')).toBe(723);
@@ -103,7 +103,7 @@ describe('restoreWatch — 撤销（无损还原）', () => {
     expect(restoreWatch(removed)).toBe(true);
 
     const back = uiMem.history.get('old') as WatchHistory;
-    expect(back.updatedAt).toBe(1000); // ★ 关键：不是 Date.now()
+    expect(back.updatedAt).toBe(1000); // 关键：不是 Date.now()
     // 排序也回到原位：new(5000) 仍在 old(1000) 之前
     expect(recentWatch().map((x) => x.url)).toEqual(['new', 'old']);
   });
@@ -123,7 +123,7 @@ describe('restoreWatch — 撤销（无损还原）', () => {
     deleteWatch(it.url);
     restoreWatch(it);
 
-    // ★ 2026-09-29：带来源标识的记录按分组键存放（同片多集合并一条）
+    // 带来源标识的记录按分组键存放（同片多集合并一条）
     expect(uiMem.history.get(historyGroupKey({ sourceKey: 'src1', vodId: 'v1' }))).toEqual(it);
   });
 
@@ -156,7 +156,7 @@ describe('recordWatch — 续播所需字段（rawUrl/flag）', () => {
       vodId: 'v1',
       time: 123,
     });
-    // ★ 2026-09-29：带 sourceKey+vodId 的记录按**分组键**存（同片多集合并一条）
+    // 带 sourceKey+vodId 的记录按**分组键**存（同片多集合并一条）
     const it = uiMem.history.get(historyGroupKey({ sourceKey: 'src1', vodId: 'v1' })) as WatchHistory;
     expect(it.rawUrl).toBe('raw://ep/12?sId=abc');
     expect(it.flag).toBe('BD5');
@@ -173,7 +173,7 @@ describe('recordWatch — 续播所需字段（rawUrl/flag）', () => {
   });
 });
 
-// ★ 2026-09-29（用户报「同一个资源第一集和第二集算两个历史记录」）：同源同片合并为一条
+// 同源同片合并为一条
 describe('recordWatch — 同源同片多集合并（分组键）', () => {
   it('同 sourceKey+vodId 的第1集/第2集只留一条，且字段更新为当前集', () => {
     recordWatch({
@@ -238,7 +238,7 @@ describe('clearUiMemory — 清空全部（保留既有能力）', () => {
   });
 });
 
-describe('latestOf — 续播前取指定 url 最新记录（★2026-09-20 修复）', () => {
+describe('latestOf — 续播前取指定 url 最新记录（修复）', () => {
   it('同 url 多条 → 取 updatedAt 最新（快进后的进度）', () => {
     const entries: Array<[string, unknown]> = [
       ['u1', { name: 'A', url: 'u1', time: 120, updatedAt: 1000 }],
@@ -270,7 +270,7 @@ describe('latestOf — 续播前取指定 url 最新记录（★2026-09-20 修�
   });
 });
 
-// ★ 2026-09-26：历史页「有更新」检测（源内现在集数 > 已看到的那一集）
+// 历史页「有更新」检测（源内现在集数 > 已看到的那一集）
 describe('watchedEpisodeOf / latestEpisodeOf — 更新检测', () => {
   it('已看集号：备注优先（第N集 / EP / SxxExx / 第N话）；电影等解析不到 → 0', () => {
     expect(watchedEpisodeOf({ remarks: '第12集', name: '狂飙 - 第12集' })).toBe(12);

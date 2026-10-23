@@ -1,7 +1,7 @@
 // src/main/subtitle/provider.ts
-// ★ 2026-09-28：外挂字幕「多源」的 Provider 契约 —— 新增字幕站只需实现本接口并登记到 registry。
+// 外挂字幕「多源」的 Provider 契约 —— 新增字幕站只需实现本接口并登记到 registry。
 //
-// 背景（用户要求「多找几个字幕的源站，适配到字幕的 API 里」）：
+// 背景：
 //   此前只有 assrt（**必须自填 token**，没 token 时字幕功能整条不可用）。
 //   接入免 token 的网页源后，"有没有字幕"不再取决于用户是否有 token。
 //

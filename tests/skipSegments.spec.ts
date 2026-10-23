@@ -1,4 +1,4 @@
-// tests/skipSegments.spec.ts — 跳过片头片尾：记录存取 + 播放期判据（★ 2026-10-08 新增）
+// tests/skipSegments.spec.ts — 跳过片头片尾：记录存取 + 播放期判据（新增）
 import { describe, it, expect } from 'vitest';
 import {
   clampSeconds,

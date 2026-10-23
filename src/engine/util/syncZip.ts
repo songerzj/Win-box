@@ -83,7 +83,7 @@ export function looksLikeZip(buf: Buffer): boolean {
  *
  * 为什么默认 store：资源文件通常已被压缩（.so/.guard），再 deflate 收益极小，
  * 而 store 让实现无压缩状态机、字节可预测，便于单测。
- * ★ 2026-09-30：类文件（classFix 的字节码修补）在几 MB~十几 MB 量级，store 会让缓存
+ * 类文件（classFix 的字节码修补）在几 MB~十几 MB 量级，store 会让缓存
  *   膨胀到数倍 → 提供 deflate 档（仍只依赖 node:zlib，不引第三方库）。
  */
 export function buildZip(entries: ZipEntryData[], opts?: { deflate?: boolean }): Buffer {

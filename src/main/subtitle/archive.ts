@@ -4,7 +4,7 @@
 //   - gz ：node:zlib（gunzipSync）
 //   - rar：node-unrar-js（官方 unrar 编译的 wasm，MIT）
 //   - 7z / bz2：7z-wasm（7-Zip 24.09 编译的 wasm）
-// ★ wasm 二进制一律用 `wasmBinary` 显式传入（从 node_modules 路径读字节）——两个库都支持该参数，
+// wasm 二进制一律用 `wasmBinary` 显式传入（从 node_modules 路径读字节）——两个库都支持该参数，
 //   这样既不依赖库内部基于 __dirname 的 wasm 定位，也能在 app.asar 内正常工作（Electron 会给 fs 打补丁）。
 import { gunzipSync } from 'node:zlib';
 import { readFileSync } from 'node:fs';

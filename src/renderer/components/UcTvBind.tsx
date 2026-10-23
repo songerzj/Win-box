@@ -1,9 +1,9 @@
 // src/renderer/components/UcTvBind.tsx
-// ★ 2026-10-14 UC TV Token（非会员 UC 原画）绑定块 —— 挂在 DriveBindModal 的「UC 网盘」页签下。
+// UC TV Token（非会员 UC 原画）绑定块 —— 挂在 DriveBindModal 的「UC 网盘」页签下。
 //
-// 为什么单独一个：wex 族 jar（虎斑/玩偶…）的 UC 取流在 `MyPan$UcMineProvider.player()` 里按
-//   `member_type` 分流；**非高会（NORMAL）走的是 `Wex_ucpan_token`**（UC 电视端开放平台 OAuth
-//   的 token 对），而不是 cookie —— 只绑 cookie 时必报
+// 为什么单独一个：部分第三方源的 UC 取流按
+//   `member_type` 分流；**非高会（NORMAL）走的是 UC 电视端开放平台 OAuth
+//   的 token 对**，而不是 cookie —— 只绑 cookie 时必报
 //   「非高会需要配置 UC TV Token，请到配置中心扫码获取」。桌面端没有 jar 的配置中心扫码页，
 //   故这里直接复刻该扫码流（主进程侧见 src/main/net/ucTvToken.ts）。
 import { useCallback, useEffect, useRef, useState } from 'react';

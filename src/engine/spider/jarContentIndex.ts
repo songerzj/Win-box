@@ -1,7 +1,7 @@
 // src/engine/spider/jarContentIndex.ts
-// ★ 2026-09-29：jar 转换产物的「内容哈希复用」索引。
+// jar 转换产物的「内容哈希复用」索引。
 //
-// 为什么需要（用户报「摸鱼源还要经历大 jar 加载」的根因之一）：
+// 为什么需要（大 jar 源重复加载的根因之一）：
 //   `JarSpiderBridge.doConvert()` 的缓存键是 **jar URL 的 md5**（`md5Hex(jarUrl)`）——
 //   源站/订阅只要换域名、换文件名或加查询参数，缓存立刻未命中，于是**重新下载 + 重新 dex2jar**
 //   （大 jar 实测 20s~3min），哪怕 jar 内容一个字节都没变。

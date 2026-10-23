@@ -3,7 +3,7 @@ package android.os;
 /**
  * android.os.Process stub —— 进程/线程身份查询（隐藏 API 家族的常用入口）。
  *
- * ★ 2026-09-26 新增（壳类来源取证）：Fixture/加固壳在 SO 装载阶段会反射
+ * 新增（壳类来源实测）：Fixture/加固壳在 SO 装载阶段会反射
  *   {@code Class.forName("android.os.Process")} 取 {@code myPid()/myTid()/myUid()}
  *   （给 native 侧做「同进程校验」/租约绑定）。缺失 → 反射 Method 为 null →
  *   在壳内 VM 里 {@code invoke(null)} 直接 NPE（message 为 null，日志只见

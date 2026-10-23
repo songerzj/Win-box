@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 就在**没有任何 native 代码**的情况下整条打通 —— 不再需要 `System.load(ARM.so)`。
  *
  * ── 为什么这个方案成立（都是实测结论，不是推测）──
- * 1. `BaseSpiderGuard` 是**纯委托**：反编译显示其全部方法体只有
+ * 1. `BaseSpiderGuard` 是**纯委托**：调用链分析显示其全部方法体只有
  *    "取私有字段 + invokevirtual"（12 条 invokevirtual、0 条 ldc/getstatic/new），
  *    业务逻辑一行都不在里面。所以只要把"真实 Spider"给它，壳就活了。
  * 2. 壳里每个具体源（`NewDouBanGuard` 等）也都是空壳：
@@ -35,15 +35,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * 3. 因此**唯一缺的东西**就是"真实 Spider 从哪来"。壳原本靠 native 解密
  *    `assets/*.guard` 再用 DexClassLoader 加载；本影子类改为**用给定的 jar / 目录**加载。
  *
- * ── ★ 本方案的前提（务必先确认）──
+ * ── 本方案的前提（务必先确认）──
  * 需要一份**含真实 Spider 实现**的 jar（或 classes 目录）作为 `shimClasses`。
- * 对 `wexguard/shinidie` 这类**把代码加密**的壳，这份东西**不在 jar 里**：
+ * 对 `某加固壳/某壳类源` 这类**把代码加密**的壳，这份东西**不在 jar 里**：
  * 实测 `assets/wexshinidie.guard`（930,055 B）零明文（`com/github/catvod`、
  * `Lcom/`、`catvod`、`dex\n035`、`PK\x03\x04` 全部搜不到），也不是 zlib/gzip
  * （三种 wbits 全部 `incorrect header check`）。**它只能由 ARM native 解密。**
  * 所以本影子类的正确用法是：
  *   · 对**明文实现**的加固 jar（壳只是包装、真实类在 jar 内或随包提供）→ 直接可用；
- *   · 对**代码加密**的壳 → 先用别的手段（ARM 环境一次性取证 / 逆向）拿到解密后的 jar，
+ *   · 对**代码加密**的壳 → 先用别的手段（ARM 环境一次性实测 / 调用链分析）拿到解密后的 jar，
  *     再喂给本类。**拿到之后，剩下的全部工作就是本类这点代码。**
  *
  * 配置来源（按优先级）：
@@ -84,7 +84,7 @@ public class DexNative {
         Thread.currentThread().setContextClassLoader(loader);
         if (!originInitialized) {
             originInitialized = true;
-            // ★ 真实实现（如 fty）有自己的 Context 单例 InitOrigin，必须用宿主上下文初始化，
+            // 真实实现（如 某第三方源）有自己的 Context 单例 InitOrigin，必须用宿主上下文初始化，
             //   否则真实蜘蛛里 InitOrigin.context().getFilesDir()/getSharedPreferences() 会 NPE。
             initOrigin(context);
             forceHideUtils();
@@ -111,14 +111,14 @@ public class DexNative {
 
     /**
      * 桌面侧兜底：真实实现的 Rc 加密（B/Gc/KJ/n）默认走 InitOrigin.i 反射分支，
-     * 而 InitOrigin.i 是饭太硬主程序注入的私有类、桌面版无法提供 → 恒 NPE 返回空串。
+     * 而 InitOrigin.i 是某第三方源主程序注入的私有类、桌面版无法提供 → 恒 NPE 返回空串。
      * 这里把 merge.cn.yq 置为 true，让 Rc 改走 HideUtils 分支（我们 stub 里的占位实现）。
      *
-     * ★ 2026-09-18 默认启用（对照实验：yq=true 后全部 InitOrigin.i NPE 消失，
+     * 默认启用（对照实验：yq=true 后全部 InitOrigin.i NPE 消失，
      *   瓜子 homeVideoContent 回退链正常出内容、荐片分类正常；与 release53 经验
-     *   「yq=true 使 Rc 依赖的 fty 源不更差且多数恢复」一致）。
+     *   「yq=true 使 Rc 依赖的 某第三方源不更差且多数恢复」一致）。
      *   显式设 -Dtvbox.shellShim.forceHideUtils=false 可关闭（对照实验用）。
-     *   占位 HideUtils（原串/标准 MD5）未必等价饭太硬私有算法，但至少比 NPE 空串更接近。
+     *   占位 HideUtils（原串/标准 MD5）未必等价某第三方源私有算法，但至少比 NPE 空串更接近。
      */
     private static void forceHideUtils() {
         if ("false".equalsIgnoreCase(System.getProperty("tvbox.shellShim.forceHideUtils", "true"))) return;
@@ -136,7 +136,7 @@ public class DexNative {
      * 壳的 `Init.getSpider(name)` 会调它。
      * name 形如 `com.github.catvod.spider.NewDouBanGuard`。
      *
-     * ★ 关键：请求的类名是 **Guard 壳类**，而真实 Spider 在 shim 包里对应同一个类名。
+     * 关键：请求的类名是 **Guard 壳类**，而真实 Spider 在 shim 包里对应同一个类名。
      *   所以这里先试"从 shimClasses 用同名类加载"；
      *   加载不到再退回"实例化传入的那个 name"。
      */
@@ -146,7 +146,7 @@ public class DexNative {
         Object cached = CACHE.get(name);
         if (cached != null) return cached;
 
-        // ★★ 环检测（本方案最容易踩的坑，实测踩到过）★★
+        // 环检测（本方案最容易踩的坑，实测踩到过）
         //   壳的委托链会请求**正在构造中**的那个类：
         //       new NewDouBanGuard() → BaseSpiderGuard.<init> → Init.getSpider("NewDouBanGuard")
         //       → 这里 → new NewDouBanGuard() → ... 无限递归 → StackOverflowError
@@ -162,7 +162,7 @@ public class DexNative {
         if (l == null) l = loader;
         if (l == null) l = buildLoader();
 
-        // ★ 先按原类名找**真实实现**；找不到再试"剥掉 Guard 后缀"的名字
+        // 先按原类名找**真实实现**；找不到再试"剥掉 Guard 后缀"的名字
         //   （对齐 PlayHub 的 buildClassNameCandidates：`XxxGuard` → `Xxx`）。
         //   真实实现存在于 shimClasses 时这一步就命中，桥就是通的；
         //   全都不命中说明 shimClasses 没提供实现（见错因日志）。
@@ -186,7 +186,7 @@ public class DexNative {
             }
         }
 
-        // ★★ 2026-09-29：**这一行必须无条件打印**（`[ShellShim]` 前缀会被 App 的
+        // **这一行必须无条件打印**（`[ShellShim]` 前缀会被 App 的
         //   `extractBridgeNotes` 收集上屏）。此前它只在 -Dtvbox.shellShim.debug=true 时打印，
         //   于是设备上「守卫内层蜘蛛为空 → BaseSpiderGuard NPE」时日志里没有任何线索。
         StringBuilder sb = new StringBuilder("getSpider(").append(dotted)
@@ -206,7 +206,7 @@ public class DexNative {
         if (simple.endsWith("Guard")) {
             String stripped = simple.substring(0, simple.length() - "Guard".length());
             if (!stripped.isEmpty()) {
-                // ★ 真实实现在解出来的 jar 里常叫 Xxx（不带 Guard），而壳 jar 里只放
+                // 真实实现在解出来的 jar 里常叫 Xxx（不带 Guard），而壳 jar 里只放
                 //   XxxGuard 的空壳。父委托会把 XxxGuard 解析到壳 jar → 拿到空壳。
                 //   所以把「去 Guard 的真实名」排在前面，优先命中真实实现。
                 out.add(pkg + stripped);
@@ -217,15 +217,15 @@ public class DexNative {
         return out;
     }
 
-    /** 壳里 `proxyInvoke` 从未被调用（第八轮实测全文 0 次），这里给出等价的无害实现 */
+    /** 壳里 `proxyInvoke` 从未被调用（实测全文 0 次），这里给出等价的无害实现 */
     public static Object[] proxyInvoke(Map<String, String> params) {
         log("proxyInvoke 被调用（壳通常不会走这里）");
         return new Object[] { null, null };
     }
 
     /**
-     * ★ 弹幕启动（真实实现 DexNative 有 danmuStart()/danmuStart(boolean) 两个重载）。
-     *   桌面板不做弹幕，但 fty 系网盘蜘蛛的 playerContent 会调用它（加载播放器弹幕），
+     * 弹幕启动（真实实现 DexNative 有 danmuStart()/danmuStart(boolean) 两个重载）。
+     *   桌面板不做弹幕，但 某第三方源系网盘蜘蛛的 playerContent 会调用它（加载播放器弹幕），
      *   影子类缺此方法时会抛 NoSuchMethodError 导致 playerContent 整体失败。
      *   给出空实现即可（弹幕关闭，不影响取播放地址）。
      */
@@ -254,7 +254,7 @@ public class DexNative {
                 }
             }
             log("shellShimClasses = " + urls);
-            // ★ 壳的 `Init.init` 里是 `(DexClassLoader) DexNative.getLoader(ctx)`，
+            // 壳的 `Init.init` 里是 `(DexClassLoader) DexNative.getLoader(ctx)`，
             //   返回**普通 URLClassLoader 会 ClassCastException** —— 必须返回
             //   `dalvik.system.DexClassLoader`（我们 stub 里那个 extends URLClassLoader 的类）。
             URL[] arr = urls.toArray(new URL[0]);
@@ -269,7 +269,7 @@ public class DexNative {
             }
         } catch (Throwable t) {
             log("构建 loader 失败: " + t);
-            // ★ 2026-09-29：加载器建不起来 → 真实蜘蛛一个都拿不到 → 守卫字段留空 → NPE。
+            // 加载器建不起来 → 真实蜘蛛一个都拿不到 → 守卫字段留空 → NPE。
             //   这条无条件上屏（`[ShellShim]` 前缀会被 App 收集），避免设备侧再次「静默空」。
             System.err.println("[ShellShim] 构建真实实现加载器失败（Guard 内层蜘蛛将不可用）: " + t);
             return new URLClassLoader(new URL[0], DexNative.class.getClassLoader());

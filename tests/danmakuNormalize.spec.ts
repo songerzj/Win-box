@@ -35,7 +35,7 @@ describe('danmakuQueryCandidates（弹幕搜索候选清洗）', () => {
   });
 });
 
-// ★ 2026-09-28（用户要求）：弹幕候选显示压缩为「剧名（年份）· 第N季 · 第M集」
+// 弹幕候选显示压缩为「剧名（年份）· 第N季 · 第M集」
 describe('formatCandidateLabel（弹幕候选显示压缩）', () => {
   it('剧名 + 集号：长尾集号归一成「第N集」', () => {
     expect(formatCandidateLabel('我独自升级', '第12话')).toBe('我独自升级 · 第12集');
@@ -70,7 +70,7 @@ describe('formatCandidateLabel（弹幕候选显示压缩）', () => {
     expect(formatCandidateLabel('', '第3集')).toBe('第3集');
   });
 
-  // ★ 2026-09-29（用户报「tencent 的条目看不到是第几集」）：净化平台/类型噪声 + 集号字段兜底
+  // 净化平台/类型噪声 + 集号字段兜底
   it('tencent 条目：剔【动漫】/from tencent 噪声，集号从集名提炼', () => {
     expect(formatCandidateLabel('斗罗大陆系列小剧场(2026)【动漫】from tencent', '【qq】 第1集 菜头萧萧双向守护')).toBe(
       '斗罗大陆系列小剧场（2026） · 第1集',

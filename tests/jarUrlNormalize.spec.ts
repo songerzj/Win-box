@@ -1,8 +1,8 @@
 // tests/jarUrlNormalize.spec.ts
 // jar URL 规范化回归测试 —— 针对「源无法加载」的真实 bug。
 //
-// 真实事故（2026-09-10 用户机器日志）：
-//   配置 `global.spider = "./fty.jar;md5;3d161697458ecbcd2651a749db761ba1"`
+// 真实事故（运行日志）
+//   配置 `global.spider = "./某第三方源.jar;md5;3d161697458ecbcd2651a749db761ba1"`
 //   - JarSpider 路径：`.split(';')[0]` → md5(URL) = 531d8185... → 正常下载 1.56MB ✅
 //   - SpiderHost.warmup 路径：传完整串 → md5(整串) = f576cf33... → 下载到 404 页 9KB ❌
 //   两条路径不一致 → 预热产出为空 → 用户看到"无法加载"。
@@ -17,7 +17,7 @@ const md5 = (s: string) => createHash('md5').update(s).digest('hex');
 const BASE = 'https://raw.liucn.cc/box/fty.jar';
 
 describe('normalizeJarUrl', () => {
-  it('jinenge 相对 jar 按配置所在目录解析，而不是站根目录', () => {
+  it('某壳源 相对 jar 按配置所在目录解析，而不是站根目录', () => {
     const raw = '{"spider":"./lib/jinenge.jar;md5;1d7a5147033044a81f91d5f4a510f9ed","sites":[]}';
     const cfg = parseSiteConfigWithBase(raw, 'https://jinenge.us.kg/app/tvbox/tvbox.json').config;
     expect(normalizeJarUrl(cfg.spider)).toBe('https://jinenge.us.kg/app/tvbox/lib/jinenge.jar');
@@ -52,7 +52,7 @@ describe('normalizeJarUrl', () => {
     expect(normalizeJarUrl(undefined as unknown as string)).toBe('');
   });
 
-  it('★ 核心断言：带后缀与不带后缀得到同一缓存键', () => {
+  it('核心断言：带后缀与不带后缀得到同一缓存键', () => {
     const withSuffix = `${BASE};md5;3d161697458ecbcd2651a749db761ba1`;
     const a = md5(normalizeJarUrl(withSuffix));
     const b = md5(normalizeJarUrl(BASE));
@@ -61,7 +61,7 @@ describe('normalizeJarUrl', () => {
     expect(a).toBe('531d8185fcf3609ccf31bda56e059efc');
   });
 
-  it('★ 反例：不规范化时会产生两个不同键（这正是事故原因）', () => {
+  it('反例：不规范化时会产生两个不同键（这正是事故原因）', () => {
     const withSuffix = `${BASE};md5;3d161697458ecbcd2651a749db761ba1`;
     // 直接对原始串取 md5 = 事故中的错误键
     expect(md5(withSuffix)).toBe('f576cf332149584ccae803e9375d11ac');

@@ -1,13 +1,13 @@
 // src/main/player/PlayerEngineController.ts
-// ★ 2026-10-18（R11）：**第三方播放内核**的主进程侧 —— 单会话管理（宿主托管，插件永不拉进程）。
+// （R11）：**第三方播放内核**的主进程侧 —— 单会话管理（宿主托管，插件永不拉进程）。
 //
-// 形态（D1 已拍板，见 R11 spec §3 / 插件制作规范 §6.3）：
+// 形态（D1 已定，见 R11 spec / 插件制作规范 §6.3）：
 //   插件只给「引擎描述符」（`PlayerEngineContribute`：协议 / 二进制来源 / 参数模板）；
 //   **宿主**负责展开参数 → `spawn(exe, args)` → （mpv-ipc）`--wid` 由参数嵌入 + JSON IPC 管道通信 /
 //   （json-lines）stdin/stdout 行协议 → 状态归约 → 节流推送（`engine:state`）。
 //
-// ★ 与 `MpvController` **实例分离**（内置 mpv 路径零回归）：两者共享 `mpvCore` 的纯函数，但各管各的会话。
-// ★ 单会话是刻意的：同一时刻只有「独立播放器窗口」的一个引擎（换集/换内核 = stop + start 新进程）。
+// 与 `MpvController` **实例分离**（内置 mpv 路径零回归）：两者共享 `mpvCore` 的纯函数，但各管各的会话。
+// 单会话是刻意的：同一时刻只有「独立播放器窗口」的一个引擎（换集/换内核 = stop + start 新进程）。
 import { spawn, type ChildProcess } from 'node:child_process';
 import { connect, type Socket } from 'node:net';
 import type { BrowserWindow } from 'electron';

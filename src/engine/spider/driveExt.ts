@@ -2,7 +2,7 @@
 // 网盘绑定凭据（DriveStore 快照）→ 蜘蛛 ext 注入的共享纯函数（jar 与 js 蜘蛛共用）。
 // 链路：DriveStore.list() → EngineHost.driveTokens() → {Jar,Js}Spider → mergeDriveTokens(ext)。
 //
-// 键名约定（对齐 FongMi/TV·影视仓 drift 配置的网盘 ext 惯例，provider 名即 ext 键名）：
+// 键名约定（对齐 FongMi/TV 系 drift 配置的网盘 ext 惯例，provider 名即 ext 键名）：
 //   ext.ali   = refresh_token（catvod 阿里蜘蛛）
 //   ext.quark = 完整 cookie 串（夸克蜘蛛）
 //   ext.uc    = 完整 cookie 串（UC 蜘蛛）
@@ -79,7 +79,7 @@ export function mergeDriveTokens(
       }
       // The source's original provider keys are still part of `ext` on every
       // call. They must survive when no application binding exists; otherwise
-      // an unbound source such as csp_Quark loses its own configuration. The
+      // an unbound source such as a csp_netdisk spider loses its own configuration. The
       // caller may provide a previous host-injected snapshot when it keeps a
       // merged ext, allowing those stale values to be removed deterministically.
       const previousInjected = normalizeDriveTokens(previousInjectedTokens);
@@ -118,7 +118,7 @@ export function mergeDriveTokens(
 /**
  * Cloud-drive 配置是另一种由 jar 直接读取的凭据快照。
  * 保留其它用户配置，但网盘凭据键必须完全由当前绑定状态决定，
- * 否则解绑后旧 Cookie 仍会被 fty 系 jar 当成有效登录态。
+ * 否则解绑后旧 Cookie 仍会被部分网盘 jar 当成有效登录态。
  */
 export function mergeCloudDriveTokens(
   existing: Record<string, unknown> | undefined,
@@ -134,12 +134,12 @@ export function mergeCloudDriveTokens(
 }
 
 /**
- * 归一 ext 里的 fty 系网盘「Cloud-drive」键为完整 http URL。
+ * 归一 ext 里的网盘类「Cloud-drive」键为完整 http URL。
  *
- * fty 网盘 jar（Cloud_quark/Cloud_uc 等）在 init 时只认两种 Cloud-drive 形态：
+ * 网盘 jar（Cloud_quark/Cloud_uc 等）在 init 时只认两种 Cloud-drive 形态：
  *   · "http…" → 直接 fetch，从返回 JSON 里取 quarkCookie/ucCookie；
  *   · "./…"  → 拼本地文件服务后 fetch。
- * 而 FTY 原始配置写的是 "tvfan/Cloud-drive.txt"（既无 http 也无 ./），蜘蛛不会 fetch、
+ * 而原始配置写的是 "tvfan/Cloud-drive.txt"（既无 http 也无 ./），蜘蛛不会 fetch、
  * cookie 会被置空。这里统一成 `http://127.0.0.1:9978/file/<rel>`，让蜘蛛走 http 分支
  * 直接命中 LocalProxyServer 的 /file 路由（该文件由 SpiderHost.syncCloudDriveConfig 写入）。
  * 已有 http(s) 前缀则保持原样。

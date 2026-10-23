@@ -57,7 +57,7 @@ describe('mergeSubscriptions — 合并去重与字段保留', () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildMergedSubscription —— 多档案 → 自包含订阅导出（2026-09-29 通解）
+// buildMergedSubscription —— 多档案 → 自包含订阅导出（通解）
 // 旧实现硬编码 spider:''/flags:[]、丢 parses → 再导入后 csp_ 源全部「无法加载」。
 // ---------------------------------------------------------------------------
 describe('buildMergedSubscription — 导出必须自包含（spider/flags/parses/逐源 jar）', () => {

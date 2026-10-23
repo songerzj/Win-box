@@ -34,14 +34,14 @@ public class BridgeClassFactory extends ProxyClassFactory {
 
     @Override
     public DvmClass createClass(BaseVM vm, String className, DvmClass superClass, DvmClass[] interfaceClasses) {
-        // ★★ 2026-09-27（壳通解，勿回退）：**补齐类层级**。
+        // （壳通解，勿回退）：**补齐类层级**。
         //   unidbg 走 JNI `FindClass` 建类时 superClass/interfaceClasses 是 null（只有对象包装
         //   `ProxyDvmObject.getObjectType` 那条路才会带层级）。层级为 null 的后果：
         //   `GetMethodID(java/io/OutputStream.write([BII)V)` 注册在父类上的 jmethodID，在
         //   FileOutputStream 实例上按 hash 查方法时**走不到父类** → `DalvikVM64$58` 直接抛
-        //   BackendException（实测 wex 壳 native 把解密数据写文件时崩，守卫握手失败）。
+        //   BackendException（实测 某第三方源壳 native 把解密数据写文件时崩，守卫握手失败）。
         //   这里按真实 JVM 类反射补链（每级用 vm.resolveClass 走缓存，Object 无父类自然终止）。
-        //   ★ 重入保护（必须）：`DvmClass.<init>` 内部会 resolveClass("java/lang/Class")，
+        //   重入保护（必须）：`DvmClass.<init>` 内部会 resolveClass("java/lang/Class")，
         //     而 Class 的父类是 Object、Object 的初始化又要 Class —— 不防重入就是 Class↔Object
         //     无限递归（实测 StackOverflowError → 模拟器乱序 → 后续 JNI 全崩）。
         //     规则：正在补链的类名不再发起新的补链（其层级留 null，与本修复前一致）。
@@ -82,7 +82,7 @@ public class BridgeClassFactory extends ProxyClassFactory {
         try {
             return Class.forName(dotted, false, rawLoader);
         } catch (Throwable t) {
-            // ★ 解密 dex 里的真实类（native 会 JNI 调它们）：见 NativeBridge.registerExtraLoader
+            // 解密 dex 里的真实类（native 会 JNI 调它们）：见 NativeBridge.registerExtraLoader
             try {
                 return NativeBridge.loadExtra(dotted);
             } catch (Throwable ignored) {

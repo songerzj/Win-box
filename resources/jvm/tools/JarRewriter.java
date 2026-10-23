@@ -23,7 +23,7 @@ import java.util.jar.JarOutputStream;
  * JarRewriter —— 用 ASM 重写 jar 内 class 的**栈映射帧**，使 dex2jar 的产物
  * 能通过 JVM 字节码校验，从而**不需要 `-noverify`**。
  *
- * 为什么需要它（第十五轮，参考 PlayHub `JarSpiderService.rewriteJarForJvm`）：
+ * 为什么需要它（参考 PlayHub `JarSpiderService.rewriteJarForJvm`）：
  *   dex2jar 生成的 StackMapTable 帧往往不完整/不一致，HotSpot 在 Java7+ 会抛
  *   `VerifyError: Expecting a stackmap frame at branch target N`。
  *   我们此前的做法是 spawn 时加 `-noverify` —— 能用，但代价是：
@@ -42,7 +42,7 @@ import java.util.jar.JarOutputStream;
  *     解析不到就返回 `java/lang/Object`（保守但可用），与 PlayHub 的 `SafeFrameClassWriter` 同思路。
  *  ③ **非 class 条目原样搬运** —— `assets/**`（加固壳的 .so/.guard）、`lib/**`、
  *     `META-INF/MANIFEST.MF` 全部逐字节保留。
- *      ★ 这正是我们第十二轮踩过的坑：任何"重打包"都必须保留非 class 资源。
+ *      这正是我们踩过的坑：任何"重打包"都必须保留非 class 资源。
  *  ④ **跳过签名文件**：内容一变原签名即失效，留着只会引发校验告警/异常。
  *
  * 用法: JarRewriter <输入jar> <输出jar> [额外解析用 classpath（分号分隔）]
@@ -82,7 +82,7 @@ public class JarRewriter {
                         if (fixed == raw) fallback++; else rewritten++;
                         jos.write(fixed);
                     } else {
-                        // ★ assets/** 等非 class 资源：逐字节原样搬运
+                        // assets/** 等非 class 资源：逐字节原样搬运
                         is.transferTo(jos);
                     }
                 }

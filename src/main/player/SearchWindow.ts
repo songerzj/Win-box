@@ -37,7 +37,7 @@ export function openSearchWindow(term: string): { ok: boolean; reused: boolean }
     return { ok: true, reused: true };
   }
   ready = false;
-  // ★ 2026-10-16（界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
+  // （界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
   const size = scaledWindowFor({ width: 1100, height: 760, minWidth: 900, minHeight: 560 });
   const win = new BrowserWindow({
     width: size.width, height: size.height, minWidth: size.minWidth, minHeight: size.minHeight,

@@ -1,5 +1,5 @@
 // src/main/torrent/Aria2Sidecar.ts
-// ★ 2026-09-29：内置 BT 引擎（aria2c sidecar，磁力 B 的地基）。
+// 内置 BT 引擎（aria2c sidecar，磁力 B 的地基）。
 //
 // 为什么是 aria2c（而不是 webtorrent / MonoTorrent）：
 //   · 纯 exe、无运行时依赖（CatClaw 的 Windows 侧要拖一整套 .NET + MonoTorrent；我们这里是 Electron/JS）；
@@ -11,7 +11,7 @@
 //   · `--stop-with-process=<本进程 pid>`（Windows 专有）→ 应用被强杀也不留孤儿 aria2c；
 //   · 退出走 `dispose()`（main/index.ts 的 will-quit）。
 //
-// 真机取证（2026-09-29，aria2 1.37.0 win64，见 .tmp 冒烟脚本）：
+// 实测（aria2 1.37.0 win64）：
 //   `pause-metadata` + `followedBy`（**数组**，源码 `gatherProgressCommon` 用 List）+ `changeOption('select-file')`
 //   + `unpause` 全链路可行；元数据 2~8s 到手；`bitfield` 为 MSB-first 十六进制（`BitfieldMan::setBitInternal`
 //   的 `mask = 128 >> (index % 8)`）；下载中文件可直接按偏移读（mp4 `ftyp` 头正确、已校验区无零填充）。
@@ -91,7 +91,7 @@ export function aria2Args(
   platform: PlatformName = platformName(),
 ): string[] {
   return [
-    // ★ 绝不读用户的 aria2.conf：外部配置可能把 dir/端口/限速带偏，甚至与本进程抢端口
+    // 绝不读用户的 aria2.conf：外部配置可能把 dir/端口/限速带偏，甚至与本进程抢端口
     '--no-conf=true',
     '--enable-rpc=true',
     '--rpc-listen-all=false',
@@ -107,7 +107,7 @@ export function aria2Args(
     '--bt-save-metadata=true',
     '--bt-remove-unselected-file=false',
     '--seed-time=0',
-    // ★ 首尾优先：mp4 的 moov 常在**文件尾**，不取尾片连元数据都读不到（起播慢的第一大坑）
+    // 首尾优先：mp4 的 moov 常在**文件尾**，不取尾片连元数据都读不到（起播慢的第一大坑）
     '--bt-prioritize-piece=head=8M,tail=8M',
     // 死 tracker 默认要拖 60s 才放行，压到 20s；UDP tracker 连接更快失败重试
     '--bt-tracker-timeout=20',
@@ -267,7 +267,7 @@ export class Aria2Sidecar {
     return this.call<Aria2FileRaw[]>('aria2.getFiles', [gid], 15000);
   }
 
-  /** 选择性下载（对**暂停中**的下载改选项 —— aria2 官方文件选择流程，真机已验证） */
+  /** 选择性下载（对**暂停中**的下载改选项 —— aria2 官方文件选择流程，实测已确认） */
   async selectFile(gid: string, fileIndex: number): Promise<void> {
     await this.call('aria2.changeOption', [gid, { 'select-file': String(fileIndex) }], 15000);
   }

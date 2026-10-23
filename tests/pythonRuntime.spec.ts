@@ -146,7 +146,7 @@ describe('JarSpiderBridge.ensurePythonRuntime — 下载/解压嵌入式 CPython
   });
 });
 
-describe('JarSpiderBridge.prewarmPythonRuntime — 后台预热（★ 2026-09-24 治「py 源首次特别慢」）', () => {
+describe('JarSpiderBridge.prewarmPythonRuntime — 后台预热（治「py 源首次特别慢」）', () => {
   it('未就绪 → 预热完成下载/解压/装依赖/放 runner，且不 spawn 任何进程', async () => {
     const { jvmDir, pyDir } = tmpCache();
     const bridge = new JarSpiderBridge({ jvmDir, cacheDir: join(jvmDir, 'converted'), pyRuntimeDir: pyDir }, makeHost(fakeEmbedZip()));

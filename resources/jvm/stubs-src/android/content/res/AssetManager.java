@@ -1,7 +1,7 @@
 package android.content.res;
 
 /**
- * AssetManager stub —— 加固壳 native 取「宿主 Assets 句柄」用（★ 2026-09-27 壳通解）。
+ * AssetManager stub —— 加固壳 native 取「宿主 Assets 句柄」用（壳通解）。
  *
  * <p><b>为什么只要这么点：</b>壳的 native 调 {@code Context.getAssets()} 拿到本对象后，
  * 交给 {@code AAssetManager_fromJava(env, mgr)}，随后是 {@code AAssetManager_open(name, mode)}

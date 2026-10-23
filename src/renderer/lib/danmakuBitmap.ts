@@ -1,5 +1,5 @@
 // src/renderer/lib/danmakuBitmap.ts
-// ★ 弹幕文本位图缓存（P1-①，仿 DFM 的 DrawingCache / LruCache）：
+// 弹幕文本位图缓存（P1-①，仿 DFM 的 DrawingCache / LruCache）：
 //   「文本 + 字号 + 颜色 + DPR」→ 一张离屏位图；逐帧只做 drawImage（blit），
 //   绕开每帧对每条在屏弹幕的 strokeText + fillText（两次文字栅格化）。
 //
@@ -29,7 +29,7 @@ export interface BitmapRasterizer<T> {
 export interface BitmapCacheOptions {
   /** 条目数上限（默认 800） */
   maxEntries?: number;
-  /** 字节预算（默认 24MB；★ 这笔内存计入「内存优化」专项预算） */
+  /** 字节预算（默认 24MB；这笔内存计入「内存优化」专项预算） */
   maxBytes?: number;
   /** 单张位图超过该字节数则**不入缓存**（默认 maxBytes/8）—— 避免一张巨图把整池挤空 */
   skipBytes?: number;

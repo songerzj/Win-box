@@ -1,18 +1,18 @@
 // tests/jarResources.spec.ts
-// ★ 回归测试：dex2jar 转换产物必须保留 raw jar 里的**非 dex 资源**（assets/*.so、assets/*.guard）。
+// 回归测试：dex2jar 转换产物必须保留 raw jar 里的**非 dex 资源**（assets/*.so、assets/*.guard）。
 //
-// 事故背景（第十二轮，2026-09-11）：
-//   加固/壳型 jar（`newwex.json` / `fty.json` 这类配置的全局 jar）的内含是
+// 事故背景：
+//   加固/壳型 jar（`某壳源.json` / `某第三方源.json` 这类配置的全局 jar）的内含是
 //     classes.dex              ← 只是壳
-//     assets/wexguard_v7.so    ← ARM 原生库（解密密钥在里面）
-//     assets/wexshinidie.guard ← 加密的真正代码
+//     assets/某壳产物_v7.so    ← ARM 原生库（解密密钥在里面）
+//     assets/某壳产物.guard ← 加密的真正代码
 //   壳的 `DexNative.<clinit>` 用
-//     Init.classLoader().getResourceAsStream("assets/wexguard_v7.so")
+//     Init.classLoader().getResourceAsStream("assets/某壳产物_v7.so")
 //   取原生库。**dex2jar 只输出 .class，会把 assets 整目录丢掉** → 取到 null →
 //   `NullPointerException: Cannot invoke "java.io.InputStream.read(byte[])"`
 //   → `DexNative` 类初始化失败 → 该 jar 的全部源同时报废（实测 95 个源）。
 //
-//   第十一轮把这条链定性成「安卓加固/壳 = 架构限制，无解」是**误判**：
+//   把这条链定性成「安卓加固/壳 = 架构限制，无解」是**误判**：
 //   它连"读 assets"都没走到。补齐资源后，报错才推进到真正的架构问题
 //   （`UnsatisfiedLinkError: Can't load this .dll (machine code=0x34) on a AMD 64-bit platform`）。
 //
@@ -171,7 +171,7 @@ describe('copyJarResources — 保住加固壳的 assets', () => {
     return join(d, name);
   }
 
-  it('★ 把 assets/*.so 与 *.guard 搬进转换产物，且不重复搬 classes.dex', () => {
+  it('把 assets/*.so 与 *.guard 搬进转换产物，且不重复搬 classes.dex', () => {
     const raw = tmp('raw.jar');
     const tgt = tmp('out.jar');
     writeFileSync(raw, makeGuardRawJar());
@@ -192,7 +192,7 @@ describe('copyJarResources — 保住加固壳的 assets', () => {
     // 原有 class 必须还在
     expect(names).toContain('com/github/catvod/spider/Init.class');
 
-    // ★ 字节必须与 raw 内完全一致（getResourceAsStream 只认字节）
+    // 字节必须与 raw 内完全一致（getResourceAsStream 只认字节）
     const want = readZipEntries(makeGuardRawJar()).find((e) => e.name === 'assets/wexshinidie.guard');
     const got = readZipEntries(readFileSync(tgt)).find((e) => e.name === 'assets/wexshinidie.guard');
     expect(got?.bytes.equals(want?.bytes ?? Buffer.alloc(0))).toBe(true);
@@ -235,7 +235,7 @@ describe('JarSpiderBridge — 转换产物格式版本迁移', () => {
     dirs.length = 0;
   });
 
-  it('★ 无版本戳（清理缓存/首装）→ 保留已有产物并补写戳，不再误删重转', () => {
+  it('无版本戳（清理缓存/首装）→ 保留已有产物并补写戳，不再误删重转', () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -248,12 +248,12 @@ describe('JarSpiderBridge — 转换产物格式版本迁移', () => {
     const logs: string[] = [];
     new JarSpiderBridge({ jvmDir, cacheDir }, makeHost(logs, ''));
 
-    expect(existsSync(keep)).toBe(true); // ★ 保留（不再误删）
+    expect(existsSync(keep)).toBe(true); // 保留（不再误删）
     expect(existsSync(join(cacheDir, '.converted-version'))).toBe(true); // 补写戳
     expect(logs.some((l) => l.includes('转换产物格式升级'))).toBe(false);
   });
 
-  it('★ 真升级（戳存在且为旧值）→ 作废重转 —— 否则 assets 补齐逻辑对老用户永远不生效', () => {
+  it('真升级（戳存在且为旧值）→ 作废重转 —— 否则 assets 补齐逻辑对老用户永远不生效', () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -304,7 +304,7 @@ describe('JarSpiderBridge.doConvert — 端到端保住 assets', () => {
     dirs.length = 0;
   });
 
-  it('★ 转换后产物里能看到 assets/wexguard_v7.so（否则 DexNative.<clinit> 必 NPE）', async () => {
+  it('转换后产物里能看到 assets/某壳产物_v7.so（否则 DexNative.<clinit> 必 NPE）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -322,7 +322,7 @@ describe('JarSpiderBridge.doConvert — 端到端保住 assets', () => {
 });
 
 /**
- * ★ 2026-09-25 事故回归：大 dex（摸鱼 / Fish 系 11.3MB jar）在写死的 `-Xmx256m` 下必 OOM
+ * 事故回归：大 dex（某第三方源 / Fish 系 11.3MB jar）在写死的 `-Xmx256m` 下必 OOM
  *   → 该 jar 的全部源「无法加载 / 无法搜索」；且失败不入缓存 → 100+ 源的配置每个源都把
  *   昂贵转换重跑一遍（实测一次 30s~4 分钟）。
  */
@@ -338,7 +338,7 @@ describe('dex2jar 堆自适应 + 失败抑制（大 jar 回归）', () => {
   });
 
   it('d2jHeapMb：小 dex 保持 256m；11MB 级 dex 显著放大；按机器总内存封顶', () => {
-    // 400KB 级（fty 壳 jar）→ 仍是历史口径 256m，不改小 jar 行为
+    // 400KB 级（某第三方源壳 jar）→ 仍是历史口径 256m，不改小 jar 行为
     expect(d2jHeapMb(400 * 1024, 8 * GiB)).toBe(256);
     // 11.3MB（Fish 系大 jar）→ 远大于 256m（实测 1024m 可完成，这里给足余量）
     expect(d2jHeapMb(11.3 * 1024 * 1024, 8 * GiB)).toBeGreaterThanOrEqual(1024);
@@ -357,7 +357,7 @@ describe('dex2jar 堆自适应 + 失败抑制（大 jar 回归）', () => {
     expect(isOomOutput('')).toBe(false);
   });
 
-  it('★ 大 dex → 转换命令行给足堆（不再是写死的 256m）', async () => {
+  it('大 dex → 转换命令行给足堆（不再是写死的 256m）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     spawnMock.mockReset();
@@ -375,7 +375,7 @@ describe('dex2jar 堆自适应 + 失败抑制（大 jar 回归）', () => {
     expect(lastArgv()).toContain('-XX:+UseSerialGC');
   });
 
-  it('★ OOM → 自动按更大堆重试一次；重试成功即产出可用产物', async () => {
+  it('OOM → 自动按更大堆重试一次；重试成功即产出可用产物', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     spawnMock.mockReset();
@@ -409,7 +409,7 @@ describe('dex2jar 堆自适应 + 失败抑制（大 jar 回归）', () => {
     expect(logs.some((l) => l.includes('堆不足'))).toBe(true);
   });
 
-  it('★ 转换失败后窗口内不再重跑（100+ 源的大配置不会反复卡住）', async () => {
+  it('转换失败后窗口内不再重跑（100+ 源的大配置不会反复卡住）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     spawnMock.mockReset();
@@ -436,7 +436,7 @@ describe('dex2jar 堆自适应 + 失败抑制（大 jar 回归）', () => {
 });
 
 /**
- * ★ 2026-09-26 事故回归（用户报「摸鱼/R18 的配置一个主页都加载不出来、搜索也无法使用」）：
+ * 事故回归：
  *   那只 11.3MB dex 的 jar **实测 dex2jar 要 198 秒**才产出 4.8MB class；而 dex2jar 带 `--force`
  *   时**一启动就建输出流** —— 中途被杀（超时/关窗口/OOM）会在磁盘上留下 **22 字节的空 zip**。
  *   旧逻辑判定「文件存在且 size>0」就当成「已转换」→ 整份配置的源全报类找不到，
@@ -483,7 +483,7 @@ describe('转换产物有效性（空 zip 残骸不得当缓存）', () => {
     expect(isUsableConvertedJar(join(dir, 'missing.jar'))).toBe(false);
   });
 
-  it('★ 磁盘上是空 zip 残骸 → 必须重新转换（不能直接当缓存返回）', async () => {
+  it('磁盘上是空 zip 残骸 → 必须重新转换（不能直接当缓存返回）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     const cacheDir = join(jvmDir, 'converted');
@@ -505,7 +505,7 @@ describe('转换产物有效性（空 zip 残骸不得当缓存）', () => {
     expect(bridge.peekConverted(url)).toBe(out); // 有效产物才被认可
   });
 
-  it('★ 转换失败留下的残骸必须删掉（否则下次被当缓存 → 整份配置的源全废）', async () => {
+  it('转换失败留下的残骸必须删掉（否则下次被当缓存 → 整份配置的源全废）', async () => {
     const jvmDir = makeJvmDir();
     dirs.push(jvmDir);
     spawnMock.mockReset();

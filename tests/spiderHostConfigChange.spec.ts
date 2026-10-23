@@ -1,7 +1,7 @@
 // tests/spiderHostConfigChange.spec.ts
-// ★ 2026-09-27 事故回归：**「切换选中源」不是配置变更，不得触发任何重活**。
+// 事故回归：**「切换选中源」不是配置变更，不得触发任何重活**。
 //
-// 事故（用户报「摸鱼切换源很慢、一直加载中；从搜索结果返回也很慢」）：
+// 事故
 //   `UserConfigManager.setActiveSource()` 走的是通用的 `apply()` → 广播 onConfigChange →
 //   `SpiderHost.onUserConfigChange()` 里的**整段重活**：
 //     ① 重放整份 SiteConfig；② `vm.spiderFactory.clear()`（丢弃全部已建好的蜘蛛实例）；
@@ -102,7 +102,7 @@ describe('SpiderHost — 切源（ui-only 变更）不得触发重活', () => {
       expect(cleanupRemoved).toHaveBeenCalledTimes(2);
       expect(cleanupRemoved.mock.calls[1][0].profiles.some((p: { id: string }) => p.id === profile.id)).toBe(true);
       expect(cleanupRemoved.mock.calls[1][1].profiles.some((p: { id: string }) => p.id === profile.id)).toBe(false);
-      // ★ 2026-10-16（用户要求）：生效档案也允许删除。此处只剩这一份 → 等于「删唯一一份」，清空订阅内容
+      // 生效档案也允许删除。此处只剩这一份 → 等于「删唯一一份」，清空订阅内容
       host.cfgDeleteProfile(host.cfgSnapshot().activeProfileId);
       expect(cleanupRemoved).toHaveBeenCalledTimes(3);
       expect(host.cfgSnapshot().profiles.length).toBe(0);
@@ -111,7 +111,7 @@ describe('SpiderHost — 切源（ui-only 变更）不得触发重活', () => {
       try { rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ }
     }
   });
-  it('★ cfgSetActiveSource 不清蜘蛛实例缓存、不清全源搜索缓存', () => {
+  it('cfgSetActiveSource 不清蜘蛛实例缓存、不清全源搜索缓存', () => {
     const host = new SpiderHost();
     const dir = (globalThis as unknown as { __shostDir: string }).__shostDir;
     try {
@@ -123,7 +123,7 @@ describe('SpiderHost — 切源（ui-only 变更）不得触发重活', () => {
       const clearSpider = vi.spyOn(vm.spiderFactory, 'clear');
       const clearSearch = vi.spyOn(searchCache, 'clear');
 
-      // ★ 切源 = ui-only：两个缓存都不许被清
+      // 切源 = ui-only：两个缓存都不许被清
       host.cfgSetActiveSource('b');
       expect(clearSpider).not.toHaveBeenCalled();
       expect(clearSearch).not.toHaveBeenCalled();
@@ -139,12 +139,12 @@ describe('SpiderHost — 切源（ui-only 变更）不得触发重活', () => {
 });
 
 /**
- * ★ 2026-09-27（用户要求「确保每一个需要绑定网盘的都能有这段提示，不管换什么订阅什么源」）：
+ * 
  *   学习点 = `play()` 里蜘蛛真实产出网盘直链（`matchDriveCookieProvider` 命中）→ `markDriveBindNeeded(key)`。
  *   这里验证「学习 → 暴露给渲染层 → 落盘 → 重新构造宿主后仍在」这条链（不依赖蜘蛛类名清单）。
  */
 describe('SpiderHost — 网盘绑定「运行期学习」', () => {
-  it('★ markDriveBindNeeded：登记 → 暴露；且跨宿主重建仍保留（落盘）', () => {
+  it('markDriveBindNeeded：登记 → 暴露；且跨宿主重建仍保留（落盘）', () => {
     const dir = (globalThis as unknown as { __shostDir: string }).__shostDir;
     try {
       const host = new SpiderHost();
@@ -165,11 +165,11 @@ describe('SpiderHost — 网盘绑定「运行期学习」', () => {
 });
 
 /**
- * ★ 2026-09-27（载荷层补完·缺口 B）：**播放前就能学会「要网盘 Cookie」，播放失败要能上屏**。
+ * （载荷层补完·缺口 B）：**播放前就能学会「要网盘 Cookie」，播放失败要能上屏**。
  *
  * 为什么：原先只在「播放**成功**产出网盘直链」时学习 —— 未绑定 Cookie 时播放必失败，
  * 于是「学不到 → 不显示绑定入口 → 永远绑不上」。详情数据在播放之前就带着答案
- * （实测 wex 玩偶：`vod_play_from = 夸克原画$$$夸克最高急速…`），失败信息也能翻译成可执行提示。
+ * （实测 某第三方源：`vod_play_from = 夸克原画$$$夸克最高急速…`），失败信息也能翻译成可执行提示。
  */
 describe('SpiderHost — 详情判定 + 播放失败翻译（缺口 B）', () => {
   it('detail()：播放源名带网盘字样 → 立刻记入绑定清单', async () => {
@@ -192,7 +192,7 @@ describe('SpiderHost — 详情判定 + 播放失败翻译（缺口 B）', () =>
     }
   });
 
-  it('★ play()：网盘未绑定的失败 → 返回可上屏的中文提示（不 throw）+ 记入绑定清单', async () => {
+  it('play()：网盘未绑定的失败 → 返回可上屏的中文提示（不 throw）+ 记入绑定清单', async () => {
     const dir = (globalThis as unknown as { __shostDir: string }).__shostDir;
     try {
       const host = new SpiderHost();

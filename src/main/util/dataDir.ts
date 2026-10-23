@@ -1,5 +1,5 @@
 // src/main/util/dataDir.ts
-// ★ 2026-09-30（用户要求）：配置与缓存目录从系统默认位置（%APPDATA%\win-box，C 盘）搬到**安装目录/data**。
+// 配置与缓存目录从系统默认位置（%APPDATA%\win-box，C 盘）搬到**安装目录/data**。
 //   - 仅打包态启用（dev 保持默认位置，行为不变）；
 //   - 便携版取 PORTABLE_EXECUTABLE_DIR（portable exe 所在目录），安装版取 exe 所在目录；
 //   - 老用户首次启动自动迁移：同盘「整目录 rename」（秒级无损）→ 跨盘「复制 + 删源」→
@@ -94,7 +94,7 @@ const SKIP_TOP = new Set(SAFE_USERDATA_SUBDIRS.map((s) => s.toLowerCase()));
  * 迁移时**不带走**的相对路径（可重建的纯缓存；旧目录随后整体删除，等于顺带清掉 C 盘大头）：
  *  - Chromium 各缓存目录（Cache / Code Cache / GPUCache / Dawn* / blob_storage / …）；
  *  - `winbox-cache/update`（刚用完的安装包，重下即可）。
- *  ★ 注意：Chromium 的**状态目录**（Local Storage 含观看历史、Network 含网页登录态、Preferences…）必须迁移。
+ *  注意：Chromium 的**状态目录**（Local Storage 含观看历史、Network 含网页登录态、Preferences…）必须迁移。
  */
 export function shouldSkipRel(rel: string): boolean {
   const norm = rel.replace(/\\/g, '/').toLowerCase();

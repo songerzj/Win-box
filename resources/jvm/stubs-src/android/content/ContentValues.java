@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * ContentValues stub —— 键值对容器（SQLite insert/update 的参数）。
  *
- * ★ 这个类**必须是功能完整的**：它是纯数据结构，不依赖任何 Android 系统能力，
+ * 这个类**必须是功能完整的**：它是纯数据结构，不依赖任何 Android 系统能力，
  *   蜘蛛/Room 会往里 put 再读出来。做成空壳会导致数据静默丢失。
  *   因此这里用真实的 HashMap 实现（与 Android 行为一致）。
  */

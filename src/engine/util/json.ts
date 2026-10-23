@@ -54,7 +54,7 @@ export function stripJsonComments(input: string): string {
 /**
  * 去掉对象/数组里的**尾随逗号**（`[1,2,]` / `{"a":1,}`）——字符串感知。
  *
- * ★ 2026-09-28（通解）：安卓 org.json 的 JSONTokener **宽容尾随逗号**（读到 `]`/`}`
+ * （通解）：安卓 org.json 的 JSONTokener **宽容尾随逗号**（读到 `]`/`}`
  *   前若只有逗号即当作结束），而 JS 的 JSON.parse 一律拒绝 ⇒ 同一份订阅安卓能导入、
  *   桌面报「配置不是合法 JSON 对象」。实测订阅 `https://700sjro44343.vicp.fun/eggp/0211/tv.json`：
  *   剥注释后仍挂在 `\"\",\n      ],` 两处尾随逗号上，去掉即解析成功。
@@ -100,10 +100,10 @@ export function stripTrailingCommas(input: string): string {
 /**
  * 给**未加引号 / 引号错位**的对象键名补正引号（字符串感知）。
  *
- * ★ 2026-10-14（用户报「肥猫订阅导入失败」）：实测 `http://肥猫.net/tv` 的站源写成
+ * 实测某站的站源写成
  *   JS 对象字面量风格，两种键名缺陷并存：
- *     ① 裸键名：`"api": "csp_AppDrama",\n ext: { … }`；
- *     ② **引号错位**：`"api": "csp_AppDrama",\n ext": { … }`（只有**后引号**、没有前引号，
+ *     ① 裸键名：`"api": "csp_某源",\n ext: { … }`；
+ *     ② **引号错位**：`"api": "csp_某源",\n ext": { … }`（只有**后引号**、没有前引号，
  *        position 2795 / line 124 就是它）。
  *   两者 JSON.parse 都必拒（`Expected double-quoted property name`），安卓 org.json 能容忍。
  *

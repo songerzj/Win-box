@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * <p>参考实现：CatVodTVOfficial/CatVodTVSpider 的
  * {@code app/src/main/java/com/github/catvod/spider/PushAgent.java}。
  *
- * <p>★ 适配取舍（不做 1:1 复刻的地方）：
+ * <p>适配取舍（不做 1:1 复刻的地方）：
  * <ul>
  *   <li><b>阿里云盘分支</b>（{@code getAliContent} / {@code refreshTk} /
  *       {@code ProxyMedia} / {@code listFiles}）：原版依赖 ali openapi + 阿里

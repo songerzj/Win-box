@@ -25,7 +25,7 @@ describe('parseSo360', () => {
   });
 });
 
-// ★ 2026-09-24：360 兜底封面「比正常封面暗/不协调」—— 结果是深色视频截图/横版剧照/透明切图。
+// 360 兜底封面「比正常封面暗/不协调」—— 结果是深色视频截图/横版剧照/透明切图。
 //   改为「竖版海报优先（且够大）→ 优先 jpg/webp → 面积大者」。
 describe('pickBestSo360Cover（选真正的竖版海报）', () => {
   const c = (img: string, w: number, h: number, title = 'x') => ({ img, w, h, title });
@@ -80,7 +80,7 @@ describe('isRelevantHit（宁缺勿错图）', () => {
     expect(SO360_REFERER).toBe('https://image.so.com/');
   });
 
-  // ★ 2026-09-23 收紧：季号必须一致（实测反例：「侠探杰克第四季」命中过《侠探杰克》第三季的文章）
+  // 收紧：季号必须一致（实测反例：「侠探杰克第四季」命中过《侠探杰克》第三季的文章）
   it('seasonNo：识别阿拉伯/中文季部号，无标记为 0', () => {
     expect(seasonNo('侠探杰克第四季')).toBe(4);
     expect(seasonNo('无耻之徒 第二季')).toBe(2);

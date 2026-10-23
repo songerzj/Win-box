@@ -79,7 +79,7 @@ function collectUrls(root: unknown): string[] {
     }
   };
   visit(root, '', 0);
-  // ★ 负分 = 只找到「页面地址」这类不可能是最终播放地址的候选 → 一律不要
+  // 负分 = 只找到「页面地址」这类不可能是最终播放地址的候选 → 一律不要
   //   （宁可判为「未解析出」交给嗅探兜底，也不能把页面地址当成功结果）
   hits.sort((a, b) => b.score - a.score);
   return hits.filter((h) => h.score >= 0).map((h) => h.url);

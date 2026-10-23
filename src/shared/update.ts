@@ -1,7 +1,7 @@
 // src/shared/update.ts
 // 启动更新提示的契约与纯函数 —— 主/渲染层共用（零依赖，不含 electron）。
 //
-// ★ 2026-10-13 口径：启动时比对本地版本与 GitHub 最新 Release；若本地更低，
+// 口径：启动时比对本地版本与 GitHub 最新 Release；若本地更低，
 //   展示更新说明并由用户选择是否从「代理加速的 GitHub」下载 Setup 安装包。
 //
 // 设计红线（务必遵守）：
@@ -26,9 +26,8 @@ export const UPDATE_RELEASES_API = `https://api.github.com/repos/${UPDATE_REPO}/
 export const UPDATE_RELEASES_PAGE = `https://github.com/${UPDATE_REPO}/releases/latest`;
 
 /**
- * ★ 2026-10-16（用户要求「在『暂不更新 / 立即更新』之间加一个『网盘更新』，点击打开指定链接」）：
  *   网盘备用下载地址（123 云盘分享页，用户自己手动下载）—— 与 GitHub 直连/加速下载互为备份。
- *   ★ 这是**固定链接**（用户维护同一分享、只换里面的文件）；日后若分享地址变更，**只改这一处**。
+ *   这是**固定链接**（用户维护同一分享、只换里面的文件）；日后若分享地址变更，**只改这一处**。
  */
 export const DISK_UPDATE_URL = 'https://1824896562.share.123pan.cn/123pan/syh2jv-vxL6h?pwd=KAMI#';
 
@@ -36,7 +35,7 @@ export const DISK_UPDATE_URL = 'https://1824896562.share.123pan.cn/123pan/syh2jv
  * GitHub 代理加速前缀池（用法 = 前缀直接拼接原始 GitHub 地址，如
  *   `https://gh.acmsz.top/https://github.com/o/r/releases/download/…`）。
  *
- * ★ 2026-09-30（用户要求「现在的软件里 GitHub 代理加速还是太慢，能不能把 github.akams.cn 的代理接口内置进来」）：
+ *
  *   该站点把社区节点硬编码在自家 JS bundle 里（**没有公开 JSON 接口**），本清单是**从 `github.akams.cn`
  *   的快照提取**（`contribute` 49 条 + `测绘` 31 条 = 80 条，见 `.tmp/akams-extract.cjs`）。
  *   顺序 = **本机实测速率降序**（`.tmp/akams-speed-measure.cjs`，Range 64KB/1.5s），前 48 条实测连通、
@@ -213,7 +212,7 @@ export interface UpdateProgress {
 }
 
 /**
- * ★ 2026-09-30（用户要求「先为代理链路测速，挑下载速度最快的下载」）：单条线路的测速样本。
+ * 单条线路的测速样本。
  *   `bytes`/`ms` 是「限时窗口内实际收到的字节数与耗时」；`ttfb` 是首字节耗时（可选）。
  *   速率口径：**优先用「去掉首字节」的 [ms - ttfb] 段**算 sustained 速率 —— 小样本窗口下
  *   TTFB 会占掉大半时间（实测同一节点 64KB 样本 217KB/s、2MB 样本 5057KB/s，差 20 倍），

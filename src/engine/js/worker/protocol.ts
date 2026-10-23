@@ -1,5 +1,5 @@
 // src/engine/js/worker/protocol.ts
-// ★★ 2026-09-30（用户报「另一台设备用自用本地包搜索时软件卡死」）★☆
+// ☆
 //   JS 蜘蛛（drpy/hiker）此前跑在**主进程内**（node:vm）。而同步 `req()` 是用
 //   `spawnSync` 实现的 —— 它同步阻塞主进程：实测单个源连续同步请求每次冻住 400ms~1.5s，
 //   指向本机回环（`/pkg/…` 等自家本地代理路由）时更会与主进程**互等死锁**（实测 11.6s，
@@ -26,7 +26,7 @@ export type HostCall =
 
 /** 主进程 → worker（任务） */
 export type WorkerTask =
-  // ★ open 也带 id：脚本加载/init 失败必须**立刻回执**（否则池只能等 OPEN_TIMEOUT 杀 worker 重来，
+  // open 也带 id：脚本加载/init 失败必须**立刻回执**（否则池只能等 OPEN_TIMEOUT 杀 worker 重来，
   //   表现为「JS 源连环打开超时」）—— 与 call 共用 pending 回执通道。
   | { t: 'open'; id: number; key: string; api: string; ext: string }
   | { t: 'setExt'; key: string; ext: string }

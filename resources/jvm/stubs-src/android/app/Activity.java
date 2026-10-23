@@ -6,7 +6,7 @@ import android.view.Window;
 /**
  * Activity stub —— 前台活动。
  *
- * 桌面 TVBox 无真实 Activity，但 fty 系蜘蛛的弹幕初始化（ProxyOrigin.getan）会先
+ * 桌面 TVBox 无真实 Activity，但 某第三方源系蜘蛛的弹幕初始化（ProxyOrigin.getan）会先
  * InitOrigin.getActivity() 拿 Activity，再 Activity.getWindow().getDecorView() 查找视图。
  * 若 getWindow() 返回 null（历史实现），则 getDecorView() 直接 NPE。
  * 这里返回一个非 null 空 Window，让视图遍历安全地走到"无结果"分支。
@@ -43,7 +43,7 @@ public class Activity extends android.content.Context {
     }
 
     /**
-     * ★ 2026-09-30（用户报「其他接口的盘搜类型源点搜索结果进不了详情」）：
+     * 
      * 盘搜/网盘族蜘蛛（实测 小米订阅 `csp_MiSou`）在 detailContent 的**类初始化**里调用
      * `Activity.requestPermissions(String[], int)`（写外部存储前向系统申请权限，API 23+）；
      * 桩里缺这个方法 → `NoSuchMethodError` → `ExceptionInInitializerError` → 详情整体失败

@@ -4,14 +4,14 @@
 // 为什么抽出来：这些 provider 全是「宿主代发请求 → 取 JSON → 按受限路径取数」的同一形态，
 // 请求头展开 / 取值 / 解码 / 取文本的细节只应有一份实现（避免各 provider 各抄一遍而漂移）。
 //
-// ★ 依赖方向：本文件复用宿主**既有**的极简 HTTP 取字节工具（`subtitle/http`），**不新造网络栈**
+// 依赖方向：本文件复用宿主**既有**的极简 HTTP 取字节工具（`subtitle/http`），**不新造网络栈**
 //   （设计方案 §1「勿重造」）。解码口径见下方 `decodeBody`（**不复用**字幕文本的启发式）。
 import * as iconv from 'iconv-lite';
 import { getBuffer } from '../subtitle/http';
 
 /**
  * 声明式 provider 的响应解码：**UTF-8 优先，非法才回落 GB18030**。
- * ★ 为什么不复用字幕的 `decodeSubtitle`（双解码打分选优）：那是为「字幕文本」设计的启发式，
+ * 为什么不复用字幕的 `decodeSubtitle`（双解码打分选优）：那是为「字幕文本」设计的启发式，
  *   对**纯 UTF-8 的 JSON/XML API 响应**会因启发式打分把中文误判成 GBK（实测 JSON 里的「繁花」被解成「绻佽姳」）。
  *   JSON/API 响应按规范就是 UTF-8；GBK 源会因 UTF-8 严格解码失败而自然落到回落分支。
  */

@@ -1,11 +1,10 @@
 // src/engine/spider/okhttp4Compat.ts
-// ★★ 2026-10-14（用户日志实测 + 全量缓存扫描）★★
-//   现象：wex 订阅的嵌套源（`com.github.catvod.spider.SoAiPanSoo`，壳 jar `983a5ad5…` 运行时解出的
+//   现象：某第三方源里的嵌套源（`com.github.catvod.spider.SoAiPanSoo`，壳 jar `983a5ad5…` 运行时解出的
 //     载荷）播放必失败：
 //     java.lang.NoSuchMethodError:
 //       'okhttp3.RequestBody okhttp3.RequestBody.create(java.lang.String, okhttp3.MediaType)'
 //
-//   根因（实证，非推测）：
+//   根因（经调用链分析确认）：
 //     · 该蜘蛛按 **okhttp 4.x** 的参数序调用（内容在前、MediaType 在后）——4.x 起
 //       `RequestBody.create` 的 Kotlin companion 方法是 `create(content, contentType)`；
 //     · 桌面端父类加载器里只有 **okhttp 3.14.9**（`resources/jvm/libs/okhttp-3.14.9.jar`），
@@ -13,7 +12,7 @@
 //       String / ByteString / [B / [BII / File），**没有** 4.x 参数序的那个 ⇒ 解析不到 ⇒ NoSuchMethodError；
 //     · 安卓端自带 okhttp 4.x ⇒ 真机正常，桌面端必崩。
 //
-//   ★ 关键：报错**不在** Node 端转换产物里，而在**运行时**产物里 ——
+//   关键：报错**不在** Node 端转换产物里，而在**运行时**产物里 ——
 //     壳 jar 在 JVM 内解密出嵌入式 dex 载荷，由 `resources/jvm/stubs-src/dalvik/system/BaseDexClassLoader.java`
 //     做**运行时 dex2jar**，落到 `<cacheDir>/runtime-dex/<md5>.<rev>.jar`（全量扫描 39 个缓存 jar，
 //     唯一命中 = `runtime-dex/9bf5537a788b88a867898a1da7884288.r2.jar` 的 `SoAiPanSoo.class`）。

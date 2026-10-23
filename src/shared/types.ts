@@ -44,7 +44,7 @@ export interface SourceBean {
   click: string; // "host;selector"
   style: string;
   /**
-   * ★ 2026-09-29（用户要求）本地包「网页源」：该源的网页首页（`homePage` 字段）。
+   * 本地包「网页源」：该源的网页首页（`homePage` 字段）。
    * 上游形态：html 页自带 UI，靠宿主 `window.fm` 桥拉数据（见 shared/webbridge.ts）。
    * 空 = 普通源（走常规分类网格）。
    */
@@ -75,14 +75,14 @@ export interface ParseBean {
 export interface LiveBean {
   name: string; // 默认 "线路{N}"
   api: string;
-  type: string; // ★ 字符串；"0" | "3"，其它值清空频道
+  type: string; // 字符串；"0" | "3"，其它值清空频道
   url: string; // 空则回退 api
   jar: string;
   ext: string;
   epg: string;
   playerType: string;
   timeout: number; // clamp [5,30]
-  /** ★ 2026-09-29 EPG：直播线路时区（IANA，如 Asia/Shanghai）；空/缺省 = 本机时区（对齐 FongMi `Live.getZoneId`） */
+  /** EPG：直播线路时区（IANA，如 Asia/Shanghai）；空/缺省 = 本机时区（对齐 FongMi `Live.getZoneId`） */
   timeZone?: string;
   header?: Record<string, string>;
   ua?: string;
@@ -158,7 +158,7 @@ export interface VodItem {
   type: string;
   sourceKey: string;
   /**
-   * ★ 2026-09-30（用户报「其他接口的盘搜类型源搜索结果无法展示详情」）：
+   * 
    * 源侧 `vod_tag` 原样透传 —— `folder` = **文件夹条目**（盘搜/网盘的「夸克 (92个)」这类），
    * 点击应拿它的 id 走 `categoryContent`（文件夹展开），而不是进详情页（详情必空）。
    */
@@ -213,19 +213,19 @@ export interface SearchAllReport {
   failedSources: number; // 出错源数
   totalRaw: number; // 汇总前原始命中数
   /**
-   * ★ 2026-09-23 三轮：本次报告来自**本地缓存**（同关键词 5 分钟内重复搜索 → 秒回）。
+   * 本次报告来自**本地缓存**（同关键词 5 分钟内重复搜索 → 秒回）。
    * 值为缓存写入时间戳；UI 据此提示「本地缓存 · 点『重新搜索』刷新」。
    */
   cachedAt?: number;
   /**
-   * ★ 2026-09-24：本次有 N 个源因「运行时正在下载/转换」未参与（清缓存/首装后的第一次搜索）。
+   * 本次有 N 个源因「运行时正在下载/转换」未参与（清缓存/首装后的第一次搜索）。
    * UI 据此显示醒目横幅并在约 25 秒后**自动重搜一次**，避免用户面对空结果无从下手。
    */
   pendingSources?: number;
 }
 
 /**
- * ★ 2026-09-23 聚合搜索「流式进度」事件：每完成一个源就推一条给渲染层，
+ * 聚合搜索「流式进度」事件：每完成一个源就推一条给渲染层，
  * 让结果**边搜边出**（此前要等全部源跑完，慢源多时界面几十秒空白 → 「搜索特别慢」的观感主因）。
  */
 export interface SearchAllProgressEvent {
@@ -233,14 +233,14 @@ export interface SearchAllProgressEvent {
   wd: string;
   /**
    * 该源的结果（结构同 mergeSearchResults 的输入）。
-   * ★ 2026-09-24：**可选** —— 快速窗口到点时会推一条「不带 source」的进度，
+   * **可选** —— 快速窗口到点时会推一条「不带 source」的进度，
    * 只用于告诉 UI「已出 X 个、其余 N 个仍在补搜」（用户不必干等所有慢源）。
    */
   source?: { key: string; name: string; status: 'ok' | 'empty' | 'error'; items?: VodItem[]; error?: string; ms?: number };
   /** 已完成的源数 / 总源数 */
   done: number;
   total: number;
-  /** ★ 仍在补搜的源数（= total - done，供 UI 显示「其余 N 个仍在补搜」） */
+  /** 仍在补搜的源数（= total - done，供 UI 显示「其余 N 个仍在补搜」） */
   pending?: number;
 }
 
@@ -268,10 +268,10 @@ export interface PlayResult {
   message?: string;
   /** 蜘蛛解析标记：生态里可能是 0/1，也可能是解析站 URL → 透传不加工 */
   jx?: number | string;
-  /** ★ 播放地址属于「cookie 型」网盘且该 provider 未绑定 → 渲染层提示去配置页绑定（值为网盘 provider，如 quark/uc/baidu/115） */
+  /** 播放地址属于「cookie 型」网盘且该 provider 未绑定 → 渲染层提示去配置页绑定（值为网盘 provider，如 quark/uc/baidu/115） */
   needDriveCookieBind?: string;
   /**
-   * ★ 2026-09-29：桌面版无载体的原始链接（磁力 / 电驴）——`url` 置空 + `message` 上屏时一并给出，
+   * 桌面版无载体的原始链接（磁力 / 电驴）——`url` 置空 + `message` 上屏时一并给出，
    * 主进程把它复制到剪贴板（用户可直接粘进 qBittorrent / 迅雷等工具）。见 `engine/vod/playLink.ts`。
    */
   externalLink?: string;
@@ -284,10 +284,10 @@ export interface MetaHit {
   poster: string; // 完整可引用 URL（https://image.tmdb.org/t/p/w342/...）
   overview: string;
   type: 'movie' | 'tv';
-  /** ★ 2026-09-24：TMDB 条目 id（详情页「演职员/相关推荐」用它再请求一次详情；无则说明是豆瓣/360 命中） */
+  /** TMDB 条目 id（详情页「演职员/相关推荐」用它再请求一次详情；无则说明是豆瓣/360 命中） */
   tmdbId?: number;
   /**
-   * ★ 2026-09-25：TMDB `backdrop_path`（**横版剧照**，w1280）。
+   * TMDB `backdrop_path`（**横版剧照**，w1280）。
    *   详情页背景只允许用横版图 —— `images.backdrops` 取不到时用它兜底，**绝不退回竖版封面**（会被裁得很难看）。
    */
   backdrop?: string;
@@ -313,9 +313,77 @@ export interface MetaExtra {
   cast: MetaCastMember[];
   genres: string[];
   recommendations: MetaRecommendation[];
-  /** ★ 2026-09-24：导演名（TMDB `credits.crew[job=Director]` / 剧集 `created_by`）；
+  /** 导演名（TMDB `credits.crew[job=Director]` / 剧集 `created_by`）；
    *  详情页在源数据缺导演时用它补展示 */
   directors: string[];
+}
+
+// ---------- 详情页「豆瓣」增强：相关推荐 / 影评（`meta:doubanExtra`） ----------
+// 来源：movie.douban.com/j/subject_suggest（取 id）+ m.douban.com rexxar
+//   `{movie|tv}/{id}/recommendations` · `{movie|tv}/{id}/reviews` · `{movie|tv}/{id}?for_mobile=1`（取 intro 梗概）。
+export interface DoubanExtraItem {
+  id: string;
+  title: string;
+  year: number | '';
+  /** 已包装为本地 /img 中继的封面 URL */
+  poster: string;
+  /** 梗概（豆瓣 `intro`，已截断为一行）；取不到时为空串（UI 退用 subtitle） */
+  overview: string;
+  /** 豆瓣自带的副标题行（`年份 / 地区 / 类型 / 导演 / 主演`）—— 推荐条目里的「简介」原始形态 */
+  subtitle: string;
+  /** 豆瓣评分（0~10），无则 undefined */
+  rating?: number;
+  mediaType: 'movie' | 'tv';
+  /** 豆瓣条目页（外链兜底） */
+  url: string;
+}
+
+export interface DoubanReviewItem {
+  id: string;
+  title: string;
+  /** 影评摘要（豆瓣 abstract，已截断） */
+  abstract: string;
+  /** 影评评分（1~5，豆瓣口径），无则 undefined */
+  rating?: number;
+  /** 「有用」数 */
+  useful: number;
+  /** 评论数 */
+  comments: number;
+  author: string;
+  /** 发表时间（原样字符串，形如 `2023-01-29 13:21:07`） */
+  date: string;
+  /** 豆瓣影评页（点击用系统浏览器打开） */
+  url: string;
+}
+
+/** 影评正文块（豆瓣正文里 `<img>` **只有 `id="img_XXX"`、没有 src**，
+ *   真实地址在 `photos[].image.*.url` ⇒ 按 id 还原成图片块，否则长影评会丢大半内容） */
+export type DoubanReviewBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; url: string; caption?: string };
+
+/** 影评全文（点击影评行 → 独立小窗口展示用；`GET rexxar/api/v2/review/{id}?for_mobile=1`） */
+export interface DoubanReviewDetail {
+  id: string;
+  title: string;
+  author: string;
+  /** 影评评分（1~5），无则 undefined */
+  rating?: number;
+  date: string;
+  useful: number;
+  comments: number;
+  /** 豆瓣影评页（窗口内「在豆瓣打开」用） */
+  url: string;
+  /** 豆瓣标记「含剧透」 */
+  spoiler: boolean;
+  blocks: DoubanReviewBlock[];
+}
+
+export interface DoubanDetailExtra {
+  /** 豆瓣条目 id（未命中为 ''） */
+  id: string;
+  recommendations: DoubanExtraItem[];
+  reviews: DoubanReviewItem[];
 }
 
 // ---------- 发现页（国内榜单；与播放源解耦） ----------
@@ -324,7 +392,7 @@ export interface DiscoverItem {
   year: number | '';
   /** 已包装为本地 /img 中继的封面 URL */
   poster: string;
-  /** ★ 2026-09-25：横版剧照（TMDB `backdrop_path`，w1280，已 /img 中继）—— Hero 背景只用横版图 */
+  /** 横版剧照（TMDB `backdrop_path`，w1280，已 /img 中继）—— Hero 背景只用横版图 */
   backdrop?: string;
   tmdbId?: number;
   doubanId?: string;
@@ -351,7 +419,7 @@ export interface DiscoverSection {
 }
 
 /**
- * ★ 2026-09-24：某部片的图集（发现页 Hero「横版剧照轮播」用）。
+ * 某部片的图集（发现页 Hero「横版剧照轮播」用）。
  * backdrops = TMDB 横版剧照（w1280，已按中文优先 + 评分排序，≤6 张）；
  * posters = 竖版海报（w342，≤8 张）。均已包装为本地 /img 中继 URL。
  */
@@ -360,7 +428,7 @@ export interface MetaImages {
   posters: string[];
 }
 
-// ---------- 发现页「分类」浏览（TMDB 类型清单 + 按类型翻页；★ 2026-09-24） ----------
+// ---------- 发现页「分类」浏览（TMDB 类型清单 + 按类型翻页） ----------
 export interface DiscoverGenre {
   id: number;
   name: string;
@@ -422,7 +490,7 @@ export interface UserConfig {
   sources: SourceBean[]; // 有序 = UI 顺序（当前 profile 的有效源）
   lives: LiveBean[];
   /**
-   * ★ 2026-09-24：解析接口（订阅顶层 `parses`）。
+   * 解析接口（订阅顶层 `parses`）。
    *   此前只在导入时解析、**未持久化也未送进运行时**，导致 parse===1 的播放地址无处可解。
    *   注意：**不含**合成的「超级解析」(type=4) —— 该条由 ParseService 的内置嗅探兜底承担，
    *   存进来只会在每次 config 往返时被 parseParses 反复 unshift 出重复项。
@@ -433,7 +501,7 @@ export interface UserConfig {
   profiles: UserProfile[];
   activeProfileId: string; // 当前生效 profile id（'' = 无档案管理，仅源列表）
   /**
-   * ★ 2026-10-15（用户报「配置里删掉的源，换源下拉里还在」）：**用户手动删除过的源 key 墓碑**。
+   * **用户手动删除过的源 key 墓碑**。
    *   订阅是"全量替换"语义（导入 / 启动时 7 天自动刷新 / 档案切换都用订阅自带源重建 `sources`）——
    *   若不记账，用户删掉的源会在任何一次订阅往返后复活（观感 =「删了还在」）。
    *   口径与「本机导入的本地直播线路」（withLocalLives）一致：**用户的本地增删改要在订阅往返里保住**。
@@ -453,7 +521,7 @@ export interface UserProfile {
 }
 
 /**
- * ★ 2026-09-30（用户要求）：换源弹层的「左订阅 / 右源」视图。
+ * 换源弹层的「左订阅 / 右源」视图。
  * 每份档案给出源 key/name 清单：当前生效档案取**运行期真实源列表**（含手动增删改），
  * 其余档案解析其存档 JSON（解析失败给空清单，不阻塞弹层）。
  */
@@ -466,7 +534,7 @@ export interface ProfileSitesView {
   }>;
 }
 
-/** ★ 2026-09-30：数据目录信息（安装目录/data；老用户迁移结果与回退原因） */
+/** 数据目录信息（安装目录/data；老用户迁移结果与回退原因） */
 export interface DataDirInfo {
   path: string;
   mode: 'dev' | 'activated' | 'fallback';
@@ -536,7 +604,7 @@ export interface ProxyRule {
 // ---------- 宿主从 engine 注入的能力（T04 实现，T02 仅定义） ----------
 export interface HttpRequest {
   url: string;
-  /** ★ 2026-09-29 增加 `propfind`（WebDAV 列目录）；HttpClient 统一转大写后交给 undici */
+  /** 增加 `propfind`（WebDAV 列目录）；HttpClient 统一转大写后交给 undici */
   method?: 'get' | 'post' | 'head' | 'propfind';
   headers?: Record<string, string>;
   body?: string;
@@ -549,7 +617,7 @@ export interface HttpRequest {
   charset?: string;
   buffer?: 0 | 1 | 2; // 0 文本 / 1 字节数组 / 2 base64
   /**
-   * ★ 2026-09-25：`1` = 本请求走 **DoH 解析**（host 被 DNS 污染时用）。
+   * `1` = 本请求走 **DoH 解析**（host 被 DNS 污染时用）。
    *   仅用于「系统 DNS 结果明显不对」的兜底重试（订阅拉取、CMS 源请求），默认不开。
    */
   doh?: 0 | 1;

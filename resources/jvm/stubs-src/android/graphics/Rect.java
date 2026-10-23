@@ -6,7 +6,7 @@ import android.os.Parcelable;
 /**
  * Rect stub —— 矩形区域（纯数据结构）。
  *
- * ★ Braille 型纯数据类：必须功能完整。蜘蛛常用它做坐标裁剪计算，
+ * Braille 型纯数据类：必须功能完整。蜘蛛常用它做坐标裁剪计算，
  *   空壳会导致计算结果恒为 0。这里用真实的 int 字段实现。
  */
 public class Rect implements Parcelable {

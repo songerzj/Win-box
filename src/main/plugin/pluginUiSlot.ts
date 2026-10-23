@@ -1,7 +1,7 @@
 // src/main/plugin/pluginUiSlot.ts
 // 插件受限 UI 槽位适配层：把 `contributes.ui.slot`（L3 **声明式**）摊平成宿主视图 `UiSlotView`。
 //
-// ★ 与 R6~R8 的 UI 类同口径：插件**不跑代码、不注入任何 UI**（红线②）—— 本层只搬运白名单字段；
+// 与 R6~R8 的 UI 类同口径：插件**不跑代码、不注入任何 UI**（红线②）—— 本层只搬运白名单字段；
 //   组件树的**渲染**在渲染层（`components/PluginSlot.tsx`），`link` 的动作由渲染层按 §5.9 词表执行。
 // 事实源：docs/design/插件制作规范.md §5.12；机器契约见 src/shared/plugin.ts。
 
@@ -31,7 +31,7 @@ function itemFromContribute(it: UiSlotItem): UiSlotItemView {
   };
 }
 
-/** 声明式贡献 → 视图（★ 只搬运白名单字段） */
+/** 声明式贡献 → 视图（只搬运白名单字段） */
 export function uiSlotFromContribute(c: UiSlotContribute, owner: UiSlotOwner): UiSlotView {
   return {
     id: c.id,

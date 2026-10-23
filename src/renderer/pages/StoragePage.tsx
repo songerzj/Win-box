@@ -1,5 +1,5 @@
 // src/renderer/pages/StoragePage.tsx — WebDAV 存储（只读）：浏览自建 OpenList/AList/Nextcloud 等并播放。
-// ★ 2026-09-29：播放走 `/play?dav=<id>`（主进程中继注入 Authorization，凭据绝不进 URL）；
+// 播放走 `/play?dav=<id>`（主进程中继注入 Authorization，凭据绝不进 URL）；
 //   mp4/webm 等内联播，mkv/HEVC 等交给本机外部播放器接力（复用磁力的播放器设置）。
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';

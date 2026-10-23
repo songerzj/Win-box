@@ -3,7 +3,7 @@ package android.net;
 import java.util.List;
 
 /**
- * ConnectivityManager stub —— ★ 2026-09-27 新补（wex 仓共用助手取 DNS 用：
+ * ConnectivityManager stub —— 新补（某第三方源仓共用助手取 DNS 用
  *   `getAllNetworks()` → `getNetworkCapabilities(n).hasCapability(12)` → `getLinkProperties(n).getDnsServers()`；
  *   缺类时整源 `ClassNotFoundException`）。
  *

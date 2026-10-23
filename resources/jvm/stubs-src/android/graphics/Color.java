@@ -5,11 +5,11 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Color stub —— 颜色工具类（★ 2026-09-26 新增）。
+ * Color stub —— 颜色工具类（新增）。
  *
- * ★ Braille 型纯计算类：必须功能完整。蜘蛛/壳 jar 的详情与 UI 代码会直接引用
- *   `Color.RED` 一类常量做静态初始化（缺类 → 整个类加载失败，真机实测：
- *   玩偶/盘搜等源「点开资源无详情」就是这条），还会用 `parseColor("#RRGGBB")`
+ * Braille 型纯计算类：必须功能完整。蜘蛛/壳 jar 的详情与 UI 代码会直接引用
+ *   `Color.RED` 一类常量做静态初始化（缺类 → 整个类加载失败，实测：
+ *   某第三方源/盘搜等源「点开资源无详情」就是这条），还会用 `parseColor("#RRGGBB")`
  *   解析配置里的颜色串 —— 空壳会让颜色恒为 0（黑），故这里按 AOSP 语义实现。
  */
 public class Color {

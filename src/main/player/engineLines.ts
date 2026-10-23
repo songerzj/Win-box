@@ -1,5 +1,5 @@
 // src/main/player/engineLines.ts
-// ★ 2026-10-18（R11）第三方播放内核的**纯逻辑**（不 import electron，可单测）。
+// （R11）第三方播放内核的**纯逻辑**（不 import electron，可单测）。
 //   与 `mpvCore.ts` 的分工：`mpv-ipc` 协议族**逐字复用** `mpvCore`（观察/命令/归约）；
 //   本文件只负责**插件引擎描述符**相关的三件事：
 //     ① 参数模板展开 `expandEngineArgs`（可选占位符缺省 → **整项丢弃**）；
@@ -14,7 +14,7 @@
 //                `{"event":"duration","value":…}` `{"event":"paused","value":…}` `{"event":"eof"}`
 //                `{"event":"exit"}` `{"event":"tracks","audio":[{"id":1,"title":"国语"}],"sub":[{"id":2}]}`
 //                `{"event":"error","message":"…"}`
-//   ★ 未识别的事件/字段一律**忽略**（前向兼容）；字段名即上表（**不做字段重映射**）。
+//   未识别的事件/字段一律**忽略**（前向兼容）；字段名即上表（**不做字段重映射**）。
 
 import { placeholdersOf } from '../../shared/plugin';
 import type { MpvAudioTrack, MpvCommand, MpvKernelState, MpvSubtitleTrack } from '../../shared/player';
@@ -105,8 +105,8 @@ export const ENGINE_QUIT_LINE = '{"cmd":"quit"}\n';
 
 /**
  * 渲染层命令 → **json-lines 下行命令行**（返回空数组 = 该命令在通用族里无对应动作）。
- * ★ `load` 不走这里（起播时由 `engineLoadLine` 单独下发）；`quit` 由 `ENGINE_QUIT_LINE` 下发。
- * ★ `sub-add`/`sub-font`/`sub-pos`/`aid`/`sid`/`sr-mode` 等 mpv 专属命令在通用族**无对应动作** → 空数组
+ * `load` 不走这里（起播时由 `engineLoadLine` 单独下发）；`quit` 由 `ENGINE_QUIT_LINE` 下发。
+ * `sub-add`/`sub-font`/`sub-pos`/`aid`/`sid`/`sr-mode` 等 mpv 专属命令在通用族**无对应动作** → 空数组
  *   （插件若声明了 `capabilities`，宿主 UI 据此收敛；不提供假能力）。
  */
 export function engineCommandLines(cmd: MpvCommand): string[] {

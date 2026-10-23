@@ -1,4 +1,4 @@
-// tests/discoverCascade.spec.ts — 级联分类（豆瓣数据层）的纯函数测试（★ 2026-10-15）。
+// tests/discoverCascade.spec.ts — 级联分类（豆瓣数据层）的纯函数测试。
 // 覆盖：recommend 响应解析（丢榜单条目 / 封面中继 / 年份抽取）、豆瓣自带词表解析、
 //       查询串拼装（「全部」不下发）、年代 tag → 年份区间、内置快照字典形状。
 import { describe, expect, it } from 'vitest';
@@ -156,7 +156,7 @@ describe('选项字典', () => {
   });
 });
 
-// ★ 2026-10-15（用户要求「点播页分类要和发现页一样丰富」）：源没有对应筛选组时的**本地过滤**口径
+// 源没有对应筛选组时的**本地过滤**口径
 describe('点播页本地维度（源缺失该筛选组时）', () => {
   it('localDimensions 给出 类型/地区/年代 三维，选项都够多且首项是「全部」', () => {
     const dims = localDimensions();

@@ -1,7 +1,7 @@
 // tests/okhttp4Compat.spec.ts — 给 `okhttp3/RequestBody` 追加 okhttp 4.x 参数序的 `create` 重载。
-// 实测来源：用户日志 `app-2026-10-14.log` 的
+// 实测来源：`运行日志` 的
 //   `NoSuchMethodError: 'okhttp3.RequestBody okhttp3.RequestBody.create(java.lang.String, okhttp3.MediaType)'`
-//   调用者 = wex 订阅运行时解出的载荷（`com.github.catvod.spider.SoAiPanSoo`，落在 Java 侧 runtime-dex 产物里，
+//   调用者 = 某第三方源订阅运行时解出的载荷（`com.github.catvod.spider.SoAiPanSoo`，落在 Java 侧 runtime-dex 产物里，
 //   Node 端改写 jar 够不到）⇒ 采用「给宿主类补方法 + 兼容 jar 排 -cp 最前」的普适路线。
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';

@@ -1,9 +1,9 @@
 // src/renderer/components/PluginSlot.tsx
-// ★ 受限 UI 槽位渲染器（渲染层）：把宿主装配好的 `UiSlotView` 组件树渲染进宿主页面的槽位。
+// 受限 UI 槽位渲染器（渲染层）：把宿主装配好的 `UiSlotView` 组件树渲染进宿主页面的槽位。
 //
-// ★ 插件**不跑代码、不注入任何 UI**（红线②）—— 这里只按**受限词汇表**的 6 类组件画**宿主样式**；
+// 插件**不跑代码、不注入任何 UI**（红线②）—— 这里只按**受限词汇表**的 6 类组件画**宿主样式**；
 //   `link` 复用**宿主动作词表**（`runPluginCommand`，与 `ui.command` / `keymap` 同一执行器）。
-// ★ 无插件声明该槽位时返回 `null` ⇒ **对既有页面零视觉/布局影响**。
+// 无插件声明该槽位时返回 `null` ⇒ **对既有页面零视觉/布局影响**。
 // 事实源：docs/design/插件制作规范.md §5.12；机器契约见 src/shared/plugin.ts。
 import { useEffect, useState } from 'react';
 import { client } from '../api/client';

@@ -1,12 +1,12 @@
 // src/engine/vod/detailFix.ts
-// ★ 2026-09-24：蜘蛛详情**字段错位纠偏**（「立播」源实测）。
-//   真实现象（libvio detailContent 原始返回，经 normalizeSpiderDetail 归一后）：
+// 蜘蛛详情**字段错位纠偏**（某源实测）。
+//   真实现象（某壳源 detailContent 原始返回，经 normalizeSpiderDetail 归一后）：
 //     name = ''                     ← 片名缺失（列表页有，详情页丢）
 //     type = '动作,惊悚,犯罪'        ← 正确（类型）
 //     year = '动作,惊悚,犯罪'        ← 错位：类型串窜进了年份
 //     area = '动作,惊悚,犯罪'        ← 错位：类型串窜进了地区
 //     director = '韩国'  actor = '韩国' ← 错位：地区名窜进了导演/演员
-//     remarks = '上映 2026-09-09(韩国)'
+// remarks = '上映 2026-09-09(韩国)'
 //   即站点信息行在蜘蛛侧被整体下移了一格。这里做**保守纠偏**：识别「地区/语言/类型串」并归位或清空；
 //   清空后由详情页用 TMDb 演职员补（我们已有该能力），片名缺失由列表名兜底（渲染层传 name 参数）。
 import type { VodDetail } from '../../shared/types';

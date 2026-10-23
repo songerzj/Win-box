@@ -1,4 +1,4 @@
-﻿// tests/shellShim.spec.ts — 第十八轮结论 §六：应用侧接入 shell-shim（方案 A 影子类）。
+﻿// tests/shellShim.spec.ts — 结论 应用侧接入 shell-shim（方案 A 影子类）。
 // 验证 JarSpiderBridge.call() 在「启用 shell-shim」时把 shell-shim.jar 插到子进程
 // classpath **最前**，并透传 -Dtvbox.shellShimClasses；「默认关闭」时 argv 与历史完全一致。
 // 只 mock child_process.spawn（不触网、不跑真 JVM），断言 argv 形状。
@@ -44,7 +44,7 @@ function classpathOf(argv: string[]): string {
 }
 
 /**
- * ★★ 2026-09-26 分层修复后：**加载器 classpath**（`SpiderRunner` 之后的那个参数）才是
+ * 分层修复后：**加载器 classpath**（`SpiderRunner` 之后的那个参数）才是
  *   蜘蛛 jar / shell-shim jar 该在的地方（顺序 = 改写产物目录 → shell-shim → 蜘蛛 jar）。
  *   `-cp` 只放运行时（stubs/libs/桥/unidbg）——否则父加载器抢占原始类，影子类与 native 改写都不生效。
  */
@@ -97,7 +97,7 @@ describe('JarSpiderBridge.call — shell-shim 接入（默认关闭 / 开启）'
 
     const argv = spawnMock.mock.calls[0][1] as string[];
     expect(argv).toContain('-Dtvbox.shellShimClasses=C:/real/impl.jar');
-    // ★ classpath 最前（分号分隔第一段）必须是 shell-shim.jar，靠类加载顺序覆盖壳的 native DexNative
+    // classpath 最前（分号分隔第一段）必须是 shell-shim.jar，靠类加载顺序覆盖壳的 native DexNative
     expect(loaderCpOf(argv).split(';')[0]).toBe(join(dir, 'stubs', 'shell-shim.jar'));
   });
 

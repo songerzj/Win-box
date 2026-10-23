@@ -7,11 +7,11 @@ package android.content.res;
  * 以及 {@code AttributeSet} 的实现被传递。桌面端没有资源编译产物，
  * 该类只需要"类型存在 + 方法可调用"。
  *
- * <p>★ 关键约束：必须 extends {@code android.util.AttributeSet}——内嵌库会把
+ * <p>关键约束：必须 extends {@code android.util.AttributeSet}——内嵌库会把
  * XmlResourceParser 当 AttributeSet 传给 View 构造器（字节码里是
  * {@code checkcast android/util/AttributeSet}），接口链断了就 VerifyError。
  *
- * <p>★ 注意 {@code getPositionDescription()} 的返回类型由父接口决定（String），
+ * <p>注意 {@code getPositionDescription()} 的返回类型由父接口决定（String），
  * 与安卓原版的 int 版本不同名不同签名——这里**不能**重复声明，否则冲突。
  */
 public interface XmlResourceParser extends android.util.AttributeSet, java.io.Closeable {

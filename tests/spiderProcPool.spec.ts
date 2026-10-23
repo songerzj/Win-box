@@ -4,9 +4,9 @@
 // ③达 PER_KEY_CAP 后排队（空闲即执行）；④排队超时只失败该请求、不牵连进程；
 // ⑤执行超时 kill 进程 + 失败语义；⑥exit 崩溃 → 失败语义；⑦全局上限 LRU 回收；
 // ⑧空闲回收（并行多开的进程收敛到每 key 1 个）；⑨行协议信封不被日志碎片打穿；
-// ⑩★ 空结果是**合法结果**（ok:true, data=''）—— 不再被误判失败去回退一次性；
-// ⑪★ 2026-10-17（B1）播放期收缩：布防后池整体空闲 30s 收敛到 1 个热进程。
-// ★ 行协议契约：子进程每条响应必须以 '\n' 结尾（与 SpiderRunner.println/runner.py print 一致），
+// ⑩空结果是**合法结果**（ok:true, data=''）—— 不再被误判失败去回退一次性；
+// ⑪（B1）播放期收缩：布防后池整体空闲 30s 收敛到 1 个热进程。
+// 行协议契约：子进程每条响应必须以 '\n' 结尾（与 SpiderRunner.println/runner.py print 一致），
 //   池按物理换行分帧 —— 假子进程必须带 '\n'，否则帧永不收敛（测试挂起）。
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
@@ -46,7 +46,7 @@ function makeEnv(respond = true) {
       onLine: respond
         ? (line) => {
             const req = JSON.parse(line);
-            return JSON.stringify({ id: req.id, ok: true, data: 'OK:' + req.method }) + '\n'; // ★ 行协议：结尾必须换行
+            return JSON.stringify({ id: req.id, ok: true, data: 'OK:' + req.method }) + '\n'; // 行协议：结尾必须换行
           }
         : () => null, // 不回（测试手动 reply）
     });
@@ -80,11 +80,11 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     const r2 = await pool.submit('k1', SPEC, REQ('b', 'searchContent'));
     expect(r1).toEqual({ ok: true, data: 'OK:homeContent' });
     expect(r2).toEqual({ ok: true, data: 'OK:searchContent' });
-    expect(spawned).toHaveLength(1); // ★ 复用的核心：第二个请求不打新进程
+    expect(spawned).toHaveLength(1); // 复用的核心：第二个请求不打新进程
     expect(SPEC.serveArgv.join(' ')).toContain('--serve');
   });
 
-  it('同 key 并发 → 同一进程内并发承接（★ 三轮：进程内 24 线程，不再为并发多开进程）', async () => {
+  it('同 key 并发 → 同一进程内并发承接（三轮：进程内 24 线程，不再为并发多开进程）', async () => {
     const { pool, spawned } = makeEnv();
     // 三个请求同步连发：都在同一个进程内并发执行（行协议按 id 解复用）
     const p1 = pool.submit('k1', SPEC, REQ('a'));
@@ -93,7 +93,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     expect(await p1).toEqual({ ok: true, data: 'OK:homeContent' });
     expect(await p2).toEqual({ ok: true, data: 'OK:homeContent' });
     expect(await p3).toEqual({ ok: true, data: 'OK:homeContent' });
-    expect(spawned.length).toBe(1); // ★ 一个热进程就够（旧的「一进程一请求」会开 3 个）
+    expect(spawned.length).toBe(1); // 一个热进程就够（旧的「一进程一请求」会开 3 个）
     expect(pool.aliveCount).toBe(1);
   });
 
@@ -165,7 +165,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     const { pool, spawned } = makeEnv(false);
     const p = pool.submit('k1', SPEC, REQ('boom'));
     reply(spawned[0].child, 'boom', 'java.lang.ClassNotFoundException: com.github.catvod.spider.Symx', false);
-    // ★ 2026-09-28：错误串不再当「正常蜘蛛输出」返回 —— 调用方凭 error 记原因/触发类缺失兜底重试
+    // 错误串不再当「正常蜘蛛输出」返回 —— 调用方凭 error 记原因/触发类缺失兜底重试
     expect(await p).toEqual({
       ok: true,
       data: '',
@@ -182,7 +182,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
       children.push(c);
       return c as never;
     });
-    // ★ 三轮：并发单位变成「进程 × 在途数」——占满 = PER_KEY_CAP 个进程且每个进程在途满。
+    // 并发单位变成「进程 × 在途数」——占满 = PER_KEY_CAP 个进程且每个进程在途满。
     const procs = Math.min(PER_KEY_CAP, effectiveGlobalCap());
     const total = procs * MAX_INFLIGHT_PER_PROC;
     // 占用者给足超时（60s），保证先触发的是**排队超时**而不是"占用者执行超时"
@@ -213,15 +213,15 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     expect(r).toEqual({ ok: true, data: '{"list":[{"n":"a\nb"}]}' }); // GARBAGE 行被忽略，data 原样返回
   });
 
-  it('执行超时 → 只失败该请求，**不杀进程**（★ 三轮：进程里还有别的源的在途请求）', async () => {
+  it('执行超时 → 只失败该请求，**不杀进程**（三轮：进程里还有别的源的在途请求）', async () => {
     vi.useFakeTimers();
     const killed: string[] = [];
     const pool = new SpiderProcPool(() => muteChild(() => killed.push('kill')) as never);
     const p = pool.submit('k1', SPEC, REQ('t'), 8000); // 源级超时 8s
     await vi.advanceTimersByTimeAsync(8_100);
-    // ★ reason='timeout' 是「不回退一次性」的判据（见 JarSpiderBridge）：死源只等一个超时，不再 ×2
+    // reason='timeout' 是「不回退一次性」的判据（见 JarSpiderBridge）：死源只等一个超时，不再 ×2
     expect(await p).toEqual({ ok: false, data: '', reason: 'timeout' });
-    expect(killed).toHaveLength(0); // ★ 不再 kill 进程（并发下会连带杀掉其它源）
+    expect(killed).toHaveLength(0); // 不再 kill 进程（并发下会连带杀掉其它源）
     expect(pool.aliveCount).toBe(1);
   });
 
@@ -240,7 +240,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
 
   it('全局上限：额度用尽时回收最久空闲进程（LRU）后再复用额度', async () => {
     const { pool, spawned } = makeEnv();
-    // ★ 2026-09-23 三轮：全局上限改为**内存自适应**（空闲 >2GB → 12，否则 6），
+    // 全局上限改为**内存自适应**（空闲 >2GB → 12，否则 6），
     //   用例按 effectiveGlobalCap() 动态构造「刚好占满 + 1」的场景。
     const cap = effectiveGlobalCap();
     // 用 cap 个不同 key 各占 1 个进程（= 全局上限），全部转入空闲
@@ -252,7 +252,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     // 第 cap+1 个 key：额度满 → 回收最久空闲的 k0 进程，再为新 key spawn
     const r7 = await pool.submit('k' + cap, { ...SPEC, key: 'k' + cap }, REQ('r' + cap));
     expect(r7.ok).toBe(true);
-    expect(pool.aliveCount).toBeLessThanOrEqual(cap); // ★ 不会无限增长
+    expect(pool.aliveCount).toBeLessThanOrEqual(cap); // 不会无限增长
     expect(spawned.length).toBe(cap + 1); // 新进程确实起来了（额度靠回收腾出）
     expect(spawned[0].child.kill).toHaveBeenCalled(); // 最久空闲者被回收
   });
@@ -260,7 +260,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
   it('空闲回收：并行期扩容出来的进程空闲后收敛到每 key 1 个热进程', async () => {
     vi.useFakeTimers();
     const { pool, spawned } = makeEnv(false);
-    // ★ 三轮：扩容的触发条件是「在途满」→ 先灌满第 1 个进程的在途，第 MAX+1 个请求才会扩容第 2 个进程
+    // 扩容的触发条件是「在途满」→ 先灌满第 1 个进程的在途，第 MAX+1 个请求才会扩容第 2 个进程
     const reqs = Array.from({ length: MAX_INFLIGHT_PER_PROC + 1 }, (_, i) => pool.submit('k1', SPEC, REQ(`a${i}`)));
     expect(spawned.length).toBe(Math.min(2, PER_KEY_CAP, effectiveGlobalCap()));
     // 全部回行 → 两个进程都空闲
@@ -275,7 +275,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     clearInterval(timer);
   });
 
-  // ★ 2026-10-17（B1）：播放期收缩 —— 未布防时每 key 各留 1 个热进程（搜索再命中不付冷启动）；
+  // （B1）：播放期收缩 —— 未布防时每 key 各留 1 个热进程（搜索再命中不付冷启动）；
   //   布防（= 用户开始播放，播放期间不再发搜索请求）后，池整体空闲够久即收敛到 1 个。
   it('播放期收缩：布防后池整体空闲 30s 收敛到 1（未布防则保持每 key 1 个热进程）', async () => {
     vi.useFakeTimers();
@@ -287,17 +287,17 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     expect(pool.aliveCount).toBe(3);
     const timer = pool.startReclaimTimer();
     await vi.advanceTimersByTimeAsync(PLAYBACK_SHRINK_IDLE_MS + 20_000);
-    expect(pool.aliveCount).toBe(3); // ★ 未布防：每 key 各保留 1 个热进程
+    expect(pool.aliveCount).toBe(3); // 未布防：每 key 各保留 1 个热进程
     pool.armPlaybackShrink();
     await vi.advanceTimersByTimeAsync(PLAYBACK_SHRINK_IDLE_MS + 20_000);
-    expect(pool.aliveCount).toBe(1); // ★ 播放期：整体空闲够久 → 收敛到 1
+    expect(pool.aliveCount).toBe(1); // 播放期：整体空闲够久 → 收敛到 1
     clearInterval(timer);
     pool.dispose();
   });
 
-  // ★ 2026-09-23 预热（warm）：启动/配置应用后先付掉 JVM 冷启动（发 __ping__），
+  // 预热（warm）：启动/配置应用后先付掉 JVM 冷启动（发 __ping__），
   //   首次搜索/进主页直接复用这些热进程 —— 「全源搜索也像单源搜索一样秒出」的配套。
-  //   三轮增强：count 可一次预热多个同 key 进程（同 key 并行度 = 全源搜索真实并发上限）。
+  //   增强：count 可一次预热多个同 key 进程（同 key 并行度 = 全源搜索真实并发上限）。
   it('预热：先 spawn 进程并发 __ping__ 探针，随后请求复用该进程（不再冷启动）', async () => {
     const { pool, spawned } = makeEnv();
     expect(pool.warm('k1', SPEC)).toBe(1);
@@ -308,7 +308,7 @@ describe('SpiderProcPool — 复用 / 并行 / 排队 / 失败语义', () => {
     await new Promise((r) => setTimeout(r, 5)); // 等假子进程回信封 → 进程转空闲
     const r = await pool.submit('k1', SPEC, REQ('a'));
     expect(r.ok).toBe(true);
-    expect(spawned).toHaveLength(1); // ★ 复用：预热进程直接承接首个真实请求
+    expect(spawned).toHaveLength(1); // 复用：预热进程直接承接首个真实请求
   });
 
   it('预热多进程：count 上限 = PER_KEY_CAP，且幂等补差额', async () => {

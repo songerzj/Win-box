@@ -1,6 +1,6 @@
 // src/shared/dlna.ts
 // DLNA / UPnP 投屏的契约与「播放地址 → 投屏目标」解析 —— 主/渲染层共用（纯函数，零依赖）。
-// ★ 2026-09-29 口径（对位 CatClawVideo `Core/Services/Dlna.cs` = TVBox `osc/dlna` 815 行的移植）：
+// 口径（对位 CatClawVideo `Core/Services/Dlna.cs` = TVBox `osc/dlna` 815 行的移植）：
 //   只覆盖 TVBox 实际用到的 **AVTransport:1 三动作** `SetAVTransportURI → Play →（有续播位置才）Seek REL_TIME`；
 //   不做 Gena 事件订阅、不做 RenderingControl 音量、不做设备租约刷新。
 import { LOCAL_PROXY_HOST, LOCAL_PROXY_PORT } from './constants';
@@ -23,7 +23,7 @@ export interface DlnaCastTarget {
   headers?: Record<string, string>;
   /** 续播位置（ms，>0 才发 Seek） */
   positionMs: number;
-  /** ★ 本机中继地址（`/bt/…`、`/proxy/…` 等）无法解出真实上游 → 电视端多半拉不到流 */
+  /** 本机中继地址（`/bt/…`、`/proxy/…` 等）无法解出真实上游 → 电视端多半拉不到流 */
   localRelay?: boolean;
 }
 

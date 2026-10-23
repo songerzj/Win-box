@@ -56,26 +56,26 @@ describe('JarSpiderBridge.call — spawn argv 强制 UTF-8（任务 A）', () =>
     expect(await p).toBe('{"list":[]}');
 
     const argv = spawnMock.mock.calls[0][1] as string[];
-    // ★ argv[0] = -noverify：关闭字节码校验。dex2jar 产物的 StackMapTable 常不完整，
+    // argv[0] = -noverify：关闭字节码校验。dex2jar 产物的 StackMapTable 常不完整，
     //   HotSpot(Java7+) 类型校验会抛 VerifyError: Expecting a stackmap frame at branch target，
     //   导致整只蜘蛛不可用；ART 不依赖这些帧，因此必须关闭校验以对齐 Android 行为。
     expect(argv[0]).toBe('-noverify');
-    // ★ argv[1..2] = 内存上限 + SerialGC：JRE17 默认 G1 会按物理内存推导堆，
+    // argv[1..2] = 内存上限 + SerialGC：JRE17 默认 G1 会按物理内存推导堆，
     //   在低可用内存机器上 mmap 失败直接崩溃（hs_err_pid*.log），
     //   蜘蛛表现为「空结果」。必须给出明确的小堆上限并换掉 G1。
     //   这两个旗标缺失 = 用户看到的「多数 JAR 源无法显示」回归。
     expect(argv[1]).toBe('-Xmx256m');
     expect(argv[2]).toBe('-XX:+UseSerialGC');
-    // ★ argv[3] = 蜘蛛数据沙箱：把蜘蛛可见的 getCacheDir/getFilesDir 收进
+    // argv[3] = 蜘蛛数据沙箱：把蜘蛛可见的 getCacheDir/getFilesDir 收进
     //   converted 的**兄弟目录**，使其清理逻辑（如 DexNative.<clinit> 调用的
     //   deleteFilesWithFeature）再怎么递归也碰不到 converted 里的转换产物
     //   —— 否则 jar 缓存被删会让整套配置所有源集体 ClassNotFoundException。
     expect(argv[3]).toBe(`-Dtvbox.spiderCacheDir=${join(dir, 'sandbox')}`);
-    // ★ argv[4..13] = JDK 模块封装放行（2026-09-26 壳类取证新增，勿删）：
+    // argv[4..13] = JDK 模块封装放行（壳类实测新增，勿删）
     //   加固壳的混淆 VM 用反射做深拷贝（`java.lang.Object.clone` 等 JDK 内部成员）。
     //   Android(ART)/Java8 无模块封装 → 成功；JDK17 默认不 open → InaccessibleObjectException
     //   → 壳内 SO 装载/加密链路降级（现象：详情有、剧集空；`[FishSoLoader] prepare failed`）。
-    //   这一段缺失 = 摸鱼/同类壳源回到「详情能开、资源列表空」的回归。
+    //   这一段缺失 = 某第三方源/同类壳源回到「详情能开、资源列表空」的回归。
     expect(argv.slice(4, 15)).toEqual([
       '--add-opens=java.base/java.lang=ALL-UNNAMED',
       '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
@@ -87,26 +87,26 @@ describe('JarSpiderBridge.call — spawn argv 强制 UTF-8（任务 A）', () =>
       '--add-opens=java.base/java.nio=ALL-UNNAMED',
       '--add-opens=java.base/java.security=ALL-UNNAMED',
       '--add-opens=java.base/java.text=ALL-UNNAMED',
-      // ★ 2026-09-27 壳通解：壳 native 会 close() JarURLInputStream（JDK 内部类），
+      // 壳通解：壳 native 会 close() JarURLInputStream（JDK 内部类），
       //   unidbg 反射代理 setAccessible 需要放行 sun.net.www.protocol.jar，勿删。
       '--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED',
     ]);
     expect(argv[15]).toBe('-Dfile.encoding=UTF-8');
     expect(argv[16]).toBe('-Dsun.stdout.encoding=UTF-8');
     expect(argv[17]).toBe('-Dsun.stderr.encoding=UTF-8');
-    // ★ argv[18..19] = 宿主代理端口/入口（2026-09-26）：壳与蜘蛛的 `<entry>?do=proxy&key=…`
+    // argv[18..19] = 宿主代理端口/入口：壳与蜘蛛的 `<entry>?do=proxy&key=…`
     //   播放地址靠它（key 只能由本 JVM 解，服务必须跑在 JVM 里）。端口按加载器参数确定性分配。
     const loadCp = join(dir, 'a.jar');
     expect(argv[18]).toBe(`-Dtvbox.proxy.port=${spiderProxyPort(loadCp)}`);
     expect(argv[19]).toBe(`-Dtvbox.proxy.entry=${LOCAL_PROXY_BASE}/proxy/${spiderProxyPort(loadCp)}`);
-    // ★ argv[20..22] = 壳通解：dex 加载器 stub 的运行时 dex2jar 参数（2026-09-27）
+    // argv[20..22] = 壳通解：dex 加载器 stub 的运行时 dex2jar 参数
     //   壳 native 解出裸 dex 后 → stub 就地转 jar 再加载（缺任一项则退回可解释失败）
     expect(argv[20]).toBe(`-Dtvbox.d2j.java=${join(dir, 'jre', 'bin', 'java.exe')}`);
     expect(argv[21]).toContain('-Dtvbox.d2j.cp=');
     expect(argv[22]).toBe(`-Dtvbox.d2j.cache=${join(dir, 'cache', 'runtime-dex')}`);
     // 其后仍是既定编排：-cp <运行时 classpath> SpiderRunner <加载器 cp> <className> <method> <args...>
     expect(argv[23]).toBe('-cp');
-    // ★★ 分层铁律（勿回退）：**蜘蛛 jar / shell-shim jar 绝不能进 -cp** —— 父加载器（应用加载器）
+    // 分层铁律（勿回退）：**蜘蛛 jar / shell-shim jar 绝不能进 -cp** —— 父加载器（应用加载器）
     //   会先加载 jar 里的原始类，SpiderRunner 子加载器里排最前的「native 改写产物目录」就永不生效
     //   → 壳的 `System.load` 照旧失败、守卫不 ready（App88「bridge request encryption failed」）。
     expect(argv[24]).not.toContain('a.jar');
@@ -152,7 +152,7 @@ describe('JarSpiderBridge.call — spawn argv 强制 UTF-8（任务 A）', () =>
     await expect(p2).resolves.toBe('');
   });
 
-  // ★ 2026-10-14（用户指令「不允许给用户系统建盘符」）：曾经的「蜘蛛沙箱盘」用 `subst` 建 V:\ 虚拟盘 +
+  // 曾经的「蜘蛛沙箱盘」用 `subst` 建 V:\ 虚拟盘 +
   //   子进程 cwd=V:\ 来收容 `/data/…` 写入，会在用户机器上多出一个盘符 —— 该机制连同 cwd 覆盖已整条删除。
   //   这里改为断言**不再有任何 cwd 覆盖**（JVM 与 Python 一视同仁，恢复历史行为）。
   it('不再覆盖子进程 cwd（JVM 与 Python 均无 cwd 参数）', async () => {

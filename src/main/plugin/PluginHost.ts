@@ -1,14 +1,14 @@
 // src/main/plugin/PluginHost.ts
 // 插件宿主（主进程侧聚合层）：登记 / 物化 / 安装 / 卸载 / 启停 + **超分着色器链解析**。
 //
-// ★ 随包官方插件（`resources/plugins/*.winbox`）在启动时**物化**（解包）到 `<pluginsDir>/<id>.winbox/`
-//   并写 `.builtin.json` 侧签 —— 方案 A（2026-10-16 用户定）：磁盘布局与用户安装**完全同构**，
+// 随包官方插件（`resources/plugins/*.winbox`）在启动时**物化**（解包）到 `<pluginsDir>/<id>.winbox/`
+// 并写 `.builtin.json` 侧签 —— 方案 A：磁盘布局与用户安装**完全同构**，
 //   ⑤/⑥ 的绝对路径逻辑只有一套；随软件更新（随包版本变化）时重新物化。
 //   若用户自己装了同 id（目录无侧签）→ **尊重用户**，不覆盖。
 //
-// ★ 渲染层只报「档位」，**绝对路径全在主进程解析**（渲染层不碰文件系统）：见 srShaders。
+// 渲染层只报「档位」，**绝对路径全在主进程解析**（渲染层不碰文件系统）：见 srShaders。
 // 事实源：docs/design/插件系统_设计方案.md §6.1 / §8。
-// ★ 依赖注入（不 import electron）：三个路径由调用方传入，便于单测。
+// 依赖注入（不 import electron）：三个路径由调用方传入，便于单测。
 
 import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -50,7 +50,7 @@ export interface PluginOpResult {
   items?: PluginView[];
 }
 
-/** ★ 写插件设置字段的结果（成功时带上**最新面板列表**，渲染层据此收敛） */
+/** 写插件设置字段的结果（成功时带上**最新面板列表**，渲染层据此收敛） */
 export interface PluginSettingResult {
   ok: boolean;
   reason?: string;
@@ -62,10 +62,10 @@ interface HostOptions {
   builtinDir: string;
   /** 启停状态持久化文件（默认 `<pluginsDir>/../plugins-state.json` 由调用方给出） */
   statePath: string;
-  /** ★ 插件设置面板值的持久化文件（缺省 = 与 `statePath` 同目录的 `plugin-settings.json`） */
+  /** 插件设置面板值的持久化文件（缺省 = 与 `statePath` 同目录的 `plugin-settings.json`） */
   settingsPath?: string;
   /**
-   * ★ R11：`local-path` 引擎的**用户本机路径**来源（`engine:<contributeId> → 路径`）。
+   * R11：`local-path` 引擎的**用户本机路径**来源（`engine:<contributeId> → 路径`）。
    * 缺省 = 空表（未接入 → 一律「未指定本机程序路径」）；由 `main/index.ts` 注入 `playerSettings.enginePaths`。
    */
   enginePaths?: () => Record<string, string>;
@@ -75,11 +75,11 @@ export class PluginHost {
   private readonly installer: PluginInstaller;
   private readonly registry: PluginRegistry;
   private readonly state: JsonStore;
-  /** ★ 插件设置面板值（按插件 id → panelId → fieldKey 分桶；`contributes.settings.panel`） */
+  /** 插件设置面板值（按插件 id → panelId → fieldKey 分桶；`contributes.settings.panel`） */
   private readonly settings: JsonStore;
   private entries: PluginEntry[] = [];
   private loaded = false;
-  /** ★ R10：L4 沙箱管理器（未接入 → `kind:"code"` 插件不启动，`PluginView.sandbox` 恒 undefined） */
+  /** R10：L4 沙箱管理器（未接入 → `kind:"code"` 插件不启动，`PluginView.sandbox` 恒 undefined） */
   private sandbox: PluginSandboxManager | null = null;
 
   constructor(private readonly opts: HostOptions) {
@@ -148,7 +148,7 @@ export class PluginHost {
     const next = on ? cur.filter((x) => x !== id) : cur.includes(id) ? cur : [...cur, id];
     this.setDisabled(next);
     await this.ensureLoaded();
-    // ★ R10：启停直接影响 L4 沙箱生命周期 → 立刻与登记表对齐（启 → 起沙箱 / 停 → 释放）
+    // R10：启停直接影响 L4 沙箱生命周期 → 立刻与登记表对齐（启 → 起沙箱 / 停 → 释放）
     await this.syncSandboxes();
     return { ok: true, items: await this.list() };
   }
@@ -182,7 +182,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件皮肤（`contributes.theme`）：已启用 + 载荷就位 + 通过内容校验。
+   * 插件皮肤（`contributes.theme`）：已启用 + 载荷就位 + 通过内容校验。
    * `id` 已带 `plugin:` 前缀 —— 渲染层**直接拿它作 `data-theme`**。
    * 规范：docs/design/皮肤与主题规范.md（令牌词表 / layout / 校验）。
    */
@@ -208,7 +208,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件字幕源（`contributes.subtitle.provider`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 SubtitleProvider。
+   * 插件字幕源（`contributes.subtitle.provider`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 SubtitleProvider。
    * 同 id **先到先得**（内置源 id 已在安装校验期由 `SUBTITLE_ID_TAKEN` 拦掉，不在此重复）。
    * 规范：docs/design/插件制作规范.md §5（L2 声明式 provider）。
    */
@@ -230,7 +230,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件元数据源（`contributes.meta.provider`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 MetaProvider。
+   * 插件元数据源（`contributes.meta.provider`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 MetaProvider。
    * 同 id **先到先得**（内置 `tmdb`/`douban` id 已在安装校验期由 `META_ID_TAKEN` 拦掉）。
    * 规范：docs/design/插件制作规范.md §5.5。
    */
@@ -252,7 +252,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件发现页数据源（`contributes.discover.source`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 DiscoverSource。
+   * 插件发现页数据源（`contributes.discover.source`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 DiscoverSource。
    * 同 id **先到先得**。规范：docs/design/插件制作规范.md §5.6。
    */
   async discoverSources(): Promise<DiscoverSource[]> {
@@ -273,7 +273,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件弹幕源（`contributes.danmaku.source`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 DanmakuSource。
+   * 插件弹幕源（`contributes.danmaku.source`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 DanmakuSource。
    * 同 id **先到先得**（合成键 `plugin:<contributeId>` 供三步链路路由）。规范：docs/design/插件制作规范.md §5.7。
    */
   async danmakuSources(): Promise<DanmakuSource[]> {
@@ -294,8 +294,8 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件直播输出模板（`contributes.live.template`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 LiveTemplate。
-   * ★ 本类型**不发请求** —— 只把宿主已解析的直播频道格式化输出；**一个插件可声明多个模板**（各自独立 id），
+   * 插件直播输出模板（`contributes.live.template`）：已启用 + 载荷就位 + 通过内容校验 → 适配为宿主 LiveTemplate。
+   * 本类型**不发请求** —— 只把宿主已解析的直播频道格式化输出；**一个插件可声明多个模板**（各自独立 id），
    *   同 id **先到先得**（含跨插件）。规范：docs/design/插件制作规范.md §5.8。
    */
   async liveTemplates(): Promise<LiveTemplate[]> {
@@ -318,8 +318,8 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件受限动作按钮（`contributes.ui.command`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `UiCommandView`。
-   * ★ 本类型**不取数、不跑代码** —— 主进程只做「校验 + 装配」，动作由**渲染层**按词表执行；同 id **先到先得**。
+   * 插件受限动作按钮（`contributes.ui.command`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `UiCommandView`。
+   * 本类型**不取数、不跑代码** —— 主进程只做「校验 + 装配」，动作由**渲染层**按词表执行；同 id **先到先得**。
    * 规范：docs/design/插件制作规范.md §5.9。
    */
   async uiCommands(): Promise<UiCommandView[]> {
@@ -342,8 +342,8 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件快捷键（`contributes.keymap`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `KeymapView`
-   * （键位串归一到规范形式，如 `Ctrl+Alt+F`）。★ 本类型**不跑代码、不取数** —— 主进程只做「校验 + 装配」，
+   * 插件快捷键（`contributes.keymap`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `KeymapView`
+   * （键位串归一到规范形式，如 `Ctrl+Alt+F`）。本类型**不跑代码、不取数** —— 主进程只做「校验 + 装配」，
    * 动作由**渲染层**按 `ui.command` **同一套词表**执行；同 id **先到先得**。规范：§5.10。
    */
   async keymaps(): Promise<KeymapView[]> {
@@ -366,10 +366,10 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件设置面板（`contributes.settings.panel`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `SettingsPanelView`
-   * （含**有效值** = 存值合法则用存值、否则回落 `default`）。★ 本类型**不跑代码、不取数** —— 主进程只做
+   * 插件设置面板（`contributes.settings.panel`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `SettingsPanelView`
+   * （含**有效值** = 存值合法则用存值、否则回落 `default`）。本类型**不跑代码、不取数** —— 主进程只做
    * 「校验 + 装配 + **代持久化**」，表单渲染与写回由**渲染层**完成；同 id **先到先得**。规范：§5.11。
-   * ★ 值的**读取面留给 L4**（`kind:"code"` + `settings` 权限 → `winbox.settings`）；asset 插件自身不读。
+   * 值的**读取面留给 L4**（`kind:"code"` + `settings` 权限 → `winbox.settings`）；asset 插件自身不读。
    */
   async settingsPanels(): Promise<SettingsPanelView[]> {
     await this.ensureLoaded();
@@ -392,7 +392,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ 写一个设置字段值（渲染层表单 onChange → IPC）：值必须过**该字段的类型 / 约束**校验
+   * 写一个设置字段值（渲染层表单 onChange → IPC）：值必须过**该字段的类型 / 约束**校验
    * （不合法 → **明确失败**，不静默强转），通过后按 `pluginId → panelId → fieldKey` 分桶持久化。
    * 返回最新的面板列表（渲染层据此收敛）。
    */
@@ -418,8 +418,8 @@ export class PluginHost {
   }
 
   /**
-   * ★ 插件受限 UI 槽位（`contributes.ui.slot`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `UiSlotView`。
-   * ★ 本类型**不跑代码、不取数** —— 主进程只做「校验 + 装配」，组件树渲染在渲染层
+   * 插件受限 UI 槽位（`contributes.ui.slot`）：已启用 + 载荷就位 + 通过内容校验 → 摊平成 `UiSlotView`。
+   * 本类型**不跑代码、不取数** —— 主进程只做「校验 + 装配」，组件树渲染在渲染层
    * （`components/PluginSlot.tsx`，按页面语义名落到对应槽位）；同 id **先到先得**。规范：§5.12。
    */
   async uiSlots(): Promise<UiSlotView[]> {
@@ -442,10 +442,10 @@ export class PluginHost {
   }
 
   /**
-   * ★ R11 第三方播放内核（`contributes.player.engine`）：已启用 + `kind:"code"` + 载荷就位 + 通过内容校验
+   * R11 第三方播放内核（`contributes.player.engine`）：已启用 + `kind:"code"` + 载荷就位 + 通过内容校验
    * → 摊平成 `PlayerEngineView`（**含 exe 就绪判定**：`plugin-file` 落在插件目录内 / `local-path` 取用户配置）。
-   * ★ 未就绪**仍出现在列表里**（`ready:false` + `note`），由渲染层显示为不可选 + 原因；同 id **先到先得**。
-   * ★ 插件**永不拉进程** —— 本方法只解析「用哪个 exe」，实际 spawn 在 `PlayerEngineController`（宿主）。
+   * 未就绪**仍出现在列表里**（`ready:false` + `note`），由渲染层显示为不可选 + 原因；同 id **先到先得**。
+   * 插件**永不拉进程** —— 本方法只解析「用哪个 exe」，实际 spawn 在 `PlayerEngineController`（宿主）。
    * 规范：docs/design/插件制作规范.md §6.3。
    */
   async playerEngines(): Promise<PlayerEngineView[]> {
@@ -474,9 +474,9 @@ export class PluginHost {
   }
 
   /**
-   * ★ R11：按 `engine:<contributeId>` 取**启动规格**（已就绪的 exe + **未展开**参数模板 + 协议）。
+   * R11：按 `engine:<contributeId>` 取**启动规格**（已就绪的 exe + **未展开**参数模板 + 协议）。
    * 未启用 / 未就绪 / 未知 / 校验不过 → `null`（由 `engine:start` 明确上屏原因）。
-   * ★ 返回的 `exe` 已解析、`args` 仍是模板（占位符展开由 `PlayerEngineController` 按会话上下文完成）。
+   * 返回的 `exe` 已解析、`args` 仍是模板（占位符展开由 `PlayerEngineController` 按会话上下文完成）。
    */
   async playerEngineSpec(id: string): Promise<EngineLaunchSpec | null> {
     await this.ensureLoaded();
@@ -503,7 +503,7 @@ export class PluginHost {
     return null;
   }
 
-  // ---- ★ R10：L4 沙箱（`kind:"code"`）----
+  // ---- R10：L4 沙箱（`kind:"code"`）----
 
   /**
    * 接入 L4 沙箱管理器（由 `main/index.ts` 调用；**不接入 → code 插件不启动**）。
@@ -563,7 +563,7 @@ export class PluginHost {
   }
 
   /**
-   * ★ R10 安装前**干跑**：解包 + 校验但**不落盘**，返回权限清单（含 `permissionNotes`）供用户确认。
+   * R10 安装前**干跑**：解包 + 校验但**不落盘**，返回权限清单（含 `permissionNotes`）供用户确认。
    * 确认后由渲染层把 `path` 回传给 `installFromFile`。
    */
   async inspect(filePath: string): Promise<PluginInspectResult> {
@@ -612,7 +612,7 @@ export class PluginHost {
 
   /** 物化随包插件：随包 zip → `<pluginsDir>/<id>.winbox/` + `.builtin.json` 侧签 */
   private async materializeBuiltin(): Promise<void> {
-    // ★ 必须用 listBuiltin()（不经 list() 的去重）——物化后的同名目录会在 list() 里把随包 zip 覆盖掉，
+    // 必须用 listBuiltin()（不经 list() 的去重）——物化后的同名目录会在 list() 里把随包 zip 覆盖掉，
     //   那样就看不到"随包版本变了"这件事，永远不会重新物化。
     const packaged = await this.registry.listBuiltin();
     for (const e of packaged) {
@@ -641,7 +641,7 @@ export class PluginHost {
   private async refresh(): Promise<void> {
     this.entries = await this.registry.list();
     this.loaded = true;
-    // ★ R10：登记表每次刷新后与 L4 沙箱**幂等对齐**（该跑的在跑、不该跑的释放）
+    // R10：登记表每次刷新后与 L4 沙箱**幂等对齐**（该跑的在跑、不该跑的释放）
     await this.syncSandboxes();
   }
 
@@ -650,7 +650,7 @@ export class PluginHost {
   }
 
   private view(e: PluginEntry): PluginView {
-    // ★ R10：code 插件恒带沙箱状态（未启动 / 已释放 → `{ running: false }`；asset → undefined）
+    // R10：code 插件恒带沙箱状态（未启动 / 已释放 → `{ running: false }`；asset → undefined）
     const sandbox =
       e.manifest.kind === 'code' && this.sandbox ? this.sandbox.stateOf(e.id) ?? { running: false } : undefined;
     return {
@@ -683,7 +683,7 @@ export class PluginHost {
     return null;
   }
 
-  /** ★ R11：`local-path` 引擎的用户路径表（未接入 / 读取失败 → 空表） */
+  /** R11：`local-path` 引擎的用户路径表（未接入 / 读取失败 → 空表） */
   private enginePaths(): Record<string, string> {
     try {
       const m = this.opts.enginePaths?.();

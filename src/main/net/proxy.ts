@@ -1,5 +1,5 @@
 // src/main/net/proxy.ts
-// ★ 2026-09-25：**网络代理**设置（`<userData>/proxy.json`）。
+// **网络代理**设置（`<userData>/proxy.json`）。
 // 用途：域名被 **DNS 污染 / TLS SNI 阻断**时（例 `apiyutu.com`：DoH 能解到真实 IP，
 // 但 `servername=域名` 的 TLS 握手被 ECONNRESET），客户端直连无解 —— 全局走代理才能通。
 //
@@ -160,7 +160,7 @@ export function proxyDispatcher(url: string): ProxyAgent {
 }
 
 /**
- * ★ 统一出站 dispatcher 链：用户设了代理且目标非本机 → **代理优先**，其次才是给定的兜底链。
+ * 统一出站 dispatcher 链：用户设了代理且目标非本机 → **代理优先**，其次才是给定的兜底链。
  * 主进程请求 / 本地中继（/img /play）/ 元数据（TMDB 豆瓣 360）都用它，口径一致。
  * 返回顺序即尝试顺序（调用方逐个试或只取第一个）。
  */

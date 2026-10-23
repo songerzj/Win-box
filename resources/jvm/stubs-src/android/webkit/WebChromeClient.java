@@ -14,7 +14,7 @@ import android.view.View;
  * {@code onHideCustomView()}、{@code onJsAlert(WebView,String,String,JsResult)}、
  * {@code onShowCustomView(View,CustomViewCallback)}。
  *
- * <p>★ 这些方法**必须是 non-final 的 public 实例方法**：子类要 override，
+ * <p>这些方法**必须是 non-final 的 public 实例方法**：子类要 override，
  * 签名差一点（比如少了 @Override 对应的父方法）就会触发
  * "method does not override or implement a method from a supertype" 的
  * VerifyError —— 这正是 dex2jar 产物的典型雷区。

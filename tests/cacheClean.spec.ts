@@ -9,7 +9,7 @@ import { clearAppCache, type ClearCacheResult } from '../src/main/util/cacheClea
 
 function makeSandbox(): { ud: string; sp: string } {
   const ud = mkdtempSync(join(tmpdir(), 'cclean-ud-'));
-  // ★ 注意：sp 不能用 ud/cache/spider —— Windows 大小写不敏感，ud/Cache 与 ud/cache 是同一目录，
+  // 注意：sp 不能用 ud/cache/spider —— Windows 大小写不敏感，ud/Cache 与 ud/cache 是同一目录，
   //   测试里会互相覆盖导致断言失真；生产上 SpiderHost 的 cache/spider 与 Chromium Cache 本就同目录。
   const sp = join(ud, 'jarcache');
   mkdirSync(sp, { recursive: true });

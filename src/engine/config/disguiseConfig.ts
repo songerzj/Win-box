@@ -1,5 +1,5 @@
 // src/engine/config/disguiseConfig.ts
-// ★ 2026-10-15：订阅「**伪装体**」提取 —— 用户报 `https://yc.wya6.cn/wykj.php` 无法被正确识别。
+// 订阅「**伪装体**」提取 —— 识别 `https://yc.wya6.cn/wykj.php` 这类站点的伪装配置。
 //
 // 实测形态（该站**按 UA 分流**：浏览器 / `TVBox` / `catvod` UA 都给「浮光」落地页 HTML(≈2.5KB)，
 //   只有 `okhttp/*` UA 才给真体）：

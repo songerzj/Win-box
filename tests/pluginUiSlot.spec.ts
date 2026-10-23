@@ -1,5 +1,5 @@
 // tests/pluginUiSlot.spec.ts — 插件受限 UI 槽位（L3 声明式 UI）适配层：
-//   `contributes.ui.slot` → 宿主视图 `UiSlotView`（★ 插件不跑代码、不注入 UI；主进程只做校验 + 装配，
+//   `contributes.ui.slot` → 宿主视图 `UiSlotView`（插件不跑代码、不注入 UI；主进程只做校验 + 装配，
 //   组件树渲染在渲染层 `components/PluginSlot.tsx`，link 复用动作词表执行器）。
 // 覆盖：白名单字段搬运（6 类组件）/ 归属插件标注 / 可选字段不留 undefined / slot·kv 副本隔离。
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 // src/shared/driveCookie.ts — 网盘 Cookie 完整性校验（纯函数，主/渲染层共用，零依赖）。
 //
-// 背景（2026-09-26：用户实测「UC 没会员播放似乎要两个 cookie」+ 对 fty 真实 jar 的逆向取证）：
-//   · fty 系网盘蜘蛛 `Cloud_quark/Cloud_uc` 在 init 读到 Cloud-drive 配置里的
+// 背景（UC 非会员播放似乎要两个 cookie；经调用链分析确认网盘 jar 的相关读取行为）：
+//   · 部分网盘蜘蛛 `Cloud_quark/Cloud_uc` 在 init 读到 Cloud-drive 配置里的
 //     `quarkCookie`/`ucCookie` 后，会做 `cookie.contains("pus")` 判定 —— 不含 `__pus`/`__puus`
 //     的 cookie 会被**直接置空**（等于没绑定）；UC 侧还额外读 `ucToken`。
 //   · 社区实现（混合盘等）明确：夸克/UC 的取流会话**实际只需 `__pus`**，而部分接口/非会员取流
@@ -25,7 +25,7 @@ const REQUIRED: Record<string, string[]> = {
 };
 
 /**
- * ★ 2026-09-28：**前缀型必需**（任一前缀命中即通过）—— 115 的登录态 cookie 名带随机后缀
+ * **前缀型必需**（任一前缀命中即通过）—— 115 的登录态 cookie 名带随机后缀
  * （`UID_<hash>_<n>` / `SEID_<hash>_<n>`），无法用精确键名表达；缺了它 115 直链必然 401。
  */
 const REQUIRED_PREFIX_ANY: Record<string, string[]> = {
@@ -73,7 +73,7 @@ export function checkDriveCookie(provider: string, cookie: string): CookieCheck 
   const p = (provider || '').trim().toLowerCase();
   const need = REQUIRED[p];
   if (!need) {
-    // ★ 2026-09-28：前缀型（115）—— 登录态键名带随机后缀，只能“任一前缀命中即通过”
+    // 前缀型（115）—— 登录态键名带随机后缀，只能“任一前缀命中即通过”
     const prefixes = REQUIRED_PREFIX_ANY[p];
     if (!prefixes) return { ok: true, missing: [], message: '' };
     if (prefixes.some((x) => cookieHasPrefix(cookie, x))) return { ok: true, missing: [], message: '' };

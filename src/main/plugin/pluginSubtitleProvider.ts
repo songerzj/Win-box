@@ -1,9 +1,9 @@
 // src/main/plugin/pluginSubtitleProvider.ts
 // 插件字幕源适配层：把 `contributes.subtitle.provider`（L2 **声明式**）适配为宿主的 SubtitleProvider。
 //
-// ★ 全部声明式：宿主按插件的 **URL 模板** 代发请求、按 **JSON 路径** 取数 —— **不执行插件的代码**。
+// 全部声明式：宿主按插件的 **URL 模板** 代发请求、按 **JSON 路径** 取数 —— **不执行插件的代码**。
 //   （这也是 L2 不需要 `permissions` 的原因：出网由宿主做，插件只描述"去哪儿取、取哪些字段"。）
-// ★ v1 仅 GET；请求头/取文本/取值等共用细节见 providerHttp.ts（与元数据源等同一份实现）。
+// v1 仅 GET；请求头/取文本/取值等共用细节见 providerHttp.ts（与元数据源等同一份实现）。
 // 事实源：docs/design/插件制作规范.md §5.4；机器契约见 src/shared/plugin.ts。
 import { expandSubTemplate, jsonPathGet, type SubtitleProviderContribute } from '../../shared/plugin';
 import type { SubtitleCandidate, SubtitleFetchResult, SubtitleSettings } from '../../shared/subtitle';

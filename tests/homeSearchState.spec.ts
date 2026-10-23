@@ -1,5 +1,5 @@
 // tests/homeSearchState.spec.ts
-// ★ 2026-09-28 回归：「搜索返回栈错乱」—— home 状态版本守卫（`HomeMem.updatedAt`）。
+// 回归：「搜索返回栈错乱」—— home 状态版本守卫（`HomeMem.updatedAt`）。
 //
 // 用户复现：搜「奥特曼」→ 进详情 → 搜「假面骑士」→ 进详情 → 返回 ⇒ 回到的是**奥特曼**的结果。
 // 根因：`loadUiMemory()`（挂载 / 窗口 focus / visibilitychange 都会触发）用**盘上的 home 整份覆盖**内存，
@@ -116,7 +116,7 @@ describe('端到端 — 走真实 save/load 路径', () => {
     expect(uiMem.home.search?.wd).toBe('B');
   });
 
-  it('★ 核心回归：盘上还是上一次搜索（A），内存已是新搜索（B）→ 重读后必须保持 B', () => {
+  it('核心回归：盘上还是上一次搜索（A），内存已是新搜索（B）→ 重读后必须保持 B', () => {
     // 盘上先写 A（模拟"上一次搜索落盘"）
     uiMem.home = home({ search: searchMem('A'), updatedAt: 1000 });
     saveUiMemory();

@@ -136,7 +136,7 @@ describe('SpiderFactory — getCSP 分发（type 3 api 后缀）', () => {
     const b = f.getCSP(bean, host);
     expect(a).toBe(b);
   });
-  it('ext 变更后重建蜘蛛实例（★ ext 模块缺陷修复：改配置必须立即生效）', () => {
+  it('ext 变更后重建蜘蛛实例（ext 模块缺陷修复：改配置必须立即生效）', () => {
     const f = new SpiderFactory();
     const a = f.getCSP({ key: 'e1', type: 3, api: 'csp_X', ext: '{"token":"old"}' } as SourceBean, host);
     const b = f.getCSP({ key: 'e1', type: 3, api: 'csp_X', ext: '{"token":"new"}' } as SourceBean, host);
@@ -260,7 +260,7 @@ describe('SourceViewModel — type 3 homeContent→homeVideoContent 回退（任
     expect(sp.recCalls).toBe(1);
   });
 
-  it('★ 装得满一页的首页 list → items 全来自 homeContent，且绝不触发回退', async () => {
+  it('装得满一页的首页 list → items 全来自 homeContent，且绝不触发回退', async () => {
     const sp = new StubSpider(
       JSON.stringify({
         class: [{ type_id: '1', type_name: '电影' }],
@@ -271,11 +271,11 @@ describe('SourceViewModel — type 3 homeContent→homeVideoContent 回退（任
     const r = await vmWithSpider(sp).home({ key: 'q2', type: 3, api: 'csp_X' } as SourceBean);
     expect(r.items[0].name).toBe('首页片');
     expect(r.items).toHaveLength(25);
-    expect(sp.recCalls).toBe(0); // ★ 2026-10-16：≥一页 → 一票否决，任何回退都不发起
+    expect(sp.recCalls).toBe(0); // ≥一页 → 一票否决，任何回退都不发起
     expect(sp.catCalls).toBe(0);
   });
 
-  it('★ 装不满一页的首页 list → 允许尝试回退，但只采纳「更丰富的那份」（此处仍保留首页片）', async () => {
+  it('装不满一页的首页 list → 允许尝试回退，但只采纳「更丰富的那份」（此处仍保留首页片）', async () => {
     const sp = new StubSpider(
       JSON.stringify({ class: [{ type_id: '1', type_name: '电影' }], list: [{ vod_id: '1', vod_name: '首页片' }] }),
       JSON.stringify({ list: [{ vod_id: '9', vod_name: '不应出现' }] }),
@@ -323,7 +323,7 @@ describe('SourceViewModel — type 3 homeContent→homeVideoContent 回退（任
     expect(r.items).toHaveLength(0);
   });
 
-  it('★ py/蜘蛛返回 name/pic 字段（无 vod_ 前缀）→ 列表多键兜底（封面/名称不丢，TMDB 补全可触发）', async () => {
+  it('py/蜘蛛返回 name/pic 字段（无 vod_ 前缀）→ 列表多键兜底（封面/名称不丢，TMDB 补全可触发）', async () => {
     // 部分 py 蜘蛛返回 {name,pic,…} 而非 vod_name/vod_pic —— 此前列表归一化只认 vod_ 前缀，
     // 名称取空 → 首页 TMDB 封面补全不触发 → 长期无封面。本用例锚定兜底生效。
     const sp = new StubSpider(
@@ -336,7 +336,7 @@ describe('SourceViewModel — type 3 homeContent→homeVideoContent 回退（任
     expect(r.items[0].pic).toBe('https://x/a.jpg');
   });
 
-  it('★ detail 多键兜底：pic 别名键（vod_pic_url/video_pic/vod_pic_thumb）也能出封面', async () => {
+  it('detail 多键兜底：pic 别名键（vod_pic_url/video_pic/vod_pic_thumb）也能出封面', async () => {
     const sp = new StubSpider('', '');
     sp.detailContent = async () =>
       JSON.stringify({
@@ -412,7 +412,7 @@ describe('SourceViewModel — type 3 homeContent→homeVideoContent 回退（任
 });
 
 describe('SourceViewModel — type3 首页分类兜底（P0-JVM-HOME：JVM 源主页空白根因修复）', () => {
-  it('★ homeContent 仅 class + homeVideoContent 空 → 用首个分类第1页兜底，主页不再空网格', async () => {
+  it('homeContent 仅 class + homeVideoContent 空 → 用首个分类第1页兜底，主页不再空网格', async () => {
     const sp = new StubSpider(JSON.stringify({ class: [{ type_id: '1', type_name: '电影' }], list: [] }), '');
     sp.catRet = JSON.stringify({
       page: 1, pagecount: 9, total: 180,
@@ -443,7 +443,7 @@ describe('SourceViewModel — type3 首页分类兜底（P0-JVM-HOME：JVM 源�
     expect(r.total).toBe(60);
   });
 
-  it('homeVideoContent 有数据时优先用它；分类兜底即使用过也不许顶掉它（★ 2026-10-16 口径：只取更丰富的那份）', async () => {
+  it('homeVideoContent 有数据时优先用它；分类兜底即使用过也不许顶掉它（口径：只取更丰富的那份）', async () => {
     const sp = new StubSpider(
       JSON.stringify({ class: [{ type_id: '1', type_name: '电影' }], list: [] }),
       JSON.stringify({ list: [{ vod_id: '9', vod_name: '推荐片' }] }),
@@ -454,7 +454,7 @@ describe('SourceViewModel — type3 首页分类兜底（P0-JVM-HOME：JVM 源�
     expect(r.items[0].name).toBe('推荐片');
   });
 
-  it('★ 装不满一页的首页 list → 尝试兜底但「不更丰富」不采纳（列表不换小、不打 homeFallback 标）', async () => {
+  it('装不满一页的首页 list → 尝试兜底但「不更丰富」不采纳（列表不换小、不打 homeFallback 标）', async () => {
     const sp = new StubSpider(
       JSON.stringify({ class: [{ type_id: '1', type_name: '电影' }], list: [{ vod_id: '1', vod_name: '首页片' }] }),
       '',
@@ -534,7 +534,7 @@ describe('SourceViewModel — type 2/-1 桌面版不可用；type 4 走 CmsSourc
 });
 
 /**
- * ★ 2026-10-16（用户报「很多源，如玩偶、木偶，点播分类一页都填不满、既没有分页也不能瀑布」）：
+ * 
  *   ① 一批 `csp_*` 壳源的 `categoryContent` **只回 list**（pagecount/total/page 全缺 = 0），
  *      但翻页真能用（pg=2 是全新一页）→ 引擎按「装得满一页 ⇒ 后面大概率还有」兜底 `pagecount=9999`；
  *   ② 首页列表**装不满一页**时，回退「首个分类第 1 页」取能填满的内容（沿用既有分类兜底口径），
@@ -724,10 +724,10 @@ describe('SourceViewModel — type3 play 归一化（P1-2 normalizeSpiderPlay �
     expect(r.url).toBe('https://a/1#https://a/2'); // video:// 前缀也去掉了
   });
 
-  // ★ 2026-10-16（用户报「PY 直播源（虎牙/斗鱼）无法观看」）：生态里 url 数组常是**「名称/地址」交替对**
+  // 生态里 url 数组常是**「名称/地址」交替对**
   //   名称不是地址 → 若照旧「逐项都当地址」会拼出 `蓝光4M#http://…`，被 directPlayUrlError 判为
   //   「选集参数/相对路径」而清空 ⇒ 一律黑屏。这里只保留可播地址项。
-  it('★ url 数组为「名称/地址」交替对（虎牙/斗鱼形态）→ 只留地址项，# 连接', async () => {
+  it('url 数组为「名称/地址」交替对（虎牙/斗鱼形态）→ 只留地址项，# 连接', async () => {
     const r = await playVia(
       JSON.stringify({
         parse: 0,
@@ -738,7 +738,7 @@ describe('SourceViewModel — type3 play 归一化（P1-2 normalizeSpiderPlay �
     expect(r.url).toBe('http://tx.flv.huya.com/src/a.flv?ratio=4000#http://tx.flv.huya.com/src/a.flv?ratio=2000');
   });
 
-  it('★ url 数组分支也要保留显式 header（虎牙/斗鱼播放头 UA/Referer 全靠它）', async () => {
+  it('url 数组分支也要保留显式 header（虎牙/斗鱼播放头 UA/Referer 全靠它）', async () => {
     const r = await playVia(
       JSON.stringify({ parse: 0, url: ['原画', 'https://a/1.flv'], header: { 'User-Agent': 'libmpv', Referer: 'https://live.example/' } }),
     );
@@ -746,7 +746,7 @@ describe('SourceViewModel — type3 play 归一化（P1-2 normalizeSpiderPlay �
     expect(r.header).toEqual({ 'User-Agent': 'libmpv', Referer: 'https://live.example/' });
   });
 
-  it('★ 交替对里全是非地址（取链失败时的占位符）→ 退回原行为（交给上层报「未取得播放地址」）', async () => {
+  it('交替对里全是非地址（取链失败时的占位符）→ 退回原行为（交给上层报「未取得播放地址」）', async () => {
     const r = await playVia(JSON.stringify({ parse: 0, url: ['原画', '#-1'] }));
     expect(r.parse).toBe(0);
     expect(r.url).toBe('原画##-1'); // 退回「逐项拼接」的老行为：上层据此给「未取得播放地址」

@@ -36,7 +36,7 @@ export function wrapPlayUrl(url: string, provider: string): string {
 /**
  * 把**源站封面图**包装成经本地 `/img` 中继的地址（带 `ref` 提示 Referer）。
  *
- * ★ 2026-09-23 版（此前走 /play）：「封面总有几个补不上」的三类真实成因都对症：
+ * 该实现（此前走 /play）：「封面总有几个补不上」的三类真实成因都对症：
  *   ① 图床域名被 DNS 污染 / 只认特定 Referer（防盗链）→ 主进程经 DoH + 系统 DNS 双通道取图，
  *      并按 [ref, 图片自身 origin, 不带 Referer] 依次重试（见 LocalProxyServer.imgProxy）；
  *   ② 渲染层直连被跨域/Referer 限制；
@@ -81,7 +81,7 @@ export function driveProviderLabel(provider: string): string {
 }
 
 /**
- * ★ 2026-09-28：**走「网页二维码登录」的 provider**（主进程弹网盘网页 → 抓完整 Cookie）。
+ * **走「网页二维码登录」的 provider**（主进程弹网盘网页 → 抓完整 Cookie）。
  *
  * 为什么放在 shared：此前这份清单在渲染层被**硬编码复制**了一份（`DriveLogin.tsx` 里
  * `const WEBLOGIN_PROVIDERS = ['quark','uc','baidu']`），主进程加了新 provider（如 115）
@@ -92,8 +92,8 @@ export const WEB_LOGIN_PROVIDERS: readonly string[] = ['quark', 'uc', 'baidu', '
 
 /**
  * 蜘蛛类名归一：去 `csp_` 前缀与 `Guard` 后缀、转小写。
- * 必要原因：**同一只蜘蛛在不同配置里的类名不一样** —— fty/游魂系写 `csp_WoGGGuard`（壳类），
- * 摸鱼系直接写 `csp_Wogg`（真实类）。只按原文匹配会漏掉一半配置。
+ * 必要原因：**同一只蜘蛛在不同配置里的类名不一样** —— 部分源写 `csp_XxxGuard`（壳类），
+ * 另一批源直接写 `csp_Xxx`（真实类）。只按原文匹配会漏掉一半配置。
  */
 function normSpiderClass(api: string): string {
   return api
@@ -105,16 +105,16 @@ function normSpiderClass(api: string): string {
 
 /**
  * 网盘/盘搜家族类名（归一后匹配）：
- *   fty/游魂系：MyDrive / Cloud_* / Drive* / S_zps / YpanSo / BpanSo / KkSs / UuSs / Libvio
- *   摸鱼系：FishCloud（木偶/蜡笔/至臻/多多…这批 4K 源）/ FishDrive（摸鱼媒体库）/ FishPs / FishKF /
- *          PanWebShare*（123/光鸭分享）/ Wogg（玩偶哥哥 4K）/ Libvio（立播）
+ *   一批源：MyDrive / Cloud_* / Drive* / S_zps / YpanSo / BpanSo / KkSs / UuSs / 某壳源
+ *   另一批源：FishCloud（这批 4K 源）/ FishDrive（媒体库）/ FishPs / FishKF /
+ *          PanWebShare*（分享类）/ 某壳源（4K 源）/ 某壳源
  *
- * ★ 2026-09-27（用户报「摸鱼的立播需要绑定网盘却没有提示，fty 的立播有」）：
- *   **同一只蜘蛛在不同配置里的 ext 写法不同** —— fty 给 `LibvioGuard` + `ext.Cloud-drive`（被 ext 规则命中），
- *   摸鱼给 `csp_Libvio` + `ext={"site":[…]}`（两条 ext 规则都不命中）→ 只有类名可靠。
- *   实测配置证据：`{"key":"Libvio","name":"📺┆立播┆4K","api":"csp_Libvio","ext":"{\"site\":[…4 个域名…]}"}`。
- *   ⇒ 立播族（libvio）必须进本表；归一化已去 `csp_` 前缀与 `Guard` 后缀，两套写法一并覆盖。
- *   ★ 这一类「类名清单漏网」的问题，另有运行期兜底 `needsDriveBind()` 的第二判据（见下），
+ *
+ *   **同一只蜘蛛在不同配置里的 ext 写法不同** —— 部分源给 `XxxGuard` + `ext.Cloud-drive`（被 ext 规则命中），
+ *   另一批给 `csp_Xxx` + `ext={"site":[…]}`（两条 ext 规则都不命中）→ 只有类名可靠。
+ *   实测配置证据：`{"key":"Xxx","name":"📺┆4K","api":"csp_Xxx","ext":"{\"site\":[…4 个域名…]}"}`。
+ *   ⇒ 该族（某壳源）必须进本表；归一化已去 `csp_` 前缀与 `Guard` 后缀，两套写法一并覆盖。
+ *   这一类「类名清单漏网」的问题，另有运行期兜底 `needsDriveBind()` 的第二判据（见下），
  *     不依赖清单：任何源一旦真实产出网盘直链，就被主进程记住并显示绑定入口。
  */
 const DRIVE_SPIDER_RE =
@@ -122,7 +122,7 @@ const DRIVE_SPIDER_RE =
 
 /**
  * ext 里是否**显式声明了 `cookie` 字段**（值为空也算）。
- * 实测摸鱼配置里这一类源都写成 `{"cookie":"","site":[…]}`（笔触/123/光鸭/观影/厂长/夸父）——
+ * 实测某类配置里这一类源都写成 `{"cookie":"","site":[…]}`——
  * 它们就是要用户填凭据的源，这是比类名更可靠的信号（作者自己留的口子）。
  * 加密 ext（非 JSON）解析失败 → false（宁窄勿宽，不给它挂无用按钮）。
  */
@@ -137,11 +137,11 @@ function hasCookieField(ext?: string | null): boolean {
 }
 
 /**
- * ★ 2026-09-26（用户要求）：判断某源是否需要「网盘绑定」入口（源主页据此显示按钮）。
+ * 判断某源是否需要「网盘绑定」入口（源主页据此显示按钮）。
  * 判据（宁窄勿宽，避免给普通 CMS 源挂无用按钮）：
- *   · ext 里带网盘配置约定 `Cloud-drive`（fty/游魂系的我的云盘/转存类源都靠它读 cookie）；
+ *   · ext 里带网盘配置约定 `Cloud-drive`（部分源的我的云盘/转存类源都靠它读 cookie）；
  *   · 或 ext 里显式声明了 `cookie` 字段（作者留的凭据口子，见 hasCookieField）；
- *   · 或蜘蛛类名属网盘/盘搜家族（含摸鱼系的 FishCloud/FishDrive/PanWebShare 等，见 DRIVE_SPIDER_RE）。
+ *   · 或蜘蛛类名属网盘/盘搜家族（含 FishCloud/FishDrive/PanWebShare 等，见 DRIVE_SPIDER_RE）。
  */
 export function isDriveBindSource(ext?: string | null, api?: string | null): boolean {
   if (ext && /cloud[-_]?drive/i.test(ext)) return true;
@@ -150,13 +150,13 @@ export function isDriveBindSource(ext?: string | null, api?: string | null): boo
 }
 
 /**
- * ★★ 2026-09-27（载荷层补完·缺口 B）：**「详情里就是网盘源」的早期判定**（纯函数）★★
+ * （载荷层补完·缺口 B）：**「详情里就是网盘源」的早期判定**（纯函数）
  *
  * <p>为什么需要：`needsDriveBind` 的运行期学习原本只在**播放成功产出网盘直链**时触发 ——
- * 而没绑定 Cookie 的源**根本播放不出来**（实测 wex 玩偶：蜘蛛抛 `JSONObject["data"] not found`），
+ * 而没绑定 Cookie 的源**根本播放不出来**（实测：蜘蛛抛 `JSONObject["data"] not found`），
  * 于是「学不到 → 不显示绑定入口 → 永远绑不上」的死循环。详情数据本身就是判据：
  *
- * <p>实测形态（wex 玩偶 detailContent 原样）：
+ * <p>实测形态（某源 detailContent 原样）：
  * `vod_play_from = 夸克原画$$$夸克最高急速$$$…`、`vod_play_url` 的剧集 id 是上游私有串
  * （`1be9f9ab…|eaa9…|qjuH…|405562549…|4K HQ 高码率 DDP DTS.mp4`）——**看 id 认不出网盘，只能看源名**。
  *
@@ -180,7 +180,7 @@ export function driveBindHintFromPlaySources(
 }
 
 /**
- * ★ 2026-10-14（用户日志 `app-2026-10-13.log`）：把 `driveBindHintFromPlaySources` 的命中词归一为
+ * 把 `driveBindHintFromPlaySources` 的命中词归一为
  * **provider 键**（`quark`/`baidu`/`uc`/`115`/`ali`）。
  *
  * <p>命中词形态不统一：多数是中文标签（`夸克`/`百度`/`115`），也可能已是 URL 匹配出的键（`quark`）；
@@ -201,15 +201,15 @@ export function driveProviderKeyFromHint(hint?: string | null): string | null {
 
 /**
  * 详情「播放源名」里的网盘关键词表（宁窄勿宽：只收录真的代表云盘播放的字样）。
- * 实测命中：`夸克原画` / `夸克最高急速`（wex 玩偶，用户报的那只源）。
+ * 实测命中：`夸克原画` / `夸克最高急速`。
  */
 const DRIVE_FLAG_RE =
   /夸克|quark|阿里云盘|阿里盘|alipan|aliyun|115|123盘|123pan|迅雷|xunlei|天翼|189盘|cloud\.189|百度盘|baidupan|彩云|caiyun|光鸭|pikpak|移动云盘|网盘/;
 
 /**
- * ★★ 2026-09-27（载荷层补完·缺口 B）：**播放失败信息是否像「网盘接口因未绑定 Cookie 而拒绝」**。
+ * （载荷层补完·缺口 B）：**播放失败信息是否像「网盘接口因未绑定 Cookie 而拒绝」**。
  *
- * <p>实测（wex 玩偶·夸克盘）：未绑定网盘时蜘蛛抛
+ * <p>实测（某源·夸克盘）：未绑定网盘时蜘蛛抛
  * `org.json.JSONException: JSONObject["data"] not found.` —— 上游网盘接口在无 Cookie 时返回的是
  * 错误 JSON（连 `data` 字段都没有），蜘蛛自己没做兜底。这类失败必须翻译成「先去绑定网盘」，
  * 而不是把 JSONException 甩给用户（渲染层拿到的 message 直接展示）。
@@ -220,17 +220,17 @@ export function looksLikeDriveBindFailure(message?: string | null): boolean {
   // 实测形态：网盘接口在无 Cookie 时回包缺 data 字段（带引号/不带引号两种写法都见过）
   if (m.includes('jsonobject["data"] not found') || m.includes('jsonobject[data] not found')) return true;
   // 授权类关键词 + 网盘语境 → 也算（避免把普通 CMS 的解析错误误判成网盘问题）
-  // ★ 2026-10-14：补 `授权` —— 部分蜘蛛用**泛化**文案「请先完成网盘授权」（不含网盘名），旧正则漏判。
+  // 补 `授权` —— 部分蜘蛛用**泛化**文案「请先完成网盘授权」（不含网盘名），旧正则漏判。
   if (/(cookie|token|authorization|授权|未登录|登录|扫码)/.test(m) && /(网盘|drive|quark|uc盘|ali|115|pan)/.test(m)) return true;
-  // ★ 2026-09-28：中文网盘名也要算语境 —— 实测百度系蜘蛛的提示是
+  // 中文网盘名也要算语境 —— 实测百度系蜘蛛的提示是
   //   `还未登录百度账号,请前往【配置中心】登录`，旧正则里没有「百度」→ 漏判。
   return driveBindProviderFromText(message) !== null;
 }
 
 /**
- * ★ 2026-09-28：从**任意文本**判定「这是哪个网盘的登录/授权要求」。
+ * 从**任意文本**判定「这是哪个网盘的登录/授权要求」。
  *
- * 实测（用户反馈「部分源正常但放不出来」的一类）：百度系蜘蛛在未绑定时**不抛错**，而是返回
+ * 实测（「部分源正常但放不出来」的一类）：百度系蜘蛛在未绑定时**不抛错**，而是返回
  * `url=''` + `message='还未登录百度账号,请前往【配置中心】登录'`（`parse:0`）。
  * 渲染层只认 `parse:1` 才上屏原因 → 表现为「点了播放没反应/黑屏」，用户不知道要绑网盘。
  * 命中本函数即应翻译成「去绑该网盘」的提示（`parse:1` + `needDriveCookieBind`）。
@@ -251,8 +251,7 @@ export function driveBindProviderFromText(text?: string | null): string | null {
 }
 
 /**
- * ★★ 源主页是否显示「网盘绑定」入口（2026-09-27，用户要求「确保每一个需要绑定网盘的都能有这段提示，
- * 不管换什么订阅什么源」）★★
+ * 源主页是否显示「网盘绑定」入口
  *
  * 两个判据取并集：
  *  ① **静态**：`isDriveBindSource(ext, api)` —— 类名/ ext 特征（快、进源即有提示）；
@@ -260,9 +259,9 @@ export function driveBindProviderFromText(text?: string | null): string | null {
  *     （`SpiderHost.play` 里 `matchDriveCookieProvider(url)` 命中 ⇒ 该源产出网盘直链 ⇒ 必然需要网盘 Cookie），
  *     并持久化到 `<userData>/drive-bind-learned.json`。
  *
- * 为什么必须有 ②：类名清单永远可能漏（实测：fty 写 `LibvioGuard`+`ext.Cloud-drive` 命中，
- * 摸鱼写 `csp_Libvio`+`ext={"site":[…]}` 全部落空）。② 完全**不依赖类名与订阅写法** ——
- * 只要这个源真的走过一次网盘播放，之后每次进它都会显示绑定入口（这正是「不管换什么订阅什么源」的保证）。
+ * 为什么必须有 ②：类名清单永远可能漏（实测：部分源写 `XxxGuard`+`ext.Cloud-drive` 命中，
+ * 另一批写 `csp_Xxx`+`ext={"site":[…]}` 全部落空）。② 完全**不依赖类名与订阅写法** ——
+ * 只要这个源真的走过一次网盘播放，之后每次进它都会显示绑定入口（这正是跨订阅的保证）。
  */
 export function needsDriveBind(
   bean: { key?: string | null; ext?: string | null; api?: string | null } | null | undefined,

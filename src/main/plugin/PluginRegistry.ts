@@ -5,7 +5,7 @@
 //                载荷尚未物化为文件 —— 何时物化由后续"MPV 注入接线"决定）。
 // 冲突规则：同一 id 同时存在时 **user 覆盖 builtin**（用户装了自己的版本即以用户的为准）。
 // 事实源：docs/design/插件系统_设计方案.md §6.1 / §7.1。
-// ★ 依赖注入（不 import electron）：两个目录由调用方传入，便于单测。
+// 依赖注入（不 import electron）：两个目录由调用方传入，便于单测。
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -53,7 +53,7 @@ export class PluginRegistry {
       if (!isDir(dir)) continue;
       const m = readManifestFile(join(dir, 'plugin.json'));
       if (!m) continue;
-      // ★ 随包官方插件被**物化**（解包）到 pluginsDir 后带 `.builtin.json` 侧签 → 仍登记为 builtin
+      // 随包官方插件被**物化**（解包）到 pluginsDir 后带 `.builtin.json` 侧签 → 仍登记为 builtin
       //   （见 PluginHost.materializeBuiltin；用户自己安装的同 id 会整体替换该目录、侧签一并消失 → 归为 user）
       const builtin = existsSync(join(dir, BUILTIN_MARKER));
       out.push(entry(m, builtin ? 'builtin' : 'user', dir, true));
@@ -63,7 +63,7 @@ export class PluginRegistry {
 
   /**
    * 随包（builtin）插件：扫 `<builtinDir>/*.winbox` 只读 zip，登记期只读清单。
-   * ★ 单独暴露（不经 `list()` 的去重）：`PluginHost.materializeBuiltin` 需要看到**随包 zip 的版本**，
+   * 单独暴露（不经 `list()` 的去重）：`PluginHost.materializeBuiltin` 需要看到**随包 zip 的版本**，
    *   而物化后的同名目录会在 `list()` 里把 zip 条目覆盖掉。
    */
   async listBuiltin(): Promise<PluginEntry[]> {

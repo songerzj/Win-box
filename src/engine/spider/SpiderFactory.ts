@@ -1,5 +1,5 @@
 // src/engine/spider/SpiderFactory.ts
-// ★ getCSP 二次分发（ApiConfig.java:1456）。仅处理 type=3：按 api 后缀
+// getCSP 二次分发（ApiConfig.java:1456）。仅处理 type=3：按 api 后缀
 //   .js → JsSpider（JS 沙箱）
 //   .py → UnsupportedSpider(UNSUPPORTED_PY)
 //   其它 → JarSpider（jar/dex，等效 DexClassLoader：JVM 桥）—— 需配置 bridge + jar URL
@@ -18,7 +18,7 @@ import type { JarSpiderBridge } from './JarSpiderBridge';
 /**
  * 源级超时（ms）：配置 `timeout`（秒）> 0 则用之（clamp [5,60]s，与 SourceViewModel.t 口径一致），
  * 否则回落到 DEFAULT_SPIDER_TIMEOUT_MS。
- * ★ 同源：子进程调用超时（本文件传入 SpiderInit）与聚合搜索的单源 race 都用它 ——
+ * 同源：子进程调用超时（本文件传入 SpiderInit）与聚合搜索的单源 race 都用它 ——
  *   「源声明多久就该多久内出结果」，避免某源无限期占着 worker（历史上表现为「搜半天没结果」）。
  */
 export function sourceTimeoutMs(bean: { timeout?: number } | null | undefined): number {
@@ -42,7 +42,7 @@ export class SpiderFactory {
 
   /**
    * 缓存键 = 源 key + 影响蜘蛛行为的字段签名（api/ext/jar）。
-   * ★ 修复"ext 模块缺陷"：同 key 下改 ext（含网盘绑定参数）必须新建蜘蛛实例，
+   * 修复"ext 模块缺陷"：同 key 下改 ext（含网盘绑定参数）必须新建蜘蛛实例，
    *   否则蜘蛛 init(Context, ext) 一直拿旧 ext → 表现为配置了也不生效。
    */
   private keyOf(bean: SourceBean): string {
@@ -59,7 +59,7 @@ export class SpiderFactory {
         ext: bean.ext,
         jar: bean.jar,
         host,
-        // ★ 源声明 timeout（秒，0 → 默认）→ 子进程调用超时；与聚合搜索单源超时同源，
+        // 源声明 timeout（秒，0 → 默认）→ 子进程调用超时；与聚合搜索单源超时同源，
         //   使「蜘蛛卡住」最迟在源声明时间内被 kill（此前池内固定 120s → 表现为「搜半天没结果」）
         timeoutMs: sourceTimeoutMs(bean),
       };

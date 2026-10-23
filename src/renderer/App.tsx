@@ -1,6 +1,6 @@
 import { NavLink, Outlet, Route, Routes, UNSAFE_LocationContext, useNavigate } from 'react-router-dom';
 import TitleBar from './components/TitleBar';
-// ★ 2026-10-16（用户要求「四套皮肤绝对大改」）：环境光背景场（四外壳共用的底层氛围层）
+// 环境光背景场（四外壳共用的底层氛围层）
 import AppAmbient from './components/AppAmbient';
 import SearchPanel from './components/SearchPanel';
 import PageErrorBoundary from './components/PageErrorBoundary';
@@ -9,7 +9,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { Location } from 'react-router-dom';
 import { cacheGroupOf, cacheKeyOf, cacheLimitOf, isCacheableRoute, PageActiveContext, pickEvictions } from './lib/keepAlive';
-// ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口打开期间释放主窗口里不可见图片的已解码位图（零重载）
+// （B3「冻结/解冻」）：播放器窗口打开期间释放主窗口里不可见图片的已解码位图（零重载）
 import { setImageFreezeActive } from './lib/freezeImages';
 import ConfigPage from './pages/ConfigPage';
 import HomePage from './pages/HomePage';
@@ -17,20 +17,20 @@ import DiscoverPage from './pages/DiscoverPage';
 import DetailPage from './pages/DetailPage';
 import PlayerPage from './pages/PlayerPage';
 import LivePage from './pages/LivePage';
-// ★ 2026-09-29：WebDAV 存储（只读浏览/播放）
+// WebDAV 存储（只读浏览/播放）
 import StoragePage from './pages/StoragePage';
 import HistoryPage from './pages/HistoryPage';
 import AboutPage from './pages/AboutPage';
-// ★ 2026-10-17（用户要求）：「收藏」页（详情页收藏按钮 + 列表增删改查）
+// 「收藏」页（详情页收藏按钮 + 列表增删改查）
 import FavoritesPage from './pages/FavoritesPage';
-/** ★ 2026-09-29：启动更新提示（本地版本低于 GitHub 最新 Release 时由用户决定是否更新） */
+/** 启动更新提示（本地版本低于 GitHub 最新 Release 时由用户决定是否更新） */
 import UpdateGate from './components/UpdateGate';
 import { loadUiMemory, sameEpProgress, saveUiMemory, markHistoryOnlyWriter } from './lib/uiMemory';
-// ★ 2026-10-17（用户要求）：二次修改与再分发的免责条款（说明页与首启弹窗共用同一句话）
+// 二次修改与再分发的免责条款（说明页与首启弹窗共用同一句话）
 import { MODIFIED_BUILD_DISCLAIMER } from './lib/disclaimerText';
-// ★ 2026-10-17（用户要求）：收藏（独立 localStorage 键，不并入 uiMemory）
+// 收藏（独立 localStorage 键，不并入 uiMemory）
 import { FAVORITES_EVENT, loadFavorites } from './lib/favorites';
-// ★ 2026-09-30（用户要求）：显式绑定第三方播放器时点播直接由它播放（详见 lib/externalPlay.ts）
+// 显式绑定第三方播放器时点播直接由它播放（详见 lib/externalPlay.ts）
 import { playVodExternal } from './lib/externalPlay';
 import { useShowDiscover } from './lib/uiPrefs';
 // 详情打开方式统一入口 + 固定窗口身份判定。
@@ -38,27 +38,27 @@ import { isDetailWindow, openDetailRoute } from './lib/detailWin';
 import { isSearchWindow, bindSearchNav } from './lib/searchWin';
 import { useSkinLayout, useTheme } from './lib/theme';
 import { client } from './api/client';
-// ★ 2026-10-18 插件快捷键（contributes.keymap）：app 作用域分发（动作复用 ui.command 词表）
+// 插件快捷键（contributes.keymap）：app 作用域分发（动作复用 ui.command 词表）
 import { usePluginKeymaps } from './lib/pluginKeymaps';
 import { runPluginCommand } from './lib/pluginCommands';
 import type { Episode } from '../shared/types';
 
 /**
- * ★ 2026-10-08（用户要求「详情页独立窗口」）：详情窗口与主窗口共享同一份 localStorage 的 uiMem，
+ * 详情窗口与主窗口共享同一份 localStorage 的 uiMem，
  *   若整份写盘会把主窗口已清掉的状态复活（与播放器窗口同款问题，见 PlayerPage 顶部那段）。
  *   这里在**模块求值期**声明：本窗口只写历史与进度（任何页面挂载前的第一件事）。
  */
 if (isDetailWindow() || isSearchWindow()) markHistoryOnlyWriter();
 
 const NAV = [
-  // ★ 2026-09-24（用户定稿）：**发现放第一位，且打开软件默认进发现页**；「点播」= 源主页，移到 /home
+  // **发现放第一位，且打开软件默认进发现页**；「点播」= 源主页，移到 /home
   { to: '/', label: '发现', ico: '🧭', end: true },
   { to: '/home', label: '点播', ico: '▶' },
   { to: '/history', label: '历史', ico: '🕘' },
-  // ★ 2026-10-17（用户要求）：收藏（详见 pages/FavoritesPage.tsx）
+  // 收藏（详见 pages/FavoritesPage.tsx）
   { to: '/favorites', label: '收藏', ico: '⭐' },
   { to: '/live', label: '直播', ico: '📡' },
-  // ★ 2026-09-29（WebDAV 存储）：把自建 OpenList/AList/Nextcloud 等当媒体库浏览播放
+  // （WebDAV 存储）：把自建 OpenList/AList/Nextcloud 等当媒体库浏览播放
   { to: '/storage', label: '存储', ico: '🗄' },
   { to: '/config', label: '配置', ico: '⚙' },
   // 说明页（详细免责声明 + GitHub 主页）
@@ -66,7 +66,7 @@ const NAV = [
 ];
 
 /**
- * ★ 2026-09-29：Apple 皮肤侧边栏图标 —— SF Symbols 风格**单色线性 SVG**（16px / 1.6 描边）。
+ * Apple 皮肤侧边栏图标 —— SF Symbols 风格**单色线性 SVG**（16px / 1.6 描边）。
  * 不使用 emoji（emoji 会破坏 macOS 侧边栏观感）；其余皮肤仍用 NAV 里的 emoji。
  */
 const AP_ICONS: Record<string, React.ReactNode> = {
@@ -135,7 +135,7 @@ const AP_GROUPS: { label: string; items: typeof NAV }[] = [
 
 /**
  * 页面外壳（布局路由）：承载「页面切换过渡动画」。
- * ★ 2026-09-24（用户定稿）：以 pathname 为 key → 切页时容器重建并播放一次入场动画（淡入 + 轻微上移，苹果 / Netflix 式）。用布局路由 + Outlet 而非嵌套 Routes，
+ * 以 pathname 为 key → 切页时容器重建并播放一次入场动画（淡入 + 轻微上移，苹果 / Netflix 式）。用布局路由 + Outlet 而非嵌套 Routes，
  *   避免相对路径解析问题；query 变化（如 HomePage 清 `?agg=`）不改 pathname → 不重播动画。
  */
 function PageShell() {
@@ -148,10 +148,10 @@ function PageShell() {
 }
 
 /**
- * ★ 2026-10-15（用户要求「伪墓碑：不真关上一个页面、只让它消失」）：
+ * 
  *   主界面回到**单页内跳转**后，切页**不卸载**上一个页面 —— 保持挂载、仅隐藏（`display:none`），
  *   新页面只替换可见内容，返回时零重载、滚动/分类/搜索态原样保留。刻意不做「真墓碑」
- *   （卸载后序列化/恢复状态）——那套在多窗口下易出错，也是用户反馈「经常出 bug」的根源。
+ * （卸载后序列化/恢复状态）——那套在多窗口下易出错，也是「经常出 bug」的根源。
  *
  * 实现要点：
  *   · 每个缓存条目渲染自己那份 `<Routes location={loc}>`，并把该 location 覆盖进
@@ -236,19 +236,19 @@ export default function App() {
 function AppShell() {
   const nav = useNavigate();
   const loc = useLocation();
-  // ★ 2026-10-15：把本窗口的导航函数交给搜索入口 —— 「单页内」模式下搜索在**本窗口内**跳转（伪墓碑）。
+  // 把本窗口的导航函数交给搜索入口 —— 「单页内」模式下搜索在**本窗口内**跳转（伪墓碑）。
   useEffect(() => { bindSearchNav((to) => nav(to)); }, [nav]);
-  /** ★ 2026-09-30（用户要求）：皮肤体系 —— 网飝 / 哔哔（都是「顶部导航一体化」外壳）+ 大果 / 豆风（各自独立外壳，见下）。
+  /** 皮肤体系 —— 网飝 / 哔哔（都是「顶部导航一体化」外壳）+ 大果 / 豆风（各自独立外壳，见下）。
    *  两个经典主题（经典深/浅）与 sidebar 版式已删除。 */
   const theme = useTheme();
   /**
-   * ★ 2026-10-18（用户要求「统一皮肤标准」）：外壳形态改读皮肤注册表里的 **layout 结构枚举**（`shell`），
+   * 外壳形态改读皮肤注册表里的 **layout 结构枚举**（`shell`），
    *   不再按皮肤 id 分支 —— 插件皮肤声明同一枚举即可复用整套外壳。
    *   topbar = 单行顶栏 / dualbar = 双行头 / sidebar = 玻璃侧边栏 / pillbar = 胶囊导航 + 浮动圆钮。
    */
   const shell = useSkinLayout().shell ?? 'topbar';
   /**
-   * ★ 2026-10-08（用户要求「照参考图做一套外观，允许大改 UI 布局」）：第四套皮肤**豆风**
+   * 第四套皮肤**豆风**
    *   （Material You × 豆瓣）= 又一个**独立外壳**（见下方 douban 分支）：
    *   顶部白色工具栏（深蓝品牌胶囊 + 页面标题 + 搜索/换源 + 窗口控制）
    *   ＋ 胶囊导航条（选中项橙色实底）
@@ -257,14 +257,14 @@ function AppShell() {
    */
   const douban = shell === 'pillbar';
   /**
-   * ★ 2026-09-29（用户要求「完全改布局」）：Apple 皮肤 = **独立外壳**，不复用经典/Netflix 骨架：
+   * Apple 皮肤 = **独立外壳**，不复用经典/Netflix 骨架
    *   全宽 Liquid Glass 工具栏（左置交通灯 + 返回箭头 + 页面标题 + 右侧搜索/换源）
    *   ＋ 玻璃侧边栏（分组：媒体 / 其他，SF 风格线性图标，选中项实心蓝）
    *   ＋ 内容区（Apple TV 式精选轮播 + 内容栏，见 DiscoverPage / apple.css）。
    */
   const apple = shell === 'sidebar';
   /**
-   * ★ 2026-10-16（用户要求「四套皮肤各有特色、绝对大改」）：**哔哔专属外壳**。
+   * **哔哔专属外壳**。
    *   此前「哔哔与 netflix 共用 `.nf-nav` 单行顶栏」正是四套皮肤长得像的根源之一。
    *   现在哔哔独立为**双行头**：上行为「品牌 + 居中搜索 + 换源 + 窗口控制」，
    *   下行为**分类 tab 条**（选中项蓝色胶囊 + 弹跳）——
@@ -272,7 +272,7 @@ function AppShell() {
    */
   const bilibili = shell === 'dualbar';
   /**
-   * ★ 2026-09-30（用户要求）：配置页可关掉「发现」页（默认展示）。
+   * 配置页可关掉「发现」页（默认展示）。
    *   关掉后：导航里不出现「发现」；默认落地页从 `/` 改为 `/home`（源主页）。
    */
   const showDiscover = useShowDiscover();
@@ -307,7 +307,7 @@ function AppShell() {
   /** 工具栏返回箭头（‹）：macOS 窗口的导航回退 */
   const goBack = (): void => {
     if (window.history.length > 1) nav(-1);
-    // ★ 2026-10-08：独立详情窗口没有可退的历史 → 返回 = 关窗（更符合「点开一个独立窗口」的直觉）
+    // 独立详情窗口没有可退的历史 → 返回 = 关窗（更符合「点开一个独立窗口」的直觉）
     else if (isDetailWindow() || isSearchWindow()) void client.winClose();
     else nav(backHome, { replace: true });
   };
@@ -330,7 +330,7 @@ function AppShell() {
       const backspace = e.key === 'Backspace';
       if ((altLeft || backspace) && loc.pathname !== backHome) {
         e.preventDefault();
-        goBack(); // ★ 2026-10-08：与工具栏/返回键同一套语义（详情窗口无历史 → 关窗）
+        goBack(); // 与工具栏/返回键同一套语义（详情窗口无历史 → 关窗）
       }
     };
     window.addEventListener('keydown', onKey);
@@ -338,20 +338,20 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
 
-  // ★ 2026-10-18 插件快捷键（`contributes.keymap`，scope=app）：命中即交给宿主受控动作词表执行
+  // 插件快捷键（`contributes.keymap`，scope=app）：命中即交给宿主受控动作词表执行
   //   （插件不跑代码；键位在校验期已保证含 Ctrl/Alt/Meta，与宿主裸键不重叠）
   usePluginKeymaps('app', (km) => { void runPluginCommand(km); });
 
   // 初始化加载历史记录
   useEffect(() => {
     loadUiMemory();
-    // ★ 2026-10-17（用户要求）：收藏（独立 localStorage 键）——启动即加载，跨启动保留
+    // 收藏（独立 localStorage 键）——启动即加载，跨启动保留
     loadFavorites();
-    // ★ 2026-09-30（用户要求「软件关闭后，所有的墓碑机制都应该脱钩」）：
+    // 
     //   页面状态类记忆（搜索态/浏览态/详情态）的**脱钩在 renderer/main.tsx 挂载前完成** ——
-    //   必须早于首屏渲染，否则 HomePage 会先从 uiMem 恢复出上一次的搜索界面（用户报的现象）。
+    // 必须早于首屏渲染，否则 HomePage 会先从 uiMem 恢复出上一次的搜索界面。
     //   会话凭据 = 主进程 sessionId（每次启动必变）；观看历史/播放进度照常跨启动保留。
-    // ★ 持久化兜底：Electron 关闭窗口/刷新可能不触发 React 卸载 cleanup，
+    // 持久化兜底：Electron 关闭窗口/刷新可能不触发 React 卸载 cleanup，
     //   这里监听确定性退出信号立即写盘，保证重启后历史/进度仍在。
     const flush = () => saveUiMemory();
     window.addEventListener('beforeunload', flush);
@@ -359,10 +359,10 @@ function AppShell() {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') flush();
       else if (!isPlayerWin) {
-        // ★ 播放器窗口写在共享 localStorage 的历史，主窗口在恢复可见时重载，
+        // 播放器窗口写在共享 localStorage 的历史，主窗口在恢复可见时重载，
         //   否则主窗口启动时只 load 一次（当时为空），历史页永远读不到播放器窗口的记录。
         loadUiMemory();
-        // ★ 2026-10-17：收藏同款（辅助窗口点收藏/移除后，切回主窗口即同步）
+        // 收藏同款（辅助窗口点收藏/移除后，切回主窗口即同步）
         loadFavorites();
         window.dispatchEvent(new Event(FAVORITES_EVENT));
       }
@@ -382,13 +382,16 @@ function AppShell() {
     };
   }, []);
 
-  // ★ 播放网盘资源未绑定 cookie → 播放器/内嵌播放窗口发起「去绑定」：
-  //   主窗口收到后跳到「点播页」（网盘绑定入口统一在源主页的「网盘绑定」按钮；配置页不再放网盘配置）。
+  // 播放网盘资源未绑定 cookie → 播放器/内嵌播放窗口发起「去绑定」：
+  // 主窗口收到后跳到「配置 → 凭据 tab」的「网盘绑定」卡片（源内横幅已取消，
+  //   配置页是唯一常驻入口 + 播放时自动弹出的绑定窗口）。
+  //   配置页不参与伪墓碑缓存，导航过去即重新挂载并读取下面写好的 tab 记忆。
   //   播放器窗口不注册（主进程只把该事件发给主窗口）。
   useEffect(() => {
     if (loc.pathname === '/player') return;
     return client.onNavDriveBind(() => {
-      nav('/home');
+      try { localStorage.setItem('winbox-cfg-tab', 'account'); } catch { /* ignore */ }
+      nav('/config');
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loc.pathname]);
@@ -414,7 +417,7 @@ function AppShell() {
   // 独立播放器窗口：#/player 时渲染无侧栏的播放界面（独立 BrowserWindow 使用）
   const isPlayerWin = loc.pathname === '/player';
 
-  // ★ 2026-10-08（用户要求「详情页独立窗口」）：详情窗口复用 —— 主进程在已开的详情窗口上再点片子时
+  // 详情窗口复用 —— 主进程在已开的详情窗口上再点片子时
   //   发 `win:navigate`，本窗口切到新路由（不新开窗口、不整页重载，窗口位置/尺寸保留）。
   useEffect(() => {
     if (!isDetailWindow() && !isSearchWindow()) return;
@@ -425,7 +428,7 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ★ 2026-09-20 修复「历史续播位置过期」：独立播放器窗口关闭 → 主窗口重新获得焦点，
+  // 修复「历史续播位置过期」：独立播放器窗口关闭 → 主窗口重新获得焦点，
   //   此时重载 localStorage 历史（播放器窗口关窗时把最新进度写入了 localStorage），
   //   并广播刷新事件让历史页进度/列表即时同步（此前须切走再切回历史页才刷新）。
   useEffect(() => {
@@ -433,7 +436,7 @@ function AppShell() {
     const onFocus = () => {
       loadUiMemory();
       window.dispatchEvent(new Event('winbox:history-refresh'));
-      // ★ 2026-10-17：收藏同款 —— 在独立详情/搜索窗口里点的收藏，回到主窗口即能看到
+      // 收藏同款 —— 在独立详情/搜索窗口里点的收藏，回到主窗口即能看到
       loadFavorites();
       window.dispatchEvent(new Event(FAVORITES_EVENT));
     };
@@ -442,7 +445,7 @@ function AppShell() {
   }, [isPlayerWin]);
 
   /**
-   * ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口打开期间，把**本窗口里不可见**的已解码图片释放掉
+   * （B3「冻结/解冻」）：播放器窗口打开期间，把**本窗口里不可见**的已解码图片释放掉
    *   （只清 `img.src`、原值备份、React 树与数据原地保留，零重载）；播放器关闭即全部挂回。
    *   动因：主窗口图片墙的已解码位图 ≈130~200MB 记在 **GPU 进程**（见 docs/design/内存优化_专项立项.md §2.9）。
    *   玩家窗口自身不接（主进程广播时已排除；这里再兜一道，避免它冻自己的封面）。
@@ -451,6 +454,10 @@ function AppShell() {
     if (isPlayerWin) return;
     return client.playerOnWindowState((open) => setImageFreezeActive(open));
   }, [isPlayerWin]);
+
+  // 曾试过「常开离屏冻结（把滚出视口的图 src 置空）」—— **实测证伪、已回退**
+  //   同场景下冻结后 GPU 工作集不降反升（231 → 300MB），真正回落来自「整窗被遮挡」时合成器丢 tile。
+  //   结论与替代方向见 lib/freezeImages.ts 头注释。
 
   // 首次同意后主窗口进入说明页；记录标记，下次启动不再弹出或跳转。
   const agreeDisclaim = () => {
@@ -491,11 +498,11 @@ function AppShell() {
             你在使用过程中自行配置/导入的播放源与资源均来自<b>第三方</b>，与本软件及作者无关。
             因使用第三方来源所引发的一切后果（含版权、侵权、内容合法性）由用户与第三方自行承担，作者免责。
           </p>
-          {/* ★ 2026-10-17（用户要求）：与说明页「八、二次修改与再分发」同一句话（见 lib/disclaimerText） */}
+          {/* 与说明页「八、二次修改与再分发」同一句话（见 lib/disclaimerText） */}
           <p style={{ margin: 0 }}>{MODIFIED_BUILD_DISCLAIMER}</p>
         </div>
         <div className="row" style={{ justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
-          {/* ★ 2026-10-14：`flex: 0` = `0 1 0%` ⇒ flex-basis 归零后按 min-content 收缩，
+          {/* `flex: 0` = `0 1 0%` ⇒ flex-basis 归零后按 min-content 收缩，
               中文按钮会被压成「1 个字宽」并把文字折成两行（看起来像竖排按钮）。
               与本仓其它按钮统一用 `0 0 auto`（不可收缩、按内容取宽）。 */}
           <button style={{ flex: '0 0 auto' }} onClick={() => void client.appQuit()}>拒绝</button>
@@ -507,7 +514,7 @@ function AppShell() {
 
   // 详情页"播放"：改为在独立播放器窗口打开（主窗口仍停在选集页）。
   // 传入完整集列表 + 当前集，便于播放器窗口内自换集；主窗口换集经 player:switchEp 同步。
-  // ★ 2026-09-30（用户要求）：若在设置里**显式绑定**了第三方播放器 → 直接由它播放，不启动内置播放器窗口；
+  // 若在设置里**显式绑定**了第三方播放器 → 直接由它播放，不启动内置播放器窗口；
   //   未绑定 / 解析不出直连地址（需网页解析、需网盘绑定）→ 回退内置播放器窗口（由它上屏原因）。
   const onDetailPlay = (
     _url: string,
@@ -529,7 +536,7 @@ function AppShell() {
     const eps = meta?.episodes || [];
     const idx = Math.max(0, Math.min(meta?.epIndex ?? 0, eps.length - 1));
     const target = eps[idx];
-    // ★ 剧名副名优先用详情页 detail.name（meta.title）；无则回退从 name 反推首段
+    // 剧名副名优先用详情页 detail.name（meta.title）；无则回退从 name 反推首段
     const base = (meta?.title?.trim() || name.split(' - ')[0] || '').trim();
     const openBuiltin = async (): Promise<void> => {
       // 播放器已打开且仍是同一部片时，传递完整集上下文复用窗口；
@@ -553,7 +560,7 @@ function AppShell() {
         episodes: eps,
         epIndex: idx,
         title: base,
-        subtitleTitle: base, // ★ 供字幕检索的剧名副名（独立于集名，避免从集名反推失败）
+        subtitleTitle: base, // 供字幕检索的剧名副名（独立于集名，避免从集名反推失败）
         lastUrl: _url,
         lastName: target ? `${base} - ${target.name}` : name,
         meta: {
@@ -585,9 +592,9 @@ function AppShell() {
     });
   };
 
-  // ★ 2026-09-24：列表 → 详情的统一跳转（带上封面与片名）
-  //   片名兜底：部分源（如「立播」）详情接口不返回 vod_name，详情页用它显示标题/查 TMDb
-  // ★ 2026-10-08（用户要求）：外观开关打开时改在**独立窗口**打开（已开则复用换路由）；
+  // 列表 → 详情的统一跳转（带上封面与片名）
+  //   片名兜底：部分源详情接口不返回 vod_name，详情页用它显示标题/查 TMDb
+  // 外观开关打开时改在**独立窗口**打开（已开则复用换路由）；
   //   本窗口本身就是详情窗口时始终本窗口内跳（相关推荐/演员链不另开窗）。
   const openDetail = (k: string, id: string, pic?: string, name?: string) => {
     const qs = new URLSearchParams();
@@ -599,7 +606,7 @@ function AppShell() {
   if (isPlayerWin) {
     // 独立播放器窗口：仅播放界面（无侧栏）；标题栏由 PlayerPage 内联渲染（标题=当前集）
     return (
-      // ★ 2026-10-08：额外挂 `pvwin` 类 —— 豆风皮肤的**独立详情窗口**同样复用 `.app.pwin`，
+      // 额外挂 `pvwin` 类 —— 豆风皮肤的**独立详情窗口**同样复用 `.app.pwin`，
       //   但它是浅色页面（顶栏 + 内容）；只有真正的播放器窗口需要深色壳（见 douban.css）。
       <div className="app pwin pvwin">
         {disclaim && DisclaimerModal}
@@ -613,24 +620,24 @@ function AppShell() {
   }
 
   /**
-   * 路由表（★ 2026-09-29：抽成数组 —— 三套外壳与辅助窗口**共用同一份**，避免漏改）。
-   * ★ 2026-10-15：抽成「路径 + 元素」数组，主界面与辅助窗口两种挂载方式复用同一份路由。
+   * 路由表（抽成数组 —— 三套外壳与辅助窗口**共用同一份**，避免漏改）。
+   * 抽成「路径 + 元素」数组，主界面与辅助窗口两种挂载方式复用同一份路由。
    */
   const routeDefs: Array<{ path: string; el: React.ReactElement }> = [
-    // ★ 2026-09-24（用户定稿）：「发现」= 默认首页（软件打开即进这里）；「点播」= 源主页 /home
+    // 「发现」= 默认首页（软件打开即进这里）；「点播」= 源主页 /home
     { path: '/', el: <DiscoverPage /> },
     { path: '/home', el: <HomePage onOpenDetail={openDetail} /> },
     /**
-     * ★ 2026-09-24：全源搜索专用路由 —— 详情页「演员/相关推荐」与发现页卡片点击后跳这里，
+     * 全源搜索专用路由 —— 详情页「演员/相关推荐」与发现页卡片点击后跳这里，
      * 由 HomePage 读 `?agg=<关键词>` 自动执行一次全源搜索。
      */
     { path: '/search', el: <HomePage onOpenDetail={openDetail} /> },
     { path: '/history', el: <HistoryPage /> },
-    // ★ 2026-10-17（用户要求）：收藏列表（增删改查）
+    // 收藏列表（增删改查）
     { path: '/favorites', el: <FavoritesPage /> },
     { path: '/detail/:key/:id', el: <DetailPage onPlay={onDetailPlay} /> },
     { path: '/live', el: <LivePage /> },
-    // ★ 2026-09-29：WebDAV 存储（只读）—— 浏览自建 OpenList/AList/Nextcloud 等并播放
+    // WebDAV 存储（只读）—— 浏览自建 OpenList/AList/Nextcloud 等并播放
     { path: '/storage', el: <StoragePage /> },
     { path: '/config', el: <ConfigPage /> },
     { path: '/about', el: <AboutPage /> },
@@ -638,8 +645,8 @@ function AppShell() {
   const routeChildren = routeDefs.map((d) => <Route key={d.path} path={d.path} element={d.el} />);
 
   /**
-   * ★ 辅助窗口（详情 / 搜索）用的一次性路由：每次切路由重挂 + 过渡动画。
-   * ★ 2026-09-24（用户定稿）：布局路由 PageShell 以 pathname 为 key，切页时容器重建并播放一次动画。
+   * 辅助窗口（详情 / 搜索）用的一次性路由：每次切路由重挂 + 过渡动画。
+   * 布局路由 PageShell 以 pathname 为 key，切页时容器重建并播放一次动画。
    */
   const routesNode = (
     <Routes>
@@ -648,12 +655,12 @@ function AppShell() {
   );
 
   /**
-   * ★ 主界面用的**伪墓碑**路由（见 KeepAliveRoutes）：切页保持挂载、仅隐藏，返回零重载。
+   * 主界面用的**伪墓碑**路由（见 KeepAliveRoutes）：切页保持挂载、仅隐藏，返回零重载。
    */
   const mainRoutesNode = <KeepAliveRoutes>{routeChildren}</KeepAliveRoutes>;
 
   /**
-   * ★ 2026-10-08（用户要求「详情页独立窗口」）：详情窗口 = **无侧栏的极简外壳**（与 `#/player` 同款），
+   * 详情窗口 = **无侧栏的极简外壳**（与 `#/player` 同款），
    *   但路由仍用共享的 routesNode —— 详情页里的「演员 / 相关推荐」会跳 `/search`、其他页面也都可用
    *   （若只放 `/detail` 一条路由，这些跳转会落空白页；页面自身的 topbar 提供各自导航）。
    *   本窗口身份由 hash 的 `dw=1` 决定（见 lib/detailWin.ts）：只写历史/进度、返回=关窗。
@@ -672,7 +679,7 @@ function AppShell() {
   }
 
   /**
-   * ★ 2026-09-29：Apple（macOS / Liquid Glass）专属外壳 —— 窗口结构按 macOS 原生应用重排：
+   * Apple（macOS / Liquid Glass）专属外壳 —— 窗口结构按 macOS 原生应用重排
    *   ① 顶部**全宽统一工具栏**（交通灯左置 → 返回箭头 → 页面标题 → 右侧搜索 + 换源），
    *      整条可拖拽窗口（-webkit-app-region: drag，交互元素 no-drag）；
    *   ② 下方为「玻璃侧边栏 + 内容区」双栏（侧边栏分组 + 侧边栏底部当前源）。
@@ -721,7 +728,7 @@ function AppShell() {
   }
 
   /**
-   * ★ 2026-10-16：**哔哔专属外壳**（双行头：搜索行 + 分类 tab 条；样式全部在 bilibili.css）。
+   * **哔哔专属外壳**（双行头：搜索行 + 分类 tab 条；样式全部在 bilibili.css）。
    *   与其余三套外壳的分工：netflix = 满幅渐变浮层压在 billboard 上；大果 = 侧边栏 + 工具栏；
    *   大豆 = 顶栏 + 胶囊导航条 + 右下浮动钮。四者形态互不相同 —— 这是「大改」的骨架层落点。
    */
@@ -756,7 +763,7 @@ function AppShell() {
   }
 
   /**
-   * ★ 2026-10-08（用户要求「照参考图做一套外观，允许大改 UI 布局」）：**豆风独立外壳**
+   * **豆风独立外壳**
    *   （Material You × 豆瓣；样式全部在 douban.css）：
    *   ① `.db-head` = 顶栏（深蓝品牌胶囊「WIN-BOX」+ 页面标题 + 搜索/换源 + 窗口控制）＋ 胶囊导航条；
    *   ② `.db-main` = 路由内容（页面自身 topbar / 网格 / 卡片照常，配色由皮肤转浅）；
@@ -773,7 +780,7 @@ function AppShell() {
               WIN-BOX
             </span>
             <span className="db-title">{pageTitle}</span>
-            {/* ★ 2026-10-08：M3 搜索条 —— 直接占顶栏中段（原来只有右上角一个小胶囊） */}
+            {/* M3 搜索条 —— 直接占顶栏中段（原来只有右上角一个小胶囊） */}
             <SearchPanel bar />
             <span className="db-spacer" />
             <SourcePicker />
@@ -799,7 +806,7 @@ function AppShell() {
       <AppAmbient />
       {disclaim && DisclaimerModal}
       <main className="main">
-        {/* ★ 2026-09-24：**一体化顶栏** —— 网飝 / 哔哔把标题栏（窗口控制）并进导航条同一行，
+        {/* **一体化顶栏** —— 网飝 / 哔哔把标题栏（窗口控制）并进导航条同一行，
             不再单独占一行（此前隐藏标题文字后 space-between 把按钮挤到左上，且看起来像两行） */}
         <nav className="nf-nav">
           <span className="nf-logo">WIN-BOX</span>
@@ -809,7 +816,7 @@ function AppShell() {
             </NavLink>
           ))}
           <span className="nf-spacer" />
-          {/* ★ 2026-09-24：右上角搜索按钮（面板含热搜 + 自动联想）与「源名纯文字」换源入口 */}
+          {/* 右上角搜索按钮（面板含热搜 + 自动联想）与「源名纯文字」换源入口 */}
           <SearchPanel />
           <SourcePicker />
           <TitleBar />

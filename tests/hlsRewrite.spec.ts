@@ -1,6 +1,6 @@
 // tests/hlsRewrite.spec.ts — HLS 清单重写（本地中继）的纯函数回归。
 //
-// ★ 背景（2026-09-23 用户报「py 源播放：HLS播放失败：KeyLoadError」）：
+// 背景（「py 源播放：HLS播放失败：KeyLoadError」）：
 //   AES-128 加密流的密钥地址写在 `#EXT-X-KEY:...URI="..."`，它是**注释行**，
 //   此前重写逻辑只处理「非注释行的分片地址」→ 密钥地址原样透传：
 //     · 相对 URI（如 `key.bin`）被 hls.js 按**中继地址**解析 → http://127.0.0.1:9978/key.bin（404）；
@@ -93,8 +93,8 @@ describe('rewriteM3u8 — 加密流密钥地址（KeyLoadError 修复）', () =>
   });
 });
 
-// ★ 2026-10-08（用户报「橘汁4K · jd4k 点开就提示已播放完毕」）：jpg 伪装分片识别（[JPEG 缩略图][真 TS]）。
-describe('jpegPreludeLen / isTsAligned — jpg 伪装分片（jd4k）识别', () => {
+// jpg 伪装分片识别（[JPEG 缩略图][真 TS]）。
+describe('jpegPreludeLen / isTsAligned — jpg 伪装分片（某 4K 线路）识别', () => {
   /** 造一段 TS 载荷：每个 188 包首字节 0x47，其余填 0xAA */
   const tsPayload = (packets: number): Buffer => {
     const b = Buffer.alloc(188 * packets, 0xaa);
@@ -196,7 +196,7 @@ describe('imagePreludeLen — PNG 伪装分片识别', () => {
   });
 });
 
-describe('imagePreludeLen — 摸鱼儿 WebP TS_D 分片', () => {
+describe('imagePreludeLen — 部分源 WebP TS_D 分片', () => {
   const chunk = (type: string, data: Buffer): Buffer => {
     const header = Buffer.alloc(8); header.write(type); header.writeUInt32LE(data.length, 4);
     return Buffer.concat([header, data, ...(data.length & 1 ? [Buffer.alloc(1)] : [])]);

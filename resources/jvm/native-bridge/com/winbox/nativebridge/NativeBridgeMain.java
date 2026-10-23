@@ -18,7 +18,7 @@ import java.util.Map;
  * 成功返回人话报告，并把改写产物写到 outDir（调用方须把 outDir 排在 URL 最前）。
  * 失败抛异常：调用方按「无原生桥」降级（jar 原样加载）并清掉 outDir，避免旧产物遮蔽新 jar。
  *
- * ★ 并发（一 jar 多源：摸鱼 115 个源共用一只 jar → 池会并行起多个进程）：
+ * 并发（一 jar 多源：某第三方源 115 个源共用一只 jar → 池会并行起多个进程）：
  *   多个进程会对**同一 outDir** 调 prepare。这里用「状态戳 + 跨进程文件锁」保证
  *   同一 jar 状态只改写一次，其余进程直接复用 —— 否则会出现
  *   「A 进程正在载入类、B 进程刚把目录删掉重写」的半成品读取（类缺失/格式错）。
@@ -26,7 +26,7 @@ import java.util.Map;
 public final class NativeBridgeMain {
 
     /**
-     * ★ 桥 / 改写器版本号：**改写逻辑或产物格式一变就 +1**。
+     * 桥 / 改写器版本号：**改写逻辑或产物格式一变就 +1**。
      * 它参与状态键，用于让磁盘上的旧改写产物失效 —— 否则升级后
      * （jar 体积/时间、.so、改写计划都没变）会直接复用旧产物，修好的逻辑不生效。
      * rev3 = `.so` 落地改「同内容复用 + 内容寻址兜底」（修多进程 mmap 覆盖失败，见 NativeBridge.landSo）。
@@ -36,7 +36,7 @@ public final class NativeBridgeMain {
     private static final int BRIDGE_REV = 5;
 
     /**
-     * ★ 载荷补丁版本号（改写逻辑或产物格式一变就 +1）：解密 dex 的产物补丁参与状态键，
+     * 载荷补丁版本号（改写逻辑或产物格式一变就 +1）：解密 dex 的产物补丁参与状态键，
      * 否则升级后（jar 体积/时间没变）会复用旧补丁，修好的逻辑不生效。
      * rev1 = 载荷层首版：全量 native → `NativeBridge.invokePayload`；`System.load(String)` → `bridgeLoad`。
      * rev2 = `<clinit>` 改名 + 合成受保护的新 `<clinit>`（缺库不再抛 ExceptionInInitializerError，失败点前移到调用处）。
@@ -48,7 +48,7 @@ public final class NativeBridgeMain {
     }
 
     /**
-     * ★ 2026-09-27（实测「第一次进源必空」修复）：只把「惰性初始化上下文」重新登记给桥。
+     * （实测「第一次进源必空」修复）：只把「惰性初始化上下文」重新登记给桥。
      *
      * <p>调用方纪律（勿回退）：改写产物要**先写好、再建正式 URLClassLoader** —— 反序时
      * URLClassLoader 对目录 URL 会缓存一次（当时还是空目录的）列表，改写类「写好了却加载不到」，
@@ -62,7 +62,7 @@ public final class NativeBridgeMain {
     }
 
     /**
-     * ★★ 2026-09-27（实测「第一次进源必空」第二环，勿回退）★★
+     * （实测「第一次进源必空」第二环，勿回退）
      * 用**正式加载器**重新初始化桥（`NativeBridge.init` 可重入）。
      *
      * <p>背景：改写产物必须「先写好、再建正式 URLClassLoader」（见 {@link #arm} 注释），
@@ -93,9 +93,9 @@ public final class NativeBridgeMain {
             throw new IllegalStateException("原生运行时缺失（unidbg 不在 classpath）");
         }
 
-        // ★★ 廉价键（不启模拟器、不扫描 11MB jar）：桥版本 + jar 体积/时间 + .so 身份。
+        // 廉价键（不启模拟器、不扫描 11MB jar）：桥版本 + jar 体积/时间 + .so 身份。
         //    它命中就说明「改写产物仍然有效」——直接复用，模拟器推迟到首次原生调用（见 NativeBridge.ensureInit）。
-        //    真机实测：整条 10s 初始化里，模拟器启动 + jar 扫描 + 注册占绝对大头，而多数源全程不调 native。
+        //    实测：整条 10s 初始化里，模拟器启动 + jar 扫描 + 注册占绝对大头，而多数源全程不调 native。
         String[] soId = NativeBridge.soIdentity(jar);
         String cheap = BRIDGE_REV + "/" + jar.length() + "/" + jar.lastModified() + "/" + soId[0] + "/" + soId[1];
 
@@ -133,10 +133,10 @@ public final class NativeBridgeMain {
     }
 
     /**
-     * ★★ 2026-09-27（壳通解·载荷层）：给**运行时 dex 产物**打载荷补丁。
+     * （壳通解·载荷层）：给**运行时 dex 产物**打载荷补丁。
      *
      * <p>背景：壳把 assets 解密成明文 dex，dex 里的真实蜘蛛类自带 ARM native
-     * （wex：`LoadNiMa`/`MyCrypto`/`GoProxy`）。它们的 `<clinit>` 自己 `System.load(绝对路径)`
+     * （某第三方源：`LoadNiMa`/`MyCrypto`/`GoProxy`）。它们的 `<clinit>` 自己 `System.load(绝对路径)`
      * → 宿主 x64 抛 `UnsatisfiedLinkError` → `ExceptionInInitializerError` → 主页全空。
      * 补丁做两件事（见 NativePatcher.patchPayload）：native → `NativeBridge.invokePayload`，
      * `System.load(String)` → `NativeBridge.bridgeLoad(path)`（把 ARM .so 装进模拟器）。

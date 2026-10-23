@@ -1,6 +1,6 @@
 // src/main/net/qr/casQr.ts — 夸克/UC 共用的 CAS 扫码登录实现（禁止复制粘贴，参数化复用）。
 //
-// 协议（来自 woleigedouer/cookie-butler lib/platforms/{quark,uc}.js，未在本机对真实网络实测）：
+// 协议（来自 woleigedouer/cookie-butler lib/platforms/{quark,uc}.js，未对真实网络实测）：
 //   1) 取 token：  GET  {casBase}/getTokenForQrcodeLogin?client_id={id}&v={ver}
 //                  → { data: { members: { token } } }
 //      二维码文本 = qrUrlTemplate（含 {token}/{clientId} 占位）
@@ -155,7 +155,7 @@ export async function casQrPoll(
 
   const q = new URLSearchParams({ client_id: cfg.clientId, v: cfg.version, token: s.token });
   const h = { ...baseHeaders(cfg) };
-  // ★ 轮询时带上建会话时捕获的初始 Cookie，维持同一 CAS 会话，
+  // 轮询时带上建会话时捕获的初始 Cookie，维持同一 CAS 会话，
   //   避免「扫码后立即判定过期」（部分场景下 CAS 会话按 Cookie 关联）。
   if (s.cookie) h['Cookie'] = s.cookie;
   const res = await http.request({

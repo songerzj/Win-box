@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * AsyncTask stub —— ★ 2026-09-27 新补（真机取证：wex 玩偶的 `detailContent` 取详情时用它）。
+ * AsyncTask stub —— 新补（实测：某第三方源的 `detailContent` 取详情时用它）。
  *
  * <p>缺这个类的表现：`java.lang.ClassNotFoundException: android.os.AsyncTask`
  * （在类链接期炸 → 整个详情页失败；补上后详情/播放链路才完整）。

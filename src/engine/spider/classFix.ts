@@ -1,11 +1,11 @@
 // src/engine/spider/classFix.ts
-// ★★ 2026-09-30（用户报「除饭太硬外其他接口的『盘搜』类型源搜索出来的结果无法正常展示详情」）：
+// （部分源的「盘搜」类型源搜索结果无法正常展示详情）
 //   转换产物（dex2jar）里存在**自递归 `invokespecial`** —— DEX 的
 //     `invoke-super {p0, …}, L<当前类>;->m(…)`（即源码里的 `super.m(...)`，该方法声明在**更上层**的祖先类）
 //   被 dex2jar 原样转成 `invokespecial <当前类>.m` —— JVM 解析后指向**方法自身** ⇒ 无限递归 ⇒
 //   `StackOverflowError`。
 //
-//   实测（潇洒订阅 sun.json 的全局 jar）：`com.github.catvod.spider.Pan.init` 里就这一处，
+//   实测（部分源订阅的全局 jar）：`com.github.catvod.spider.Pan.init` 里就这一处，
 //   而 `MiPan / PanSou / Baiku / KuLe / QuPanSo / GuiGui / AiPan / KKPan / RenRen / Jike / ShuangXing /
 //   Yidong4K / 4KZhinan` 等**整族盘搜蜘蛛**的 `init` 都调 `super.init(...)` ⇒ 一进来就栈溢出 ⇒
 //   全族源「搜都搜不出来」。
@@ -59,11 +59,11 @@ export interface ClassInfo {
 
 /** 指令长度表（tableswitch / lookupswitch / wide 特判；其余按 JVM 规范）。
  *
- * ★★ 2026-10-08（用户报「打开就卡死/闪退」的真根因，勿回退）：**长度必须恒 ≥ 1**。
+ * （「打开就卡死/闪退」的真根因，勿回退）：**长度必须恒 ≥ 1**。
  *   畸形/错位字节码里 `tableswitch` 的 `hi < lo`、`lookupswitch` 的 `n < 0` 都会让旧实现
  *   算出**负数长度**，调用方 `i += len` 原地打转 ⇒ **死循环**（实测：某 227KB 混淆类
  *   `merge/A/f1.class` 必现）—— 而这条链跑在**主进程**（jar 收编 → classFix），
- *   一旦命中整个应用冻结、且产物永远收编不完 ⇒ 每次启动都在同一处卡死（用户侧「崩溃」）。
+ * 一旦命中整个应用冻结、且产物永远收编不完 ⇒ 每次启动都在同一处卡死。
  *   宁可漏修（解析错位后本就不该误改），绝不卡死：一律钳到 ≥1 保证扫描单调前进。
  */
 export function instrLen(code: Buffer, i: number): number {
@@ -194,7 +194,7 @@ export function parseClassBytes(input: Buffer): ClassInfo {
         if (op === 0xb6 || op === 0xb7 || op === 0xb8 || op === 0xb9) {
           m.invokes.push({ op, ref: codeBuf.readUInt16BE(i + 1) });
         }
-        // ★ 2026-10-08：长度一律 ≥1（见 instrLen 头注释）—— 这里再钳一道，任何未来分支都不许原地打转
+        // 长度一律 ≥1（见 instrLen 头注释）—— 这里再钳一道，任何未来分支都不许原地打转
         i += len > 0 ? len : 1;
       }
     }

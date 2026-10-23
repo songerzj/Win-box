@@ -6,7 +6,7 @@
 //     ③ `contributes.mpv.shaders` 声明的着色器必须**真实随包**于 `files/<name>`。
 // 事实源：docs/design/插件制作规范.md §3；设计文档 §3.1。
 //
-// ★ 与宿主契约一致：本文件不重复白名单/字段规则，一律**委托** validatePluginManifest。
+// 与宿主契约一致：本文件不重复白名单/字段规则，一律**委托** validatePluginManifest。
 
 import { validatePluginManifest, isSafeRelPath, type PluginManifest, type PluginReasonCode } from './plugin';
 

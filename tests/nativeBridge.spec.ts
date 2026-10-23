@@ -1,9 +1,9 @@
-// tests/nativeBridge.spec.ts — 2026-09-26 ARM 原生桥（unidbg）在 JarSpiderBridge 侧的行为：
+// tests/nativeBridge.spec.ts — ARM 原生桥（unidbg）在 JarSpiderBridge 侧的行为
 //   ① 未配置 nativeRuntimeDir → 不注入任何原生桥参数（普通源 argv 与历史完全一致）；
 //   ② 配置了目录 + jar 内含 .so + 运行时齐备 → classpath 拼上 [native-bridge.jar, ...运行时 jar]
 //      并透传 -Dtvbox.native.work / -Dtvbox.native.patch；
 //   ③ 配置了目录但 jar 内无 .so → 不启用（不做任何下载/注入）；
-//   ④ ★ 2026-09-29：守卫壳「内层蜘蛛为空」NPE → 自动改走 shell-shim 真实实现重试（第二次 argv 不带原生桥）。
+// ④ 守卫壳「内层蜘蛛为空」NPE → 自动改走 shell-shim 真实实现重试（第二次 argv 不带原生桥）。
 // 只 mock child_process.spawn（不触网、不跑真 JVM），断言 argv/classpath 形状。
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'node:events';
@@ -129,7 +129,7 @@ describe('JarSpiderBridge.call — ARM 原生桥接入', () => {
     const cp = classpathOf(argv);
     expect(cp).toContain(join(dir, 'native-bridge', 'native-bridge.jar'));
     expect(cp).toContain(join(rt, 'unidbg-0.9.9', 'unidbg-android-0.9.9.jar'));
-    // 2026-09-28 FishGuard 壳性能专项：dynarmic 是桥的默认后端，运行时必须带上它（否则回退 Unicorn2 → 慢 15~20 倍）
+    // 某加固壳性能专项：dynarmic 是桥的默认后端，运行时必须带上它（否则回退 Unicorn2 → 慢 15~20 倍）
     expect(cp).toContain(join(rt, 'unidbg-0.9.9', 'unidbg-dynarmic-0.9.9.jar'));
     expect(cp).toContain(join(rt, 'unidbg-0.9.9', 'asm-9.7.jar'));
   });
@@ -245,7 +245,7 @@ describe('JarSpiderBridge.call — 原生桥 jar 缺失必须可见', () => {
   });
 });
 
-// ── ★ 2026-09-29 守卫空 NPE 兜底：原生路线失败 → 自动改走 shell-shim 真实实现 ──
+// ── 守卫空 NPE 兜底：原生路线失败 → 自动改走 shell-shim 真实实现 ──
 describe('JarSpiderBridge.call — 守卫内层蜘蛛为空 → shell-shim 兜底', () => {
   let dirs: string[] = [];
 
@@ -276,7 +276,7 @@ describe('JarSpiderBridge.call — 守卫内层蜘蛛为空 → shell-shim 兜�
     const { bridge, dir } = makeBridge({ nativeRuntimeDir: rt });
     dirs.push(dir);
     writeFileSync(join(dir, 'stubs', 'shell-shim.jar'), 'stub-shim');
-    // 壳 jar：含 .so（触发原生桥）+ assets/ftyshinidie.guard（触发 shell-shim 自动适配）
+    // 壳 jar：含 .so（触发原生桥）+ assets/某壳产物.guard（触发 shell-shim 自动适配）
     const jar = join(dir, 'guard.jar');
     writeFileSync(jar, buildZip([
       { name: 'assets/FishGuard-v8.so', bytes: Buffer.from([0x7f, 0x45, 0x4c, 0x46]) },
@@ -362,16 +362,16 @@ describe('extractBridgeNotes — 原生桥消息抽取', () => {
     expect(/失败|降级|不可用/.test(extractBridgeNotes('[native-bridge] 准备失败，按无原生桥降级: x')[0])).toBe(true);
   });
 
-  // ★ 2026-09-29：shell-shim 影子类的说话行要能上屏（此前只在 debug 开关下打印，设备侧「守卫空 NPE」零线索）
+  // shell-shim 影子类的说话行要能上屏（此前只在 debug 开关下打印，设备侧「守卫空 NPE」零线索）
   it('抽出 shell-shim 影子行（getSpider 无真实实现可加载 → 返回 null）', () => {
     const notes = extractBridgeNotes('[ShellShim] getSpider(com.github.catvod.spider.DouDouGuard) 无真实实现可加载 → 返回 null');
     expect(notes).toHaveLength(1);
     expect(notes[0]).toContain('无真实实现可加载');
   });
 
-  // ★ 2026-10-09（孤儿端口排查）：.8 的 [baidu-state] 探针与 [host-proxy] 说话行必须能上屏 ——
+  // （孤儿端口排查）：.8 的 [baidu-state] 探针与 [host-proxy] 说话行必须能上屏 ——
   //   此前不在白名单，serve 进程 stderr 里被静默丢弃（真机「无探针输出」的真因，
-  //   本地直跑 stubs.jar 看得到、经桥看不到，第十轮日志因此误判为孤儿 JVM）。
+  //   本地直跑 stubs.jar 看得到、经桥看不到，日志因此误判为孤儿 JVM）。
   it('抽出 baidu-state 探针与 host-proxy 行（探针可见性）', () => {
     const notes = extractBridgeNotes(
       '[baidu-state] shareFsIdMap=n=16 {1a6ELVSV…→3个fsid} bdclndMap=keys=[] ukMap=keys=[] cookie=len:1239',
@@ -384,7 +384,7 @@ describe('extractBridgeNotes — 原生桥消息抽取', () => {
   });
 });
 
-// ── ★ 2026-09-29：守卫空 NPE 判据（原因上屏会截断到 120 字符，判据只取方法签名） ──
+// ── 守卫空 NPE 判据（原因上屏会截断到 120 字符，判据只取方法签名） ──
 describe('isGuardInnerSpiderNull — 失败原因判据', () => {
   it('命中：原始 NPE 与截断后的 120 字符文本、以及翻译后的中文原因', () => {
     const raw = 'java.lang.NullPointerException: Cannot invoke "com.github.catvod.crawler.Spider.init(android.content.Context, String)" because "this.oOoOoOoOoOoOoO0o" is null';

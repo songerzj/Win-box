@@ -3,7 +3,7 @@ package dalvik.system;
 /**
  * dalvik.system.VMRuntime stub —— Android 隐藏 API（Art 运行时查询）。
  *
- * ★ 2026-09-26 新增（壳类来源取证，勿删）：加固壳装 SO 前会
+ * 新增（壳类来源实测，勿删）：加固壳装 SO 前会
  *   {@code Class.forName("dalvik.system.VMRuntime")} 取 {@code getRuntime()} 再调
  *   {@code vmInstructionSet()/is64Bit()}，据此在 assets 里**挑 v7/v8 两个 .so**。
  *   宿主没有这个类 → 反射链拿不到 Method → 壳内 VM {@code invoke(null)} → NPE（message 为 null），

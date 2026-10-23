@@ -1,5 +1,5 @@
 // src/main/danmaku/logvarProvider.ts
-// ★ 2026-09-26：**外部弹幕接口**（LogVar / 御坂 / 炊烟袅袅 等自建服务）。
+// **外部弹幕接口**（LogVar / 御坂 / 炊烟袅袅 等自建服务）。
 //   实测协议：{base}/api/v2/search/anime?keyword= → /api/v2/bangumi/{animeId}
 //   → /api/v2/comment/{episodeId}?format=xml（B 站格式，交引擎 parseDanmakuResponse 解析）。
 //   公开清单里死链/401 很常见 → 每次失败记**会话级冷却**，后续搜索直接跳过，不拖慢整体。
@@ -14,7 +14,7 @@ const MAX_REDIRECTS = 3;
 
 /**
  * 单接口默认超时：搜索/剧集 8s、弹幕 40s。
- * ★ 2026-10-18（用户报「有时搜不到弹幕」）：实测「炊烟袅袅」首次取弹幕要回源聚合，
+ * 实测「炊烟袅袅」首次取弹幕要回源聚合，
  *   正常集 6~24s（第4集 23.6s），慢集直接 >30s；旧值 25s 太紧 —— 正常集也会被判超时 → 空结果。
  *   抬高到 40s（该源失败会记会话冷却，不会反复白等）。
  */
@@ -106,7 +106,7 @@ export function parseEndpointEpisodes(
     const e = raw as Record<string, unknown>;
     const id = Number(e.episodeId);
     if (!Number.isFinite(id)) continue;
-    // ★ 2026-09-29：接口的集号字段（`episodeNumber`，数字或数字串）——tencent 等条目标题可能不提集号
+    // 接口的集号字段（`episodeNumber`，数字或数字串）——tencent 等条目标题可能不提集号
     const epNumRaw = e.episodeNumber ?? e.episode_number;
     const epNum = epNumRaw == null ? '' : String(epNumRaw).trim();
     out.push({

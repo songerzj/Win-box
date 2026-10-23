@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Handler stub：桌面移植版没有 Android 主线程 Looper，用单线程调度器等价实现。
  *
- * ★ 历史缺陷（2026-09-10 修复）：旧实现对 post/postDelayed 直接同步 `runnable.run()`，
+ * 历史缺陷（修复）：旧实现对 post/postDelayed 直接同步 `runnable.run()`，
  *   而大量蜘蛛用「run() 里再次 postDelayed(this)」做定时轮询 → 同步执行会无限递归
  *   → StackOverflowError（表现为「蜘蛛返回空结果」）。
  *   现改为交由后台调度线程异步执行，语义贴近 Android 主线程消息队列。
@@ -58,7 +58,7 @@ public class Handler {
     public static boolean isMainThread() { return false; }
 
     // ── 消息 API ────────────────────────────────────────────────────────
-    // ★ 这些方法此前缺失：蜘蛛惯用 sendEmptyMessageDelayed(what, delay) 做轮询，
+    // 这些方法此前缺失：蜘蛛惯用 sendEmptyMessageDelayed(what, delay) 做轮询，
     //   少了它们就是 NoSuchMethodError（在类链接期炸，日志里只看到蜘蛛初始化失败）。
 
     /**

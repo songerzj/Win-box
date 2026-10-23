@@ -1,5 +1,5 @@
 // src/main/webbridge/webhomePreload.ts
-// ★ 2026-09-29（用户要求）：网页源窗口的 preload —— 向页面注入 `window.fm`（FongMi 桥）与 `window.fongmiClient`。
+// 网页源窗口的 preload —— 向页面注入 `window.fm`（FongMi 桥）与 `window.fongmiClient`。
 //
 // 页面（本地包 html/*.html）在脚本开头就会探测 `window.fm && typeof window.fm.req === 'function'`
 // 并监听 `fmsdk` 事件，所以注入必须在**页面脚本之前**完成（preload 天然满足）。
@@ -53,7 +53,7 @@ const CACHE_PREFIX = 'winbox-fm:';
 const fm = {
   /**
    * 宿主代发请求（绕开 CORS；credentials!=='omit' 时带会话 Cookie）。
-   * ★ 桥本身失败不能抛给页面（页面只认 `{ok,status,body}`）→ 统一转成 `ok:false` 的结果。
+   * 桥本身失败不能抛给页面（页面只认 `{ok,status,body}`）→ 统一转成 `ok:false` 的结果。
    */
   req: async (url: string, opts?: Record<string, unknown>): Promise<FmReqResult> => {
     try {

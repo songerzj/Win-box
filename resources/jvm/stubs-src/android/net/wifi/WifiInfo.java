@@ -1,7 +1,7 @@
 package android.net.wifi;
 
 /**
- * WifiInfo stub —— 与 {@link WifiManager} 配套（wex 指纹助手要 `getIpAddress()`）。
+ * WifiInfo stub —— 与 {@link WifiManager} 配套（某第三方源指纹助手要 `getIpAddress()`）。
  * 其余取值给**稳定常量**（Android 6+ 无权限时真实设备也返回这些占位值）。
  */
 public class WifiInfo {

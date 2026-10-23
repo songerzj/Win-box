@@ -16,9 +16,9 @@ import DriveBindModal from '../components/DriveBindModal';
 import { playbackResultError } from '../../shared/playbackResult';
 
 /**
- * ★ 2026-09-26：本页只在**独立播放器窗口**运行（主窗口无 /player 路由）。
+ * 本页只在**独立播放器窗口**运行（主窗口无 /player 路由）。
  *   该窗口与主窗口共享同一份 localStorage，但自己持有一份启动时的 uiMem 快照 ——
- *   若整份写盘就会把主窗口已清掉的「上次搜索态」等旧值复活（用户症状：不在搜索页进的资源，
+ *   若整份写盘就会把主窗口已清掉的「上次搜索态」等旧值复活（现象：不在搜索页进的资源，
  *   返回列表却回到了上一次的搜索页）。这里声明「只写历史与进度」。
  */
 markHistoryOnlyWriter();
@@ -33,10 +33,10 @@ export interface PlayerInitData {
   lastUrl: string;
   lastName: string;
   meta?: { pic?: string; remarks?: string; sourceName?: string; vodId?: string; fromKey?: string; id?: string; profileId?: string };
-  /** ★ 历史续播：上次播放进度（秒），交给播放器自动 seek（详情页正常播放不传） */
+  /** 历史续播：上次播放进度（秒），交给播放器自动 seek（详情页正常播放不传） */
   startTime?: number;
   /**
-   * ★ 2026-09-28：主进程给每次 `player:init` 打的**单调序号**（见 PlayerWindow.pushInit）。
+   * 主进程给每次 `player:init` 打的**单调序号**（见 PlayerWindow.pushInit）。
    * 渲染层只接受序号更大的那次，丢弃旧解析晚到的 init（否则会把正在播放的新内容顶掉）。
    */
   initSeq?: number;
@@ -47,17 +47,17 @@ export default function PlayerPage() {
   const [epIndex, setEpIndex] = useState(0);
   const [activeUrl, setActiveUrl] = useState('');
   const [curName, setCurName] = useState('');
-  /** ★ 2026-10-15（用户要求）：不含集号的片名 —— 右键「详情信息」浮层显示用（只显示片名，不显示第几集） */
+  /** 不含集号的片名 —— 右键「详情信息」浮层显示用（只显示片名，不显示第几集） */
   const [playName, setPlayName] = useState('');
   const [resolution, setResolution] = useState('');
   const windowTitle = playerWindowTitle(curName, resolution);
   const [resolving, setResolving] = useState(false);
-  // ★ 网盘资源未绑定 cookie（主进程 play 检出）→ 传给播放器提示去配置页绑定
+  // 网盘资源未绑定 cookie（主进程 play 检出）→ 传给播放器提示去配置页绑定
   const [driveBind, setDriveBind] = useState<string | null>(null);
   // 小窗口模式（主进程改窗口尺寸后广播同步）
   const [mini, setMini] = useState(false);
   /**
-   * ★ 2026-10-08（用户要求「把置顶按钮从播放器下方取消，做到上方最小化按钮旁边，播放器下方的功能区太拥挤了」）：
+   * 
    *   置顶态上提到本页 —— 标题栏（最小化旁）与 mini 条共用同一份状态（按发起窗口生效，见 win:setAlwaysOnTop）。
    */
   const [pinTop, setPinTop] = useState(false);
@@ -69,10 +69,10 @@ export default function PlayerPage() {
   const togglePinTop = useCallback(() => {
     void client.winSetAlwaysOnTop(!pinTop).then((v) => setPinTop(!!v)).catch(() => undefined);
   }, [pinTop]);
-  /** ★ 2026-09-24：parse=1 且自动解析失败时的原因提示（上屏，替代原来的静默黑屏） */
+  /** parse=1 且自动解析失败时的原因提示（上屏，替代原来的静默黑屏） */
   const [parseMsg, setParseMsg] = useState('');
   const loadingRef = useRef(false);
-  /** ★ 2026-09-28：解析代数 —— 换集/换源后旧的 client.play 晚到必须作废（不覆盖新集的地址） */
+  /** 解析代数 —— 换集/换源后旧的 client.play 晚到必须作废（不覆盖新集的地址） */
   const resolveGen = useRef(makeStaleGuard());
   /** 已应用过的 init 序号（只接受更新的那次） */
   const initSeqRef = useRef(0);
@@ -82,9 +82,9 @@ export default function PlayerPage() {
     const eps = d.episodes;
     if (!eps || idx < 0 || idx >= eps.length) return;
     const target = eps[idx];
-    const gen = resolveGen.current.next(); // ★ 开一代：晚到的旧结果直接丢弃
-    // ★ 剧名副名优先用 subtitleTitle（详情页主标题）；回退 title；再回退 resourceName 首段
-    //   ★ 2026-09-24：集名统一归一（网盘源文件名 → 「第N集 · 体积」），标题/历史都好看
+    const gen = resolveGen.current.next(); // 开一代：晚到的旧结果直接丢弃
+    // 剧名副名优先用 subtitleTitle（详情页主标题）；回退 title；再回退 resourceName 首段
+    // 集名统一归一（网盘源文件名 → 「第N集 · 体积」），标题/历史都好看
     const mainTitle = (d.subtitleTitle || d.title || '').trim();
     const label = formatEpisodeLabel(target.name, idx);
     const display = mainTitle ? `${mainTitle} - ${label}` : label;
@@ -137,7 +137,7 @@ export default function PlayerPage() {
       vodId: d.meta?.vodId ?? d.meta?.id,
       time: d.startTime || 0,
     });
-    // ★ 立即落盘：历史由本（播放器）窗口写入，主窗口靠读 localStorage 同步；
+    // 立即落盘：历史由本（播放器）窗口写入，主窗口靠读 localStorage 同步；
     //   若等 schedulePersist 的 2s 防抖，用户快速切回历史页会读到过期/空数据。
     saveUiMemory();
   }, []);
@@ -201,7 +201,7 @@ export default function PlayerPage() {
   useEffect(() => {
     const offInit = client.playerOnInit((d) => {
       const incoming = d as PlayerInitData | undefined;
-      // ★ 2026-09-28：只接受序号更大的 init —— 旧解析晚到的那份不能顶掉正在播放的新内容
+      // 只接受序号更大的 init —— 旧解析晚到的那份不能顶掉正在播放的新内容
       if (!acceptInitSeq(initSeqRef.current, incoming?.initSeq)) return;
       initSeqRef.current = Math.max(initSeqRef.current, Number(incoming?.initSeq) || 0);
       loadingRef.current = false;
@@ -213,7 +213,7 @@ export default function PlayerPage() {
     });
     // 小窗口模式状态同步
     const offMini = client.playerOnMini((m) => setMini(m));
-    // ★ 2026-09-30：订阅就绪 → 通知主进程重发最新的 init。
+    // 订阅就绪 → 通知主进程重发最新的 init。
     //   新窗口的 `did-finish-load` 可能早于本次订阅（生产产物必现）→ 首推会丢、窗口停在「等待播放…」；
     //   重发的同一份带相同 initSeq，会被上面的 acceptInitSeq 判重忽略，不会重复应用。
     void client.playerReady().catch(() => undefined);
@@ -248,7 +248,7 @@ export default function PlayerPage() {
   const canNext = !!init && epIndex < eps.length - 1;
 
   /**
-   * ★ 2026-10-18（R10）：L4 插件 `winbox.player.*` 的**转发事件**（主进程 → 本窗口）。
+   * （R10）：L4 插件 `winbox.player.*` 的**转发事件**（主进程 → 本窗口）。
    *   插件不碰内核 —— 这里把它转成宿主既有的 `mpv:cmd` / 换集逻辑（与手动操作同一路径）。
    */
   useEffect(() => {
@@ -275,7 +275,7 @@ export default function PlayerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goEp, epIndex, eps.length]);
 
-  // ★★ 进度回写历史（与 PlayPage 对称）：读「播放直链」的 playTime，写到「原始 episode url」历史键。
+  // 进度回写历史（与 PlayPage 对称）：读「播放直链」的 playTime，写到「原始 episode url」历史键。
   //   历史键与直链键不同源 —— 只有这里定时回写，历史的 time 才会推进，下次续播才能 seek 新进度。
   const liveRef = useRef<{ raw: string; url: string; name: string; flag?: string; meta?: PlayerInitData['meta'] }>({ raw: '', url: '', name: '' });
   useEffect(() => {
@@ -284,7 +284,7 @@ export default function PlayerPage() {
   useEffect(() => {
     const raw = init?.episodes?.[epIndex]?.url || '';
     if (!raw || !activeUrl) return;
-    // ★ 2026-09-29：回写进度也带上来源/资源标识 —— 否则会被写成「按 url 记」的第二条
+    // 回写进度也带上来源/资源标识 —— 否则会被写成「按 url 记」的第二条
     //   （历史按 sourceKey+vodId 分组，同片多集只留一条）
     const hist = {
       flag: init?.flag,
@@ -305,13 +305,13 @@ export default function PlayerPage() {
           remarks: init?.episodes?.[epIndex]?.name,
           time: sec,
         });
-        // ★ 立即落盘：历史由本（播放器）窗口写入，主窗口历史页靠读 localStorage 同步
+        // 立即落盘：历史由本（播放器）窗口写入，主窗口历史页靠读 localStorage 同步
         saveUiMemory();
       }
     }, 5000);
     return () => clearInterval(t);
   }, [init, epIndex, activeUrl, curName]);
-  // ★ 卸载兜底：关窗口瞬间把「最新进度」写回历史（5s 定时器已被 clear，不能再丢最后一段进度）
+  // 卸载兜底：关窗口瞬间把「最新进度」写回历史（5s 定时器已被 clear，不能再丢最后一段进度）
   useEffect(() => {
     return () => {
       const c = liveRef.current;
@@ -339,13 +339,13 @@ export default function PlayerPage() {
 
   return (
     <>
-      {/* ★ 小窗口模式：不再渲染完整标题栏（那是用户看到的"边框"）——
+      {/* 小窗口模式：不再渲染完整标题栏（那是用户看到的"边框"）——
           改用一条 18px 细拖拽条：拖窗口、双击还原；按钮悬停才显形，最大限度让画面占满 */}
       {mini ? (
         <div className="mini-strip" onDoubleClick={() => void client.playerSetMini(false)}>
           <span className="mini-strip-title" title={windowTitle}>{windowTitle}</span>
           <div className="mini-strip-btns">
-            {/* ★ 2026-10-08（用户要求）：置顶按钮在 mini 条上（与标题栏同款）；开启态 accent 高亮 */}
+            {/* 置顶按钮在 mini 条上（与标题栏同款）；开启态 accent 高亮 */}
             <button
               className="mini-btn"
               style={pinTop ? { color: 'var(--accent)' } : undefined}
@@ -391,9 +391,9 @@ export default function PlayerPage() {
           onPinToggle={togglePinTop}
         />
       )}
-      {/* ★ 2026-09-26：这两层改用 CSS 类（`.pwin-body` / `.pwin-stage`）——内联样式没有
+      {/* 这两层改用 CSS 类（`.pwin-body` / `.pwin-stage`）——内联样式没有
           `min-height: 0`，flex 的默认 `min-height: auto` 会被视频固有比例撑高，
-          竖屏/超宽视频会把播放器整体顶出视口，底部控制条随之不可见（用户报的「下方 UI 消失」）。 */}
+          竖屏/超宽视频会把播放器整体顶出视口，底部控制条随之不可见（下方 UI 消失）。 */}
       <div className="pwin-body">
         {driveBind && (
           <DriveBindModal
@@ -420,29 +420,29 @@ export default function PlayerPage() {
               onResolutionChange={setResolution}
               danmakuTitle={((init?.subtitleTitle || init?.title) || '').trim()}
               driveBindProvider={driveBind}
-              // ★ 2026-09-29：在播放器里绑定网盘成功后自动重新解析当前集（不必手动重开播放窗口）
+              // 在播放器里绑定网盘成功后自动重新解析当前集（不必手动重开播放窗口）
               onDriveBound={() => {
                 setDriveBind(null);
                 if (init) void resolve(init, epIndex);
               }}
-              // ★ 历史续播：进度以历史记录为准（新直链与 playTime 旧键不匹配，须显式传入）
+              // 历史续播：进度以历史记录为准（新直链与 playTime 旧键不匹配，须显式传入）
               startTime={init?.startTime || 0}
               canPrev={canPrev}
               canNext={canNext}
               onPrev={() => goEp(epIndex - 1)}
               onNext={() => goEp(epIndex + 1)}
               mini={mini}
-              // ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容内核 —— 仅本窗口（transparent）可用
+              // MPV 高兼容内核 —— 仅本窗口（transparent）可用
               allowMpv
-              // ★ 2026-09-30：图集源（每「集」= 一张图）/ 音乐源 → 图片浏览器 / 音乐播放器显示页码与封面
+              // 图集源（每「集」= 一张图）/ 音乐源 → 图片浏览器 / 音乐播放器显示页码与封面
               epIndex={epIndex}
               epTotal={eps.length}
-              // ★ 2026-10-16（用户要求）：全屏播放器「选集」—— 传**本线路**的集列表（与 上一集/下一集 同一份）
+              // 全屏播放器「选集」—— 传**本线路**的集列表（与 上一集/下一集 同一份）
               //   从历史记录进入时 applyInit 会重新取详情把 eps 补全 ⇒ 这边同样可用
               episodes={eps}
               onPickEpisode={(idx) => goEp(idx)}
               cover={init?.meta?.pic}
-              // ★ 2026-10-08（用户要求）：跳过片头片尾 —— 资源键（与历史分组同口径）+ 本集键（原始 episode url）
+              // 跳过片头片尾 —— 资源键（与历史分组同口径）+ 本集键（原始 episode url）
               skipResourceKey={historyGroupKey({
                 sourceKey: init?.key,
                 vodId: init?.meta?.vodId ?? init?.meta?.id,

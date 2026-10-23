@@ -9,7 +9,7 @@ import android.util.DisplayMetrics;
  * {@code getDefaultDisplay()}；另常见 {@code getCurrentWindowMetrics()} /
  * {@code addView} / {@code removeView}（全屏自定义 View 用）。
  *
- * <p>★ 这是**能力入口类**，{@code getDefaultDisplay()} 绝不返回 null：
+ * <p>这是**能力入口类**，{@code getDefaultDisplay()} 绝不返回 null：
  * 内嵌库惯用 {@code wm.getDefaultDisplay().getRotation()} 链式调用，
  * 返回 null 就是 NPE（表现为蜘蛛内部异常，日志里看不出跟 stub 有关）。
  */

@@ -1,4 +1,4 @@
-// tests/epPager.spec.ts — 详情页剧集分页（★ 2026-09-30 用户要求：每页有上限、多的翻页）
+// tests/epPager.spec.ts — 详情页剧集分页（每页有上限、多的翻页）
 import { describe, expect, it } from 'vitest';
 import { EP_PAGE_SIZE, clampEpPage, epPageCount, epPageRanges, epPageSlice } from '../src/renderer/lib/epPager';
 

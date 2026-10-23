@@ -23,7 +23,7 @@ export class PySpider extends Spider {
   private ready = false;
   /** 准备期失败原因（脚本下载/缓存），优先于调用期原因 */
   private loadError = '';
-  /** ★ 后台预热进行中标记（幂等：预热失败时 prewarm 会再次触发，避免递归/重复下载） */
+  /** 后台预热进行中标记（幂等：预热失败时 prewarm 会再次触发，避免递归/重复下载） */
   private warmupRunning = false;
 
   constructor(init: SpiderInit, bridge: JarSpiderBridge) {
@@ -45,12 +45,12 @@ export class PySpider extends Spider {
   }
 
   /**
-   * ★ 预热常驻 Python（由 SpiderHost.prewarmSpiders 调度）：仅当脚本**已落盘**
+   * 预热常驻 Python（由 SpiderHost.prewarmSpiders 调度）：仅当脚本**已落盘**
    * （本地 .py 或已缓存的下载脚本）且嵌入式运行时已就绪时生效 —— 预热不触发任何下载。
    * @returns 实际新起的进程数
    */
   /**
-   * ★ 运行时就绪判定（同步）：脚本与嵌入式 Python 运行时都已落盘才算就绪。
+   * 运行时就绪判定（同步）：脚本与嵌入式 Python 运行时都已落盘才算就绪。
    * 'unavailable' = 还没就绪（全源搜索本次跳过；**绝不触发 11MB 运行时下载**，下载由正常单源使用触发）
    */
   runtimeState(): 'ready' | 'unavailable' {
@@ -75,7 +75,7 @@ export class PySpider extends Spider {
   }
 
   /**
-   * ★ 2026-09-24 后台预热（不阻塞、幂等）：由 SpiderHost 在配置就绪/清缓存后调度 ——
+   * 后台预热（不阻塞、幂等）：由 SpiderHost 在配置就绪/清缓存后调度 ——
    *   ① 脚本未落盘 → 后台下载（首次进源不再现付脚本下载）；
    *   ② 嵌入式 Python 运行时未就绪 → 后台下载 + 解压 + 装依赖（11MB 级，本项是「首次特别慢」的主因）；
    *   ③ 两者都就绪 → 顺带深度预热一个常驻进程（预建实例，含 init(ext)）。
@@ -110,12 +110,12 @@ export class PySpider extends Spider {
     } else if (/^https?:\/\//i.test(base)) {
       path = join(this.bridge.pyCacheDir, `${md5Hex(base)}.py`);
     }
-    // ★ 脚本/运行时尚未就绪 → 转入后台预热（脚本下载 + 运行时准备），本轮不新起进程
+    // 脚本/运行时尚未就绪 → 转入后台预热（脚本下载 + 运行时准备），本次不新起进程
     if (!path || !existsSync(path) || !this.bridge.pyRuntimeReady()) {
       this.warmup();
       return 0;
     }
-    // ★ 深度预热：同 Java 侧 —— 预建实例（含 init(ext)）进 python 侧实例缓存
+    // 深度预热：同 Java 侧 —— 预建实例（含 init(ext)）进 python 侧实例缓存
     return this.bridge.prewarmPython(path, this.clsName, count, enrichExt(this.ext || '', this.host?.driveTokens?.()), this.siteKey);
   }
 
@@ -124,7 +124,7 @@ export class PySpider extends Spider {
     if (this.ready) return true;
     try {
       const base = (this.api || '').split('?')[0];
-      // ★ 本地 .py 文件（file:// 前缀）：直接从磁盘读，不下载、不缓存副本
+      // 本地 .py 文件（file:// 前缀）：直接从磁盘读，不下载、不缓存副本
       if (base.startsWith('file://')) {
         let local: string;
         try {
@@ -180,7 +180,7 @@ export class PySpider extends Spider {
     try {
       return await this.bridge.callPython(this.pyPath, this.clsName, method, [this.enrichedExt(), ...args], timeoutMs, this.siteKey);
     } catch (e) {
-      // ★ 运行时缺失/下载失败 → 明确提示（不静默空结果）
+      // 运行时缺失/下载失败 → 明确提示（不静默空结果）
       throw new SourceProblemError(
         'PY_UNSUPPORTED',
         e instanceof Error ? e.message : String(e),

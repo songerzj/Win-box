@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.zip.*;
 
 /**
- * ★ 2026-09-27「载荷壳通解」：修 dex2jar 对 R8「去掉构造器」产物的**误译**。
+ * 「载荷壳通解」：修 dex2jar 对 R8「去掉构造器」产物的**误译**。
  *
  * <p>实测（新订阅 `9280.kstore.vip/newwex.json` 的解密 dex → 运行时产物 `83e6fefc…r*.jar`）：
  * dex2jar 有一条规则 —— **`new-instance X` 的 X 在 dex 里没有 `<init>` 时，它把 NEW 写成
@@ -19,7 +19,7 @@ import java.util.zip.*;
  *       → `InstantiationError`（b1.g.&lt;clinit&gt; 的适配器注册）；</li>
  *   <li>`new-instance Lw3/i; invoke-direct Ljava/lang/Object;-><init>()` → `NEW java/lang/Object`
  *       但随后 `INVOKEVIRTUAL w3/o.x(...)`（w3.i 的父类）→ JVM 硬崩
- *       （EXCEPTION_ACCESS_VIOLATION，hs_err 实证）；</li>
+ *       （EXCEPTION_ACCESS_VIOLATION，hs_err 实测）；</li>
  *   <li>`new-instance Ly0/q; invoke-direct Ljava/lang/RuntimeException;-><init>(…)` → `NEW java/lang/RuntimeException`。</li>
  * </ol>
  *
@@ -410,7 +410,7 @@ public final class DexJarRepair {
         Map<Integer, String> plan = new LinkedHashMap<Integer, String>();
         boolean[] used = new boolean[dex.size()];
         boolean[] done = new boolean[jar.size()];
-        // 第一轮：按「构造器签名」配对（dex2jar 不改构造器调用 → 免疫 new 单元重排；最可靠）
+        // 按「构造器签名」配对（dex2jar 不改构造器调用 → 免疫 new 单元重排；最可靠）
         for (int j = 0; j < jar.size(); j++) {
             Unit ju = jar.get(j);
             int hit = -1;
@@ -438,7 +438,7 @@ public final class DexJarRepair {
             Unit du = dex.get(hit);
             if (!du.type.equals(ju.type)) plan.put(j, du.type);
         }
-        // 第二轮：产物 NEW 落到 Object/抽象类（必然误译，签名也对不上时）→ 取下一个未用 dex 子类
+        // 产物 NEW 落到 Object/抽象类（必然误译，签名也对不上时）→ 取下一个未用 dex 子类
         for (int j = 0; j < jar.size(); j++) {
             if (done[j]) continue;
             Unit ju = jar.get(j);

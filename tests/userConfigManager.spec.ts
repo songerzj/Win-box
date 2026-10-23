@@ -52,7 +52,7 @@ afterEach(() => {
   dirs.length = 0;
 });
 
-describe('UserConfigManager — 变更类别（★ 2026-09-27 切源不再触发重活）', () => {
+describe('UserConfigManager — 变更类别（切源不再触发重活）', () => {
   /** 记录每次 onChange 的 kind */
   function spyKinds(m: UserConfigManager): string[] {
     const kinds: string[] = [];
@@ -60,7 +60,7 @@ describe('UserConfigManager — 变更类别（★ 2026-09-27 切源不再触发
     return kinds;
   }
 
-  it('★ setActiveSource / setActiveLiveIndex → kind = "ui"（宿主据此跳过热活）', () => {
+  it('setActiveSource / setActiveLiveIndex → kind = "ui"（宿主据此跳过热活）', () => {
     const m = newManager(tmpDir());
     m.addSource(bean('a'));
     m.addSource(bean('b'));
@@ -100,7 +100,7 @@ describe('UserConfigManager — 变更类别（★ 2026-09-27 切源不再触发
     expect(kinds).toEqual([]);
   });
 
-  it('★ 真正的配置变更仍报 "content"（源/解析/直播/全局）', () => {
+  it('真正的配置变更仍报 "content"（源/解析/直播/全局）', () => {
     const m = newManager(tmpDir());
     m.addSource(bean('a'));
     const kinds = spyKinds(m);
@@ -166,11 +166,11 @@ describe('UserConfigManager — 增删改排序与选中', () => {
   });
 
   /**
-   * ★ 2026-10-15（用户报「配置里删掉的源，换源下拉里还在」）：
+   * 
    *   订阅是"全量替换"语义 → 删掉的源会在任何一次订阅往返（导入 / 启动 7 天自动刷新 / 档案切换）后复活。
    *   修法 = 记「已删除源」墓碑（UserConfig.deletedSourceKeys），往返时按它过滤。
    */
-  describe('已删除源墓碑（★ 2026-10-15 用户报「删了还在」）', () => {
+  describe('已删除源墓碑（防「删了还在」回归）', () => {
     it('删掉的源不会被「订阅往返」带回来（replaceFromImport 全量替换后仍不在）', () => {
       const m = newManager(tmpDir());
       m.replaceFromImport(fullConfig([bean('a'), bean('b'), bean('c')]), 'https://h/s.json');
@@ -226,7 +226,7 @@ describe('UserConfigManager — 增删改排序与选中', () => {
     });
 
     /**
-     * ★ 2026-10-16（用户报「本地包删掉订阅后重新导入、订阅里一个源都没有」）：
+     * 
      *   用户**主动重新导入**该订阅 = 「我要这份订阅」的明确意图 → 导入前先清掉这些 key 的墓碑；
      *   后台自动刷新不清墓碑 ⇒ 「删掉的不被刷新带回来」口径不变。
      */
@@ -459,7 +459,7 @@ describe('UserConfigManager v2 — 多配置档案（profiles）', () => {
     m.saveAsProfile('另一个'); // active 移到新档，两份内容都还是 p1
     const other = m.profiles().find((p) => p.id !== pa)!;
 
-    // ★ 2026-10-16（用户要求）：生效档案不再拒绝删除 —— 自动切到剩下的第一份并按其存档重建
+    // 生效档案不再拒绝删除 —— 自动切到剩下的第一份并按其存档重建
     m.deleteProfile(other.id);
     expect(m.profiles().some((p) => p.id === other.id)).toBe(false);
     expect(m.activeProfileId()).toBe(pa);
@@ -472,7 +472,7 @@ describe('UserConfigManager v2 — 多配置档案（profiles）', () => {
     expect(m.sources().length).toBe(0);
   });
 
-  // ★ 2026-09-26（用户口径）：导入新订阅 → 旧档案改名「旧订阅 xx」+ 新档案「新订阅 xx」并切换过去
+  // 导入新订阅 → 旧档案改名「旧订阅 xx」+ 新档案「新订阅 xx」并切换过去
   describe('导入新订阅的档案命名（旧订阅/新订阅）', () => {
     it('自动命名的当前档案 → 改名「旧订阅 xx」；新导入存为「新订阅 xx」并生效', () => {
       const dir = tmpDir();
@@ -514,7 +514,7 @@ describe('UserConfigManager v2 — 多配置档案（profiles）', () => {
   });
 });
 
-describe('UserConfigManager — ★ 2026-09-30 换源弹层数据与本地直播源导入', () => {
+describe('UserConfigManager — 换源弹层数据与本地直播源导入', () => {
   /** 构造一条本地导入的直播源 bean（字段口径同 ipc 侧 parseLive 产物） */
   function liveBean(name: string, url: string): LiveBean {
     return { name, url, api: '', type: '0', jar: '', ext: '', epg: '', playerType: '', timeout: 15 };
@@ -525,18 +525,18 @@ describe('UserConfigManager — ★ 2026-09-30 换源弹层数据与本地直播
     const m = newManager(dir);
     m.replaceFromImport(fullConfig([bean('a1'), bean('a2')]), 'https://host/a.json'); // 建档：json = a1/a2
     const aId = m.activeProfileId();
-    m.addSource(bean('a3')); // 手动加源 → ★ 2026-09-30 起同步写回 A 的存档 json（内容变更即对齐）
+    m.addSource(bean('a3')); // 手动加源 → 起同步写回 A 的存档 json（内容变更即对齐）
     const pb = m.saveAsProfile('配置B'); // 快照当前（a1/a2/a3）为新档案并切换过去
 
     const view = m.profileSitesView();
     expect(view.activeId).toBe(pb.id);
     expect(view.profiles.find((p) => p.id === pb.id)!.sites.map((s) => s.key)).toEqual(['a1', 'a2', 'a3']);
-    // ★ 2026-09-30：非当前档案同样含 a3 —— 存档 json 与运行期一致，
-    //   否则「切到别的订阅再切回来」会用旧 json 重建 → 手动删掉的源又冒出来（用户报的"残留"）
+    // 非当前档案同样含 a3 —— 存档 json 与运行期一致，
+    // 否则「切到别的订阅再切回来」会用旧 json 重建 → 手动删掉的源又冒出来（实测的"残留"）
     expect(view.profiles.find((p) => p.id === aId)!.sites.map((s) => s.key)).toEqual(['a1', 'a2', 'a3']);
   });
 
-  it('★ 2026-09-30：手动改过的源列表在「切走再切回」后保持不变（档案 json 与运行期同步）', () => {
+  it('手动改过的源列表在「切走再切回」后保持不变（档案 json 与运行期同步）', () => {
     const dir = tmpDir();
     const m = newManager(dir);
     m.replaceFromImport(fullConfig([bean('a1'), bean('a2'), bean('a3')]), 'https://h/a.json');
@@ -581,7 +581,7 @@ describe('UserConfigManager — ★ 2026-09-30 换源弹层数据与本地直播
   });
 
   // ---------------------------------------------------------------------------
-  // ★ 2026-10-15（用户报「导入的 TXT 直播源重启软件会消失」）：
+  // 
   // 本地导入的 TXT/M3U 线路是一份**独立于订阅的本地订阅** —— 订阅导入 / 7 天自动刷新 /
   // 档案切换都会全量替换 lives，它们必须活下来（否则重启即被自动刷新清掉）。
   // ---------------------------------------------------------------------------
@@ -622,7 +622,7 @@ describe('UserConfigManager — ★ 2026-09-30 换源弹层数据与本地直播
     expect(m.lives()[0].name).toBe('改过名');
   });
 
-  it('★ deleteLives：批量按下标删除，收敛 activeLiveIndex，越界忽略', () => {
+  it('deleteLives：批量按下标删除，收敛 activeLiveIndex，越界忽略', () => {
     const dir = tmpDir();
     const m = newManager(dir);
     m.addLive(liveBean('A', LOCAL + '?a'));

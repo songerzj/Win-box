@@ -8,7 +8,7 @@ import android.util.AttributeSet;
 /**
  * View stub —— Android 视图基类。
  *
- * ★ 2026-09-10 第四轮修复：补齐常用常量与 set/get 方法。
+ * 修复：补齐常用常量与 set/get 方法。
  *   蜘蛛/Room 在非 UI 链路也会引用 View 的常量（如 VISIBLE/GONE）与
  *   getContext/getWidth 等方法，缺一个就抛 NoSuchFieldError/NoSuchMethodError。
  *

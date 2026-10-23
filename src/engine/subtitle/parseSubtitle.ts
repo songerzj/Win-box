@@ -48,7 +48,7 @@ export function parseVtt(text: string): SubtitleCue[] {
   for (const b of blocks) {
     const lines = b.split(/\r?\n/).map((l) => l.trim()).filter((l) => l);
     if (!lines.length) continue;
-    // ★ S7（修复）：按「块首行」识别区块头（VTT 规范保留字 NOTE/STYLE/REGION）→ 整块跳过，
+    // S7（修复）：按「块首行」识别区块头（VTT 规范保留字 NOTE/STYLE/REGION）→ 整块跳过，
     //   不再逐行过滤 NOTE（旧逻辑会误删以 NOTE 开头的 cue 文本，且注释块内含 --> 的行
     //   会被误当 cue 解析成字幕文本）。
     const head = lines[0].toUpperCase();
@@ -102,7 +102,7 @@ function parseBySniff(text: string): SubtitleCue[] {
 
 /**
  * 按扩展名分派解析；未知/不符时按内容嗅探。
- * ★ 2026-09-24：**扩展名不再独占信任** —— assrt 常见「.srt 里其实是 ASS 文本」、
+ * **扩展名不再独占信任** —— assrt 常见「.srt 里其实是 ASS 文本」、
  *   以及历史调用方误传视频文件名（xxx.mkv）的情况；只要按扩展名解析出 0 cue，
  *   就按内容特征二次尝试，避免「明明有字幕却 0 cue → 挂不上」。
  */
@@ -125,7 +125,7 @@ export function shiftCues(cues: SubtitleCue[], offsetSec: number): SubtitleCue[]
   for (const c of cues) {
     const start = c.start + offsetSec;
     const end = c.end + offsetSec;
-    // ★ S4（修复）：完全移出 0 点之前的区间直接丢弃；部分穿零的区间 start 钳 0，
+    // S4（修复）：完全移出 0 点之前的区间直接丢弃；部分穿零的区间 start 钳 0，
     //   保证 end > start（旧实现两端各 Math.max(0,…) 会把穿零区间压成 start=end 空区间）。
     if (end <= 0) continue;
     out.push({
@@ -150,7 +150,7 @@ function srtTime(sec: number): string {
 }
 
 /**
- * cue 列表 → SRT 文本（★ 2026-10-08：MPV 内核外挂字幕用 —— mpv 走 `sub-add` 读文件，
+ * cue 列表 → SRT 文本（MPV 内核外挂字幕用 —— mpv 走 `sub-add` 读文件，
  * 不认我们渲染层的 VTTCue；这里把已挂载的 cue（含时间偏移，调用方先 shiftCues）重新序列化）。
  */
 export function cuesToSrt(cues: SubtitleCue[]): string {

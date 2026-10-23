@@ -1,4 +1,4 @@
-// tests/detailFix.spec.ts — 详情字段错位纠偏（立播源实测样本）+ 片名兜底
+// tests/detailFix.spec.ts — 详情字段错位纠偏（某第三方源实测样本）+ 片名兜底
 import { describe, expect, it } from 'vitest';
 import { fixDetailFields, withFallbackName } from '../src/engine/vod/detailFix';
 import type { VodDetail } from '../src/shared/types';

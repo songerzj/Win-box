@@ -1,7 +1,7 @@
 // src/main/plugin/pluginHostApi.ts
 // L4 沙箱的**宿主能力实现面**（规范 §6.1 全 11 组的宿主侧）。
 //
-// ★ 本文件**不 import electron**（系统件由 deps 注入）—— 这样单测可直接跑 `createPluginSandboxApi`
+// 本文件**不 import electron**（系统件由 deps 注入）—— 这样单测可直接跑 `createPluginSandboxApi`
 //   验「fs 越界拒绝 / settings 校验 / kv 前缀」等纯逻辑，不必起 electron。
 //
 // 事实源：docs/design/插件制作规范.md §6.1；docs/spec/R10-l4-sandbox-api/spec.md §5。
@@ -73,7 +73,7 @@ export function createPluginSandboxApi(deps: PluginSandboxApiDeps): PluginSandbo
 
     /**
      * 下载落**插件目录**。
-     * ★ v1 **非流式**：宿主 `HttpClient` 无流式接口 → `onProgress` 只报「开始(0,total) / 完成(bytes,bytes)」两帧
+     * v1 **非流式**：宿主 `HttpClient` 无流式接口 → `onProgress` 只报「开始(0,total) / 完成(bytes,bytes)」两帧
      *   （写入规范 §6.1 显式标注）。
      */
     async download(pluginId: string, url: string, name: string, onProgress: (loaded: number, total: number) => void) {

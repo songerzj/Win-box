@@ -1,5 +1,5 @@
 // src/main/net/QrLogin.ts — 网盘扫码登录（阿里云盘 easy-token 授权通道）
-// ★ 对齐 spider jar 内 Ali 蜘蛛使用的 easy-token 服务（https://easy-token.cooluc.com）：
+// 对齐 spider jar 内 Ali 蜘蛛使用的 easy-token 服务（https://easy-token.cooluc.com）：
 //   POST /api/login       → { code:200, data:{ content:<二维码文本url>, uuid } }
 //   GET  /api/login?uuid= → { code:200, data:{ state, user?{ username, refresh_token } } }
 //     state: 0=等待扫码  10=已扫待确认  20=成功(带 refresh_token)  30=二维码过期  40=已取消

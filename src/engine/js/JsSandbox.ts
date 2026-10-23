@@ -45,7 +45,7 @@ export interface JsSandboxOptions {
 export type SpiderStyle = 'hiker' | 'drpy' | 'unknown';
 
 /**
- * ★★ 2026-09-30：JS 沙箱的**执行侧接口**（JsSpider 只依赖这一面）。
+ * JS 沙箱的**执行侧接口**（JsSpider 只依赖这一面）。
  *   两个实现：
  *     · `JsSandbox`（本文件）—— 进程内 node:vm（默认/测试/降级）；
  *     · `PooledSandbox`（worker/JsWorkerPool.ts）—— worker 线程里跑同一份 JsSandbox。
@@ -181,7 +181,7 @@ export class JsSandbox implements JsSandboxLike {
       }
       this.spider = spider as Record<string, unknown>;
       this.detectStyle();
-      // ★ drpy2 风格 → local 换**上游语义**（get 缺失返回 ''，见 createLocalUpstream 注释）。
+      // drpy2 风格 → local 换**上游语义**（get 缺失返回 ''，见 createLocalUpstream 注释）。
       //   必须在 forwardInit（drpy 的 init 会读缓存）与首次调用之前完成；沙箱对象属性变更
       //   对已 context 化的 vm 全局立即可见。
       if (this.style === 'drpy' && this.globals) {
@@ -191,7 +191,7 @@ export class JsSandbox implements JsSandboxLike {
       this.loaded = true;
     } catch (e) {
       if (e instanceof UnsupportedSourceError) throw e;
-      // ★ 2026-09-29：带一行栈帧（minify 脚本只有 1~2 行，位置信息全在列号里）——
+      // 带一行栈帧（minify 脚本只有 1~2 行，位置信息全在列号里）——
       //   drpy/壳类源排障时「Cannot access 'X' before initialization」这类 TDZ 报错没位置等于没法查
       const frame = e instanceof Error && e.stack ? (e.stack.split('\n')[1] ?? '').trim() : '';
       throw new UnsupportedSourceError(
@@ -290,7 +290,7 @@ export class JsSandbox implements JsSandboxLike {
   // ------------------------------------------------------------------
   /** 执行一个模块源码（转换 + 预取依赖 + 沙箱内运行），返回 module.exports */
   private async runModule(url: string, source: string): Promise<Record<string, unknown>> {
-    // ★ 2026-09-29：**头部 import 块**走「注册表装配」，不经 esmTransform 生成 `require(...)` 调用 ——
+    // **头部 import 块**走「注册表装配」，不经 esmTransform 生成 `require(...)` 调用 ——
     //   drpy2 引擎自带 `function require(url){eval(request(url))}`，会遮蔽包装函数的 require 形参，
     //   在模块头就触发 `MOBILE_UA` TDZ 崩溃（详见 esmHeadImports.ts 文件头）。
     const heads = parseHeadImports(source);
@@ -317,7 +317,7 @@ export class JsSandbox implements JsSandboxLike {
     for (const spec of specs) {
       // 只预取相对/绝对路径模块；裸名库（cheerio/crypto-js/net.js 等）走 require 的同步分支
       if (spec === 'cheerio' || spec === 'crypto-js' || spec.includes('net.js') || spec.includes('utils.js') || spec.includes('模板.js')) continue;
-      // ★ assets://js/lib/X.js（drpy2 引擎头部写法）：本机 js-lib 有就直接用（require 同步命中），
+      // assets://js/lib/X.js（drpy2 引擎头部写法）：本机 js-lib 有就直接用（require 同步命中），
       //   没有则按 dr_py 仓库同名 lib 预取 —— 失败落空模块（对齐安卓 EMPTY_MODULE_CODE 语义）
       const assetUrl = assetLibUrl(spec);
       if (assetUrl) {
@@ -385,7 +385,7 @@ export class JsSandbox implements JsSandboxLike {
    */
   private async loadImportBinding(spec: string): Promise<unknown> {
     const g = this.globals as Record<string, unknown>;
-    // ★ 库类**本机 js-lib 构建优先**：TVBox 的 cheerio 构建带 `jinja2` 补丁（drpy2 的 init 直接
+    // 库类**本机 js-lib 构建优先**：TVBox 的 cheerio 构建带 `jinja2` 补丁（drpy2 的 init 直接
     //   调 `cheerio.jinja2(rule.homeUrl,…)`）——必须给源里点名的那份构建，缺失才回落注入的 npm 版
     if (spec.includes('cheerio') || spec.includes('crypto-js')) {
       const local = spec.endsWith('.js') ? this.evalLocalLib(spec) : undefined;
@@ -421,7 +421,7 @@ export class JsSandbox implements JsSandboxLike {
   /** 同步 require —— 预取已进缓存则命中；本地 js-lib 库可直接同步读 */
   private makeRequire(baseUrl: string): (spec: string) => unknown {
     return (spec: string): unknown => {
-      // ★ 2026-09-29 drpy2/ESM 形态：`assets://js/lib/cheerio.min.js`、`./crypto-js.js` 这类**路径形式**
+      // drpy2/ESM 形态：`assets://js/lib/cheerio.min.js`、`./crypto-js.js` 这类**路径形式**
       //   与裸名同义（drpy2.min.js 头部就是这种写法）；库类同样**本机 js-lib 构建优先**（见 loadImportBinding）
       if (spec.includes('cheerio') || spec.includes('crypto-js')) {
         const local = spec.endsWith('.js') ? this.evalLocalLib(spec) : undefined;
@@ -442,7 +442,7 @@ export class JsSandbox implements JsSandboxLike {
       if (spec.endsWith('.js')) {
         const local = this.evalLocalLib(spec);
         if (local !== undefined) return local;
-        // ★ 本机 js-lib 没有 → 用 assets:// 映射出的远程模块（runModule 预取阶段已进缓存）
+        // 本机 js-lib 没有 → 用 assets:// 映射出的远程模块（runModule 预取阶段已进缓存）
         const assetUrl = assetLibUrl(spec);
         if (assetUrl && this.moduleCache.has(assetUrl)) return this.moduleCache.get(assetUrl);
       }
@@ -470,7 +470,7 @@ export class JsSandbox implements JsSandboxLike {
       const g = this.globals as Record<string, unknown>;
       return { req: g.req, http: g.http };
     }
-    // ★ utils.js：已由自研可执行实现覆盖原 QuickJS 字节码（见 resources/js-lib/utils.js）。
+    // utils.js：已由自研可执行实现覆盖原 QuickJS 字节码（见 resources/js-lib/utils.js）。
     //   此处不复用 throw 分支，让其落到 evalLocalLib 走正常模块加载。
     if (name.includes('模板.js')) return this.getTemplate();
     const local = this.evalLocalLib(name);

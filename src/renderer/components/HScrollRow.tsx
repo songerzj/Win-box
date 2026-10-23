@@ -1,6 +1,6 @@
 // src/renderer/components/HScrollRow.tsx
 // 横向滚动行（发现页内容行 / 详情页相关推荐共用）。
-// ★ 2026-09-24（用户定稿）：**鼠标位于行内时，滚轮控制横条横向滚动，而不是页面上下滚动**；
+// **鼠标位于行内时，滚轮控制横条横向滚动，而不是页面上下滚动**；
 //   行外的空白处滚轮才滚动页面。
 // 为什么用原生 addEventListener 而不是 React onWheel：
 //   React 17+ 把 wheel 事件挂在 root 容器上且为 **passive** → `onWheel` 里 `preventDefault()` 无效

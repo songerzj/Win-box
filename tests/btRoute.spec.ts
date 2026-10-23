@@ -1,4 +1,4 @@
-// tests/btRoute.spec.ts — `/bt/<infoHash>/<fileIndex>` 取流中继（★ 2026-09-29 磁力 B 的取流口）。
+// tests/btRoute.spec.ts — `/bt/<infoHash>/<fileIndex>` 取流中继（磁力 B 的取流口）。
 //
 // 为什么值得单测：这条路由是「边下边播」的最后一公里 —— Range / Content-Range 写错 → 拖动失效；
 // 门控漏做 → 读到稀疏零（坏流）；切片循环写错 → 长片只出前 512KB。这里用**真文件 + 真 HTTP**
@@ -150,7 +150,7 @@ describe('/bt 路由 — Range 协议（拖动/seek 依赖它）', () => {
     const r = await fetch(`${base}/bt/${HASH}/7`, { headers: { Range: `bytes=10-${file.body.length + 999}` } });
     expect(r.status).toBe(206);
     expect(r.headers.get('content-range')).toBe(`bytes 10-${file.body.length - 1}/${file.body.length}`);
-    // ★ 必须读完体：否则这条请求的分片门控会拖到下一个用例（污染 covered 记录）
+    // 必须读完体：否则这条请求的分片门控会拖到下一个用例（污染 covered 记录）
     const body = Buffer.from(await r.arrayBuffer());
     expect(body.equals(file.body.subarray(10))).toBe(true);
     const bad = await fetch(`${base}/bt/${HASH}/7`, { headers: { Range: 'bytes=abc' } });

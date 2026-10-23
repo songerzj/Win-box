@@ -2,7 +2,7 @@
 // 播放相关的本地偏好 —— 主进程（本地中继 `/play`）与渲染层配置页共用。
 // 落在 <userData>/player-settings.json（见 src/main/player/playerSettings.ts）。
 
-// ---------- ★ 超分插件（M1）：用户可见档位（见 docs/design/插件系统_设计方案.md §8） ----------
+// ---------- 超分插件（M1）：用户可见档位（见 docs/design/插件系统_设计方案.md） ----------
 //
 // 档位 id 与插件 manifest 的 `contributes[type='mpv.shaders'].modes[].id` 一一对应；
 // `off` = 不注入着色器（不重启 mpv 会话，逐条 clr 即关）。
@@ -32,7 +32,7 @@ export function srModeUsable(mode: unknown, usable: readonly string[]): SrMode {
 
 export interface PlayerSettings {
   /**
-   * ★ m3u8 去广告（对位 TVBox `HawkConfig.M3U8_PURIFY`，**默认关**）。
+   * m3u8 去广告（对位 TVBox `HawkConfig.M3U8_PURIFY`，**默认关**）。
    *
    * 默认关是有意为之：清洗是启发式的（按切片路径/域名、订阅规则、SCTE/DATERANGE、
    * EXTINF 精度与帧率特征删广告段），宁可少删也不能删掉正片；实现里另有三道回退保护。
@@ -40,27 +40,25 @@ export interface PlayerSettings {
    */
   m3u8Purify: boolean;
   /**
-   * ★ 2026-09-29：磁力「外部播放器接力」的播放器路径（空 = 自动探测常见安装位置）。
+   * 磁力「外部播放器接力」的播放器路径（空 = 自动探测常见安装位置）。
    * 用途：种子内是 MKV/HEVC 等 Chromium 播不了的形态时，把本机中继地址交给它边下边播
    * （探测顺序 PotPlayer → VLC → mpv → MPC-HC，见 main/torrent/externalPlayer.ts）。
    */
   btExternalPlayer: string;
   /**
-   * ★ 2026-09-30（用户要求「点播也应该支持绑定外部播放器，和磁力区分开」+「选定后直接由它播放」）：
    * **点播**外部播放器的路径（空 = 用内置播放器）——与磁力分开绑定。
    * 填了路径：点播**直接**由它播放（不开内置播放器窗口）；从历史播放会把上次进度作为启动参数带上。
    */
   vodExternalPlayer: string;
   /**
-   * ★ 2026-10-08（用户要求「把点播外部播放器换成勾选项，不要根据路径选择是否启用；就算填了路径，
-   * 不勾选依旧不使用第三方播放器」）：**点播外部播放器总开关**。
+   * **点播外部播放器总开关**。
    * 生效判据 = `vodExternalPlayerEnabled && vodExternalPlayer 非空`；不勾选 ⇒ 一律用内置播放器（即使已填路径）。
-   * 旧配置（无此字段）按「路径非空 = 勾选」迁移（保持 09-30 起「填了路径就直接用它播」的既有行为，
+   * 旧配置（无此字段）按「路径非空 = 勾选」迁移（保持「填了路径就直接用它播」的既有行为，
    * 用户可随时取消勾选；此后该字段以显式值为准）。
    */
   vodExternalPlayerEnabled: boolean;
   /**
-   * ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容播放内核的 **mpv.exe 路径覆盖**（空 = 用内置）。
+   * MPV 高兼容播放内核的 **mpv.exe 路径覆盖**（空 = 用内置）。
    * 解析链（见 main/player/mpvCore.resolveMpvPath）：本字段（非空且存在）→ 随包内置
    * `resources/mpv/mpv.exe`（安装目录内）→ 本机常见安装位置（Program Files 等）。
    * 用途：4K / HEVC / HDR 等 Chromium 播不好的形态，改由嵌入播放器窗口的 mpv 渲染
@@ -68,19 +66,19 @@ export interface PlayerSettings {
    */
   mpvPath: string;
   /**
-   * ★ 超分插件（M1）：MPV 内核超分档位（`off`=关；其余为插件档位 id）。
+   * 超分插件（M1）：MPV 内核超分档位（`off`=关；其余为插件档位 id）。
    * **仅 MPV 内核生效**（HTML5 跑不了 GLSL）；实际是否生效由「插件已装且载荷就绪」决定（`srModeUsable`）。
    * 换档走运行期 IPC（逐条 clr+append），**不重启 mpv 会话**。
    */
   srMode: SrMode;
   /**
-   * ★ 2026-10-18（R11）第三方播放内核（`player.engine`）的**启用开关**（键 = 引擎 id `engine:<contributeId>`）。
-   * ★ 默认**关**（全表为空 = 全关）：开启意味着「将执行插件提供的本机程序」，故需配置页单独开关 + 首次开启二次确认。
+   * （R11）第三方播放内核（`player.engine`）的**启用开关**（键 = 引擎 id `engine:<contributeId>`）。
+   * 默认**关**（全表为空 = 全关）：开启意味着「将执行插件提供的本机程序」，故需配置页单独开关 + 首次开启二次确认。
    * `engine:start` 前由主进程校验本表（未启用 → 明确拒绝）。
    */
   engineEnabled: Record<string, boolean>;
   /**
-   * ★ 2026-10-18（R11）第三方播放内核的**本机程序路径**（键 = 引擎 id `engine:<contributeId>`）。
+   * （R11）第三方播放内核的**本机程序路径**（键 = 引擎 id `engine:<contributeId>`）。
    * 仅 `binary.source === 'local-path'` 的引擎使用（对位 `mpvPath` 口径：留空 = 未就绪，需用户在配置页填写）。
    */
   enginePaths: Record<string, string>;
@@ -104,7 +102,7 @@ export function normalizePlayerSettings(s: Partial<PlayerSettings> | null | unde
   // 旧配置没有该字段 → 按「路径非空」推导（迁移口径）；显式布尔值一律以它为准
   const vodOn = s && typeof s.vodExternalPlayerEnabled === 'boolean' ? s.vodExternalPlayerEnabled : vod !== '';
   const mpv = s && typeof s.mpvPath === 'string' ? s.mpvPath.trim() : '';
-  // ★ 超分档位：非白名单值（旧配置 / 手改坏）一律回落 off
+  // 超分档位：非白名单值（旧配置 / 手改坏）一律回落 off
   const sr = isSrMode(s?.srMode) ? (s!.srMode as SrMode) : 'off';
   return {
     m3u8Purify: !!(s && s.m3u8Purify),
@@ -118,7 +116,7 @@ export function normalizePlayerSettings(s: Partial<PlayerSettings> | null | unde
   };
 }
 
-/** ★ R11：`Record<string, boolean>` 归一（非对象/非布尔值丢弃；键去空白） */
+/** R11：`Record<string, boolean>` 归一（非对象/非布尔值丢弃；键去空白） */
 export function normalizeBoolMap(v: unknown): Record<string, boolean> {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
   const out: Record<string, boolean> = {};
@@ -129,7 +127,7 @@ export function normalizeBoolMap(v: unknown): Record<string, boolean> {
   return out;
 }
 
-/** ★ R11：`Record<string, string>` 归一（非对象/非字符串值丢弃；键值去空白） */
+/** R11：`Record<string, string>` 归一（非对象/非字符串值丢弃；键值去空白） */
 export function normalizeStrMap(v: unknown): Record<string, string> {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
   const out: Record<string, string> = {};
@@ -140,9 +138,9 @@ export function normalizeStrMap(v: unknown): Record<string, string> {
   return out;
 }
 
-// ---------- ★ 2026-10-08 MPV 播放内核（主进程 MpvController ↔ 渲染层 VideoPlayer） ----------
+// ---------- MPV 播放内核（主进程 MpvController ↔ 渲染层 VideoPlayer） ----------
 //
-// 口径（PoC 实测，见 .workbuddy/memory/2026-10-08.md §二）：
+// 口径（PoC 实测）：
 //   · mpv 以 `--wid=<播放器窗口 HWND>` 嵌入（子窗口在 Chromium 渲染面**之下**，
 //     故播放器窗口必须 transparent + 播放区页面透明，HTML 覆盖层仍绘制在 mpv 画面之上）；
 //   · 控制/状态走 `--input-ipc-server` 的 JSON IPC（loadfile / set_property / observe_property）；
@@ -180,7 +178,7 @@ export interface MpvStartOptions {
   /** 初始画面比例（PlayerFit；缺省 contain） */
   fit?: string;
   /**
-   * ★ 超分插件（M1）：本会话初始 mpv 着色器链（**绝对路径**，顺序即生效顺序）。
+   * 超分插件（M1）：本会话初始 mpv 着色器链（**绝对路径**，顺序即生效顺序）。
    *   经 IPC 逐条 `change-list glsl-shaders clr/append` 注入（不用拼接串，规避分隔符问题）；空/缺省 = 不注入。
    */
   shaders?: string[];
@@ -198,18 +196,18 @@ export type MpvCommand =
   | { type: 'sub-clear' }
   | { type: 'sub-font'; value: number } // CSS px（主进程换算 mpv 字号）
   | { type: 'sub-pos'; value: number } // 0..100（距顶部百分比）
-  // ★ 2026-10-17（用户要求）：音轨切换（mpv 的 aid；内置内核走 hls.js 的 audioTrack，不走这里）
+  // 音轨切换（mpv 的 aid；内置内核走 hls.js 的 audioTrack，不走这里）
   | { type: 'aid'; value: number }
-  // ★ 2026-10-17（阶段2）：字幕轨切换（mpv 的 sid；-1 = 关闭字幕）
+  // （阶段2）：字幕轨切换（mpv 的 sid；-1 = 关闭字幕）
   | { type: 'sid'; value: number }
-  // ★ 2026-10-17（阶段2）：音频源码直通（mpv `audio-spdif`；'' = 关闭直通）
+  // （阶段2）：音频源码直通（mpv `audio-spdif`；'' = 关闭直通）
   | { type: 'audio-spdif'; value: string }
-  // ★ 超分插件（M1）：整链替换 mpv 着色器（空数组 = 关闭超分），即时生效、不重启会话
+  // 超分插件（M1）：整链替换 mpv 着色器（空数组 = 关闭超分），即时生效、不重启会话
   | { type: 'glsl-shaders'; value: string[] }
-  // ★ 超分插件（M1）：换超分档位 —— 渲染层只报档位，**绝对路径由主进程解析**（渲染层不碰文件系统）
+  // 超分插件（M1）：换超分档位 —— 渲染层只报档位，**绝对路径由主进程解析**（渲染层不碰文件系统）
   | { type: 'sr-mode'; value: SrMode };
 
-/** ★ 2026-10-17（用户要求「音轨设置」）：音轨条目（mpv `track-list` 里的 audio 项归一后） */
+/** 音轨条目（mpv `track-list` 里的 audio 项归一后） */
 export interface MpvAudioTrack {
   /** mpv 音轨 id（切换时用；也用于高亮当前项） */
   id: number;
@@ -225,7 +223,7 @@ export interface MpvAudioTrack {
   selected?: boolean;
 }
 
-/** ★ 2026-10-17（阶段2）：字幕轨条目（mpv `track-list` 里 type=sub 的项归一后） */
+/** （阶段2）：字幕轨条目（mpv `track-list` 里 type=sub 的项归一后） */
 export interface MpvSubtitleTrack {
   /** mpv 字幕轨 id（切换时用；也用于高亮当前项） */
   id: number;
@@ -238,7 +236,7 @@ export interface MpvSubtitleTrack {
 }
 
 /**
- * ★ 2026-10-17（阶段2）：视频参数（HDR 标准判定 / 底栏规格标签用）。
+ * （阶段2）：视频参数（HDR 标准判定 / 底栏规格标签用）。
  * 字段名与含义**取自该内核 `video-params` 的实测输出**（不要照搬其它 mpv 版本的键名）：
  * `pixelformat/primaries/gamma/light/sig-peak` 为 mpv 标准键；
  * `hdr-vivid` 是 Yaozhi 自编译核心的**自定义扩展键**（只有它才有）。
@@ -251,11 +249,11 @@ export interface MpvVideoParams {
   gamma?: string;
   light?: string;
   sigPeak?: number;
-  /** ★ 自定义键：HDR Vivid 元数据识别（其它 mpv 构建不提供 → undefined） */
+  /** 自定义键：HDR Vivid 元数据识别（其它 mpv 构建不提供 → undefined） */
   hdrVivid?: boolean;
 }
 
-/** ★ 2026-10-17（阶段2）：音频参数（mpv `audio-params` 归一）。注意 `format` 是**采样格式**（floatp/s16），不是编码名 */
+/** （阶段2）：音频参数（mpv `audio-params` 归一）。注意 `format` 是**采样格式**（floatp/s16），不是编码名 */
 export interface MpvAudioParams {
   samplerate?: number;
   /** 声道布局名（mono/stereo/5.1…） */
@@ -267,7 +265,7 @@ export interface MpvAudioParams {
 export type MpvDisplayStandard = 'SDR' | 'HLG' | 'HDR Vivid' | 'HDR10';
 
 /**
- * ★ 2026-10-17（阶段2）：由 mpv `video-params` 推导「画面标准」。
+ * （阶段2）：由 mpv `video-params` 推导「画面标准」。
  * 口径（仅用实测存在的键，不发明）：
  *   ① `hdr-vivid === true`（Yaozhi 核心自定义键）→ HDR Vivid；
  *   ② `gamma` 含 `hlg` → HLG；含 `pq` / `smpte2084` → HDR10（BT.2020 与否不改变标签）；
@@ -283,7 +281,7 @@ export function mpvDisplayStandard(v: MpvVideoParams | null | undefined): MpvDis
 }
 
 /**
- * ★ 2026-10-17（阶段3）：起播格式标签（参照 Yaozhi 的 startup-format-logos，但我们只做**已知值**的标签）。
+ * （阶段3）：起播格式标签（参照 Yaozhi 的 startup-format-logos，但我们只做**已知值**的标签）。
  * 口径：画面标准（SDR/HLG/HDR10/HDR Vivid）必给；BT.2020 仅在 `primaries` 明说时补；
  * 音频编码（大写）与声道布局有值才补。**不做** DV/Atmos/DTS:X 这类需要专用元数据的标签（不猜）。
  */
@@ -298,11 +296,11 @@ export function mpvFormatBadges(v: MpvVideoParams | null, aCodec: string, channe
   return out;
 }
 
-// ---------- ★ 2026-10-17（阶段3b，用户要求「音频直通开关」）：mpv `audio-spdif` 档位 ----------
+// ---------- （阶段3b）：mpv `audio-spdif` 档位 ----------
 //
 // 语义：把音频**不解码**、按源码直通给功放（HDMI/SPDIF 比特流）。值 = 直接下发给 mpv 的
 //   编解码名**列表串**（mpv 认的键名：ac3 / eac3 / dts / dts-hd / truehd）；'' = 关闭直通（本机解码）。
-//   ★ 只在 MPV 内核生效（HTML5 内核无此能力），且默认关闭（多数场景本机解码更稳）。
+//   只在 MPV 内核生效（HTML5 内核无此能力），且默认关闭（多数场景本机解码更稳）。
 /** 音频直通档位（`value` = 下发给 mpv 的列表串；'' = 关闭） */
 export interface SpdifOption {
   value: string;
@@ -353,11 +351,11 @@ export interface MpvKernelState {
   cacheTime: number | null;
   /** mpv 进程已退出 */
   exited: boolean;
-  /** ★ 2026-10-17（用户要求「音轨设置」）：可用音轨（track-list 里 type=audio 的项） */
+  /** 可用音轨（track-list 里 type=audio 的项） */
   audioTracks: MpvAudioTrack[];
-  /** ★ 2026-10-17：当前音轨 id（aid）；无音轨/未知 null */
+  /** 当前音轨 id（aid）；无音轨/未知 null */
   aid: number | null;
-  // ---------- ★ 2026-10-17（阶段2）：MPV 内核「能力面」（只重做 MPV 内核下界面所需） ----------
+  // ---------- （阶段2）：MPV 内核「能力面」（只重做 MPV 内核下界面所需） ----------
   // 数据源与键名均按该内核实测（video-params / audio-params / track-list / hwdec-current / *-bitrate）。
   /** 字幕轨（track-list 里 type=sub 的项；中文轨道菜单用） */
   subtitles: MpvSubtitleTrack[];
@@ -393,7 +391,7 @@ export interface MpvStateEvent {
   state: MpvKernelState;
 }
 
-// ---------- ★ 2026-10-16（用户报「播放时画面突然消失、软件只剩声音」）播放诊断上报 ----------
+// ---------- 播放诊断上报 ----------
 //
 // 为什么需要：`vod:play` 返回 URL 后，画面/声音全在渲染层与 GPU 进程里跑，**主进程侧不再有任何日志**，
 //   出事时（最典型 = GPU 进程崩溃：合成器死 → 整窗不再刷新、连进度条都不动，而音频走另一通道继续）

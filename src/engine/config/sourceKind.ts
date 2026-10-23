@@ -1,5 +1,5 @@
 // src/engine/config/sourceKind.ts
-// ★ 源"形态"分类：把 type 与 api/jar 后缀归纳成用户能理解的四类。
+// 源"形态"分类：把 type 与 api/jar 后缀归纳成用户能理解的四类。
 //
 // 上游 TVBox 的 Site 只有 type（0 xml / 1 json / 3 spider），ext 的填法完全取决于
 // 蜘蛛实现（csp_Xxx 类）。桌面版为了让设置界面不把一堆无关字段摊平给用户，
@@ -104,7 +104,7 @@ export function extRelevant(s: Pick<SourceBean, 'type' | 'api'>): boolean {
   return INFO[sourceKindOf(s)].usesExt;
 }
 
-// ---- ★ 2026-09-29（用户报「很多源本质上是豆瓣，他们没有具体详情」）----
+// ----
 
 /**
  * 「点击片源应走**全源聚合搜索**而非详情页」的源判据（静态）。
@@ -113,12 +113,12 @@ export function extRelevant(s: Pick<SourceBean, 'type' | 'api'>): boolean {
  * 这类源是**搜索聚合型**（蜘蛛只做 searchContent，detailContent 返回空或只有简介），
  * 点进详情页必然「无详情 / 无剧集」；正确姿势是拿片名做一次全源搜索，换到能播的源。
  *
- * ★ 2026-09-30（用户报「饭太硬的豆瓣主页点了还是无详情」）：fty/饭太硬 的豆瓣片单源写成
- *   `key=点我切源 / name=豆豆┃片单 / api=csp_DouDouGuard` —— 三个字段里**都没有「豆瓣/douban」**
- *   （`豆豆`/`DouDou` 是它的自有叫法），旧判据抓不到 → 点击进详情 → 空详情。
- *   故补上 `豆豆|doudou|doudouguard` 这一族别名（摸鱼/潇洒侧则写 `csp_Douban` + 「豆瓣」名）。
+ * 某第三方源的豆瓣片单源写成
+ *   `key=点我切源 / name=某片单名┃片单 / api=csp_某源` —— 三个字段里**都没有「豆瓣/douban」**
+ *   （它用的是自有叫法而非「豆瓣」），旧判据抓不到 → 点击进详情 → 空详情。
+ *   故补上这类源的自有别名（部分源侧则写 `csp_豆瓣类` + 「豆瓣」名）。
  *
- * ★ 只作**点击分流**的加速判据；运行时兜底见 `detailIsEmpty()`（详情确实为空时同口径）。
+ * 只作**点击分流**的加速判据；运行时兜底见 `detailIsEmpty()`（详情确实为空时同口径）。
  */
 export function isDoubanLikeSource(
   s: Pick<SourceBean, 'key' | 'name' | 'api' | 'ext'> | null | undefined,

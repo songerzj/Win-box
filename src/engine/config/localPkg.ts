@@ -1,5 +1,5 @@
 // src/engine/config/localPkg.ts
-// ★ 2026-09-29（用户要求）：本地包（影视壳 / 影视仓 目录包）支持 —— 包根注册 + 包内相对路径展开。
+// 本地包（目录包）支持 —— 包根注册 + 包内相对路径展开。
 //
 // 上游形态（FongMi/TVBox 生态的「本地包」）：
 //   <包根>/影视.json    订阅主体（sites/lives/parses/spider…）

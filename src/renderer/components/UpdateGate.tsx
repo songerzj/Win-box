@@ -1,5 +1,5 @@
 // src/renderer/components/UpdateGate.tsx
-// ★ 2026-10-13：启动更新提示 —— 启动时比对本地版本与 GitHub 最新 Release；
+// 启动更新提示 —— 启动时比对本地版本与 GitHub 最新 Release；
 //   发现新版本后由用户选择「立即更新」或「暂不更新」，不再强制锁死软件。
 //
 // 红线：检查失败（网络不通等）**绝不影响软件使用** —— 直接放行。
@@ -21,7 +21,7 @@ function isPlayerWindow(): boolean {
 
 export default function UpdateGate({ children }: { children: ReactNode }) {
   /**
-   * ★ 2026-10-08（用户要求「详情页独立窗口」）：详情窗口同样跳过门禁 —— 它只是主窗口的副本窗口，
+   * 详情窗口同样跳过门禁 —— 它只是主窗口的副本窗口，
    *   提示/下载由主窗口统一负责（否则两个窗口各下一次 Setup）。
    */
   const skip = isPlayerWindow() || isDetailWinHash(window.location.hash) || isSearchWindow();
@@ -94,7 +94,7 @@ export default function UpdateGate({ children }: { children: ReactNode }) {
   const received = progress?.received || 0;
   const percent = progress?.phase === 'done' || progress?.phase === 'launching' ? 100 : progress?.percent || 0;
   const launching = progress?.phase === 'launching';
-  /** ★ 2026-09-30：下载前会先给各代理线路测速（挑最快的），此阶段不显示字节进度 */
+  /** 下载前会先给各代理线路测速（挑最快的），此阶段不显示字节进度 */
   const speedtest = progress?.phase === 'speedtest';
   const statusText = error
     ? '下载失败'
@@ -168,7 +168,7 @@ export default function UpdateGate({ children }: { children: ReactNode }) {
             </div>
           )}
 
-          {/* ★ 2026-10-14：`flex: 0`（= `0 1 0%`）会把按钮压到 min-content（中文 1 字宽）并把文字
+          {/* `flex: 0`（= `0 1 0%`）会把按钮压到 min-content（中文 1 字宽）并把文字
               折成两行，看起来像竖排按钮；与本仓其它按钮统一改为 `0 0 auto`（按内容取宽、不收缩）。 */}
           <div className="row upd-actions">
             {!busy && !error && (
@@ -176,7 +176,7 @@ export default function UpdateGate({ children }: { children: ReactNode }) {
                 <button autoFocus style={{ flex: '0 0 auto' }} onClick={() => setDismissed(true)}>
                   暂不更新
                 </button>
-                {/* ★ 2026-10-16（用户要求）：网盘备用下载 —— 点击用**系统浏览器**打开网盘分享页，用户自行下载。
+                {/* 网盘备用下载 —— 点击用**系统浏览器**打开网盘分享页，用户自行下载。
                     走 `window.open` 即可：主窗口的 `setWindowOpenHandler` 已把它交给 `shell.openExternal`
                     （见 main/index.ts），与说明页的 GitHub 链接同款口径，不必新增 IPC。
                     点它**不关弹窗**：用户下载完可能还要回来点「暂不更新」。 */}

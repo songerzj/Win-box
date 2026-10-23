@@ -25,22 +25,22 @@ public class EnvJni extends JniFunction {
     static final String GUEST_FILES = "/data/data/com.winbox/files";
     static final String GUEST_CACHE = "/data/data/com.winbox/cache";
 
-    /** 内层 JNI（= ProxyJni 反射代理）。★ 必须把 DvmMethod/VaList 原样交给它，见文末「委托纪律」 */
+    /** 内层 JNI（= ProxyJni 反射代理）。必须把 DvmMethod/VaList 原样交给它，见文末「委托纪律」 */
     private final Jni inner;
 
     /**
-     * ★ 2026-09-27（壳通解）：壳类所在的宿主加载器（= 载入壳 jar 的 URLClassLoader，见 SpiderRunner.setupEnv）。
+     * （壳通解）：壳类所在的宿主加载器（= 载入壳 jar 的 URLClassLoader，见 SpiderRunner.setupEnv）。
      *   `Context.getClassLoader()` 要返回**它**，理由：原生守卫会拿 `context.getClassLoader()` 与
      *   `Init.classLoader()`（= 壳类自己的加载器）当同一个对象用 —— 先在一个上 GetMethodID，
      *   再在另一个上 CallObjectMethod；两者不同实例/不同类时，unidbg 查不到 jmethodID →
-     *   BackendException（实测 wex：`getLoader` 在 `getResourceAsStream("assets/wexshinidie.guard")`
+     *   BackendException（实测 某第三方源：`getLoader` 在 `getResourceAsStream("assets/wexshinidie.guard")`
      *   处崩，随后守卫握手失败、BaseSpiderGuard NPE）。
      *   同一加载器还能顺带解决资产读取：壳 jar 的 `assets/**` 就在它的 URL 里，`getResourceAsStream` 可取到。
      */
     private static volatile ClassLoader hostLoader;
 
     /**
-     * ★ 2026-09-27（载荷层）：**按 VM 分桶**的宿主加载器。
+     * （载荷层）：**按 VM 分桶**的宿主加载器。
      *   壳与载荷各有一只模拟器/VM，但「Context.getClassLoader() 该返回谁」两边答案不同：
      *   壳要壳加载器（读 `assets/*.guard`），载荷要**解密 dex 的加载器**（它才能 loadClass 载荷类）。
      *   一个静态字段会让后建立的那只覆盖前者（现象：载荷 native 反射自己类时 CNFE）。
@@ -162,7 +162,7 @@ public class EnvJni extends JniFunction {
     }
 
     /**
-     * ★ 内层链「答不了」时的兜底（真机实测，勿删）：jdk 侧 stub 的 `Init.context()` 在这条调用链上
+     * 内层链「答不了」时的兜底（实测，勿删）：jdk 侧 stub 的 `Init.context()` 在这条调用链上
      * 反射不通 → 基类直接抛 `UnsupportedOperationException`，异常会把 `JNI_OnLoad`/壳自己的
      * `register()` 整条带崩（表现成桥 `准备失败 … InvocationTargetException` → 全壳降级）。
      * 只对「取 Context 的静态入口」兜底为伪造 Application；其它未支持调用照旧抛出（不静默失败）。
@@ -175,15 +175,15 @@ public class EnvJni extends JniFunction {
         throw e;
     }
 
-    // ---------------- 委托纪律（★ 2026-09-27 壳通解，勿回退） ----------------
+    // ---------------- 委托纪律（壳通解，勿回退） ----------------
     //
     // unidbg 的 JNI 分派走 **DvmMethod 变体**（`DvmMethod.callObjectMethod(obj, varArg)` → 类级 JNI 的
     // `callObjectMethod(vm, obj, DvmMethod, VarArg)`）；而基类 JniFunction 的 DvmMethod 变体只是转成
     // **字符串签名**再走 `callObjectMethod(vm, obj, String, VarArg)`，最后落在 fallbackJni 上。
-    // ★ 关键：ProxyJni 的反射实现**只在 DvmMethod/VaList 变体里**（它没有覆写字符串变体）。
+    // 关键：ProxyJni 的反射实现**只在 DvmMethod/VaList 变体里**（它没有覆写字符串变体）。
     //   所以本类如果只覆写字符串变体并 `super`，未拦截的调用会一路落到空 fallback →
     //   `UnsupportedOperationException: android/app/Application->getClassLoader()Ljava/lang/ClassLoader;`
-    //   （实测：wex 壳 `DexNative.getLoader` 里 `context.getClassLoader()` 直接崩掉守卫握手）。
+    //   （实测：某第三方源壳 `DexNative.getLoader` 里 `context.getClassLoader()` 直接崩掉守卫握手）。
     //   因此：**要用到的每个家族都必须覆写 DvmMethod/VaList 变体，并把 DvmMethod 原样交给 inner**。
 
     @Override

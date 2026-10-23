@@ -24,7 +24,7 @@ public class PendingIntent implements Parcelable {
         this.creatorPackage = creatorPackage == null ? "org.tvbox.desktop" : creatorPackage;
     }
 
-    // ---------------- 静态工厂（★ 真实调用入口） ----------------
+    // ---------------- 静态工厂（真实调用入口） ----------------
 
     public static PendingIntent getActivity(android.content.Context context, int requestCode,
                                             android.content.Intent intent, int flags) {

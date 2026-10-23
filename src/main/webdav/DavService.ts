@@ -70,7 +70,7 @@ export class DavService {
     if (!raw.length) throw new Error('未解析到目录内容（可能是地址不对，或需要用户名/密码）');
 
     const wantPath = hrefToPath(target, base) || '/';
-    // ★ 服务器基址自带路径（如 `/dav`）：PROPFIND 的 href 会带上它 —— 统一剥掉，
+    // 服务器基址自带路径（如 `/dav`）：PROPFIND 的 href 会带上它 —— 统一剥掉，
     //   让 UI 与「再次请求」都以**基址相对路径**为准（davJoin 会把基址路径加回去）。
     let basePath = '';
     try {

@@ -128,7 +128,7 @@ describe('JsSpider — 沙箱全局 API', () => {
     expect(kvMap.get('jsRuntime_a_b')).toBe('hello-local');
   });
 
-  it('local.get 键缺失 → 返回第二参数默认值（★2026-09-20 用户授权修复，上游仅异常时返回）', async () => {
+  it('local.get 键缺失 → 返回第二参数默认值（修复，上游仅异常时返回）', async () => {
     const { spider } = makeSpider(`
       export default {
         homeContent() {

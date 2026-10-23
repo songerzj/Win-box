@@ -41,15 +41,15 @@ import type { UpdateService } from '../update/UpdateService';
 import type { ExploreQuery } from '../../shared/discover';
 // 独立播放器窗口
 import { openPlayerWindow, playerSwitchEpisode, isPlayerOpen, closePlayerWindow, playerSetMini, playerIsMini, playerWindow, playerResendInit, onPlayerWindowClosed, isPlayerWindow, playerSetFullscreen, playerIsFullscreen, playerSetResizable } from '../player/PlayerWindow';
-// ★ 2026-10-08 MPV 高兼容播放内核（独立播放器窗口内嵌 --wid）
+// MPV 高兼容播放内核（独立播放器窗口内嵌 --wid）
 import { MpvController } from '../player/MpvController';
-// ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
+// （R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
 import type { PlayerEngineController } from '../player/PlayerEngineController';
-// ★ 2026-10-16 插件系统（M1）：宿主聚合（登记/安装/启停/超分着色器解析）
+// 插件系统（M1）：宿主聚合（登记/安装/启停/超分着色器解析）
 import type { PluginHost } from '../plugin/PluginHost';
 import type { PlayerEngineView } from '../../shared/plugin';
 import type { SrMode } from '../../shared/player';
-// ★ 2026-10-08 详情页独立窗口（外观开关控制；见 renderer/lib/detailWin.ts）
+// 详情页独立窗口（外观开关控制；见 renderer/lib/detailWin.ts）
 import { openDetailWindow, detailWindowReady } from '../player/DetailWindow';
 import { openSearchWindow, searchWindowReady } from '../player/SearchWindow';
 import type { MpvCommand, MpvStartOptions } from '../../shared/player';
@@ -87,11 +87,11 @@ async function probeLocalHttp(url: string, timeoutMs = 2500): Promise<boolean> {
   }
 }
 
-/** ★ 本次主进程启动的会话标识（模块求值 = 应用启动一次；重启必变） */
+/** 本次主进程启动的会话标识（模块求值 = 应用启动一次；重启必变） */
 const SESSION_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 /**
- * ★ 2026-10-14（用户要求）：本地 TXT / M3U 直播源「读 → 形态校验 → 归一化 UTF-8 落盘」的共用步骤。
+ * 本地 TXT / M3U 直播源「读 → 形态校验 → 归一化 UTF-8 落盘」的共用步骤。
  * 返回 `needsName=true` 表示调用方尚未给出线路名（交由渲染层「单独弹框命名」后二次调用）。
  * 抛错 = 文件为空 / 编码可疑 / 内容不像直播源。
  */
@@ -118,10 +118,10 @@ function importLiveFile(srcPath: string, nameOverride: string): { fileName: stri
 
 export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService, updater: UpdateService, pkgs: LocalPkgStore, plugins: PluginHost, engines: PlayerEngineController): void {
   const log = fileLogger;
-  /** ★ 2026-10-08 MPV 播放内核（单会话；播放器窗口关闭/退出应用会 dispose） */
+  /** MPV 播放内核（单会话；播放器窗口关闭/退出应用会 dispose） */
   const mpv = new MpvController(fileLogger);
   /**
-   * ★ 2026-10-17（B3「冻结/解冻」）：播放器窗口开/关 → 广播给**其余窗口**。
+   * （B3「冻结/解冻」）：播放器窗口开/关 → 广播给**其余窗口**。
    *   主窗口据此把隐藏页里已解码的图片位图释放掉（只清 `img.src`、React 树与数据原地保留，零重载）；
    *   实测这部分埋在 GPU 进程里 ≈130~200MB（见 docs/design/内存优化_专项立项.md §2.9）。
    */
@@ -147,9 +147,9 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   ipcMain.handle(IPC.WIN_CLOSE, (e) => winOf(e)?.close());
   ipcMain.handle(IPC.WIN_IS_MAXIMIZED, (e) => !!winOf(e)?.isMaximized());
   /**
-   * ★ 2026-09-30（用户要求）：播放器「置顶」按钮 —— 把**发起窗口**设为始终置顶。
+   * 播放器「置顶」按钮 —— 把**发起窗口**设为始终置顶。
    *   level 用 'floating'（HWND_TOPMOST 语义：压过所有普通窗口，但不与任务栏/系统 UI 抢层级）。
-   *   ★ 必须走 registerHandler（IpcResult 信封）—— 渲染层 client 的 unwrap 只认 {ok,data}。
+   *   必须走 registerHandler（IpcResult 信封）—— 渲染层 client 的 unwrap 只认 {ok,data}。
    */
   registerHandler(IPC.WIN_SET_ALWAYS_ON_TOP, (e: IpcMainInvokeEvent, on: unknown) => {
     const w = winOf(e);
@@ -166,7 +166,6 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
 
   registerHandler(IPC.SYSTEM_PING, () => 'pong', log);
   /**
-   * ★ 2026-09-30（用户要求「软件关闭后，所有的墓碑机制都应该脱钩」）：
    *   本次**主进程启动**的唯一会话标识（每次启动必变）——渲染层用它判定「新一次启动」，
    *   决定是否丢弃页面状态类记忆（搜索态/浏览态/详情态）。见 renderer/lib/uiMemory.ts。
    */
@@ -188,8 +187,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   registerHandler(IPC.THEME_SET, (_e: any, theme: string) => {
     nativeTheme.themeSource = theme === 'light' ? 'light' : theme === 'dark' ? 'dark' : 'system';
     const w = winOf(_e as IpcMainInvokeEvent);
-    // ★ 不透明底色：对齐主窗口 createWindow 的修复（透明背景在放大/最大化时残影异形）
-    // ★★ 2026-10-08（用户报「b蓝光 / 自建 4K-2 有声音无图像」根因修复）★★：
+    // 不透明底色：对齐主窗口 createWindow 的修复（透明背景在放大/最大化时残影异形）
+    // 「有声音无图像」类问题的根因修复：
     //   **播放器窗口是透明窗**（mpv 画面从播放区透明处透出），它自己也跑主题引导 → 会走到这里；
     //   一旦给它设不透明底色，mpv 画面被整块盖住（实测复现 + `setBackgroundColor` 最小复现）。
     //   该窗口的底色必须保持 `#00000000`（构造项），其「最大化残影」由 PlayerWindow 自身的
@@ -203,7 +202,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     if (!existsSync(p)) return '';
     return 'data:image/png;base64,' + readFileSync(p).toString('base64');
   }, log);
-  // ★ 2026-09-30（用户要求）：数据目录信息（安装目录/data；老用户迁移结果 / 回退原因）——配置页展示 + 排障
+  // 数据目录信息（安装目录/data；老用户迁移结果 / 回退原因）——配置页展示 + 排障
   registerHandler(IPC.SYSTEM_DATA_DIR, () => ({
     path: userDataDir(),
     mode: dataDirReport.mode,
@@ -228,7 +227,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
 
   // 用户配置持久化 + 源管理（任务 B）
   registerHandler(IPC.CFG_GET, () => host.cfgSnapshot(), log);
-  // ★ 2026-09-27：已学到的「需要网盘绑定」源 key（学习点 = play() 命中网盘直链，见 SpiderHost.markDriveBindNeeded）
+  // 已学到的「需要网盘绑定」源 key（学习点 = play() 命中网盘直链，见 SpiderHost.markDriveBindNeeded）
   registerHandler(IPC.DRIVE_BIND_KEYS, () => host.driveBindLearned(), log);
   registerHandler(IPC.CFG_ADD_SOURCE, (_e: any, bean: SourceBean) => host.cfgAddSource(bean), log);
   registerHandler(IPC.CFG_UPDATE_SOURCE, (_e: any, a: { key: string; patch: SourceUpdatePatch }) =>
@@ -249,15 +248,15 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   registerHandler(IPC.CFG_PROFILE_DELETE, (_e: any, id: string) => host.cfgDeleteProfile(id), log);
   registerHandler(IPC.CFG_PROFILE_UPDATE_NAME, (_e: any, a: { id: string; name: string }) => host.cfgUpdateProfileName(a.id, a.name), log);
   /**
-   * ★ 2026-09-30（用户要求）：换源弹层「左订阅 / 右源」视图 —— 每份档案的源 key/name 清单。
+   * 换源弹层「左订阅 / 右源」视图 —— 每份档案的源 key/name 清单。
    * 当前生效档案取运行期真实源列表；其余档案解析其存档 JSON（坏档给空清单，不阻塞弹层）。
    */
   registerHandler(IPC.CFG_PROFILE_SITES, () => host.cfgProfileSites(), log);
-  /** ★ 2026-09-30（用户要求）：一步完成「切换档案 + 选中该档案下的源」（单次 apply，避免两轮宿主重活） */
+  /** 一步完成「切换档案 + 选中该档案下的源」（单次 apply，避免两轮宿主重活） */
   registerHandler(IPC.CFG_SWITCH_PROFILE_SOURCE, (_e: any, a: { profileId: string; key: string }) =>
     host.cfgSwitchProfileSource(String(a?.profileId || ''), String(a?.key || '')), log);
   // 清理缓存：只删可重建的纯缓存（Chromium 缓存 / jar 转换缓存），绝不动配置/历史/绑定
-  //   ★ 2026-09-24：清完立刻在后台重建蜘蛛运行时（重新转换 jar + 重启热进程），
+  // 清完立刻在后台重建蜘蛛运行时（重新转换 jar + 重启热进程），
   //     否则用户下一次进源要在请求里现付 30~40s 的「下载 + dex2jar」并被超时打断。
   registerHandler(IPC.CACHE_CLEAR, async () => {
     const r = clearAppCache(userDataDir(), spiderCacheDir());
@@ -286,33 +285,37 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   // 弹幕（外部接口清单）
   registerHandler(IPC.DANMAKU_GET, () => host.danmakuGetSettings(), log);
   registerHandler(IPC.DANMAKU_SET, (_e: any, patch: any) => host.danmakuSetSettings(patch || {}), log);
-  // ★ 2026-09-26：season = 资源名提取的季号（同季条目优先）
+  // season = 资源名提取的季号（同季条目优先）
   registerHandler(IPC.DANMAKU_SEARCH, (_e: any, name: string, season?: number) =>
     host.danmakuSearch(String(name), Number.isFinite(Number(season)) && Number(season) > 0 ? Number(season) : undefined), log);
-  // ★ 2026-09-26：source = 接口基础地址（候选项自带来源，透传回来即可）
+  // source = 接口基础地址（候选项自带来源，透传回来即可）
   registerHandler(IPC.DANMAKU_EPISODES, (_e: any, bangumiId: number, animeTitle?: string, source?: string) =>
     host.danmakuEpisodes(Number(bangumiId), animeTitle ? String(animeTitle) : undefined, source ? String(source) : ''), log);
   registerHandler(IPC.DANMAKU_FETCH, (_e: any, episodeId: number, source?: string) =>
     host.danmakuFetch(Number(episodeId), source ? String(source) : ''), log);
   // TMDB 元数据补全（缺封面/缺简介兜底；凭据内置密文，仅查询）
   registerHandler(IPC.META_SEARCH, (_e: any, name: string, year?: string, provider?: string) => host.metaSearch(String(name || ''), year ? String(year) : undefined, provider === 'tmdb' || provider === 'douban' ? provider : undefined), log);
-  // ★ 2026-09-24：详情页增强（演职员/类型/相关推荐）与发现页榜单（无源默认主页）
+  // 详情页增强（演职员/类型/相关推荐）与发现页榜单（无源默认主页）
   registerHandler(IPC.META_EXTRA, (_e: any, name: string, year?: string) => host.metaExtra(String(name || ''), year ? String(year) : undefined), log);
+  // 详情页「相关推荐 / 豆瓣影评」tab 区块（豆瓣口径，无需凭据）
+  registerHandler(IPC.META_DOUBAN_EXTRA, (_e: any, name: string, year?: string) => host.metaDoubanExtra(String(name || ''), year ? String(year) : undefined), log);
+  // 影评全文（点影评行 → 独立小窗口；按需拉取）
+  registerHandler(IPC.META_DOUBAN_REVIEW, (_e: any, reviewId: string) => host.metaDoubanReview(String(reviewId || '')), log);
   registerHandler(IPC.META_DISCOVER, (_e: any, refresh?: boolean) => host.metaDiscover(!!refresh), log);
   registerHandler(IPC.META_MOVIE_HOT, () => host.metaMovieHot(), log);
   registerHandler(IPC.META_DISCOVER_IMAGES, (_e: any, name: string, mediaType: string, year?: string, kind?: string, doubanId?: string) =>
     host.metaDiscoverImages(String(name || ''), mediaType === 'tv' ? 'tv' : 'movie', /^\d{4}$/.test(String(year)) ? String(year) : undefined, kind === 'poster' ? 'poster' : 'backdrop', /^\d{5,}$/.test(String(doubanId || '')) ? String(doubanId) : undefined), log);
-  // ★ 2026-09-24：发现页「分类」（TMDB 类型清单 + 按类型翻页）
+  // 发现页「分类」（TMDB 类型清单 + 按类型翻页）
   registerHandler(IPC.META_GENRES, () => host.metaGenres(), log);
   registerHandler(IPC.META_GENRE_PAGE, (_e: any, mediaType: string, genreId: number, page: number) => host.metaGenrePage(String(mediaType || 'movie'), Number(genreId) || 0, Number(page) || 1), log);
-  // ★ 2026-10-15（级联分类）：发现页「分类浏览」（豆瓣 recommend；start 偏移分页）与级联词表
+  // （级联分类）：发现页「分类浏览」（豆瓣 recommend；start 偏移分页）与级联词表
   registerHandler(IPC.META_DISCOVER_QUERY, (_e: any, q: ExploreQuery) => host.metaDiscoverQuery(q || { mediaType: 'movie', tags: [] }), log);
   registerHandler(IPC.META_EXPLORE_VOCAB, () => host.metaExploreVocab(), log);
-  // ★ 2026-09-24：元数据来源配置（TMDB Key/代理/镜像 + 策略）与搜索面板联想
+  // 元数据来源配置（TMDB Key/代理/镜像 + 策略）与搜索面板联想
   registerHandler(IPC.META_GET_SETTINGS, () => host.metaGetSettings(), log);
   registerHandler(IPC.META_SET_SETTINGS, (_e: any, patch: unknown) => host.metaSetSettings((patch || {}) as Partial<MetaSettings>), log);
   registerHandler(IPC.META_SUGGEST, (_e: any, q: string) => host.metaSuggest(String(q || '')), log);
-  // ★ 发现页 Hero 轮播：取某部片的横版剧照/竖版海报（TMDB images）
+  // 发现页 Hero 轮播：取某部片的横版剧照/竖版海报（TMDB images）
   registerHandler(IPC.META_IMAGES, (_e: any, mediaType: string, tmdbId: number) =>
     host.metaImages(String(mediaType || 'movie') === 'tv' ? 'tv' : 'movie', Number(tmdbId) || 0), log);
   registerHandler(IPC.CFG_MERGE_EXPORT, (_e: any, ids: string[]) => host.mergeProfilesExport(ids), log);
@@ -328,8 +331,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return { saved: true, path: r.filePath };
   }, log);
   /**
-   * ★ 2026-09-29 设置备份（导出）：宿主设置与凭据 + 播放偏好 + 代理 + 老板键 + 渲染层 localStorage → 单个 JSON。
-   * ★ 凭据为**明文**（口径见 shared/backup.ts）：换机/重装后也能还原；文件由用户自行保管。
+   * 设置备份（导出）：宿主设置与凭据 + 播放偏好 + 代理 + 老板键 + 渲染层 localStorage → 单个 JSON。
+   * 凭据为**明文**（口径见 shared/backup.ts）：换机/重装后也能还原；文件由用户自行保管。
    */
   registerHandler(IPC.BACKUP_EXPORT, async (_e: any, renderer: Record<string, string>): Promise<BackupExportResult> => {
     const w = winOf(_e as IpcMainInvokeEvent);
@@ -354,7 +357,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     log.i(`设置备份：已导出（源 ${settings.userConfig.sources.length} / 网盘凭据 ${Object.keys(settings.driveTokens).length} / localStorage ${Object.keys(file.renderer).length} 项）→ ${r.filePath}`);
     return { saved: true, path: r.filePath };
   }, log);
-  /** ★ 2026-09-29 设置备份（导入）：校验 → 覆盖各 store → 返回 localStorage 给渲染层写回并刷新 */
+  /** 设置备份（导入）：校验 → 覆盖各 store → 返回 localStorage 给渲染层写回并刷新 */
   registerHandler(IPC.BACKUP_IMPORT, async (_e: any): Promise<BackupImportResult> => {
     const w = winOf(_e as IpcMainInvokeEvent);
     const picked = await dialog.showOpenDialog(w ?? undefined!, {
@@ -389,8 +392,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     log.i(`设置备份：已还原（源 ${s.userConfig?.sources?.length ?? 0} / 网盘凭据 ${Object.keys(s.driveTokens || {}).length} / localStorage ${Object.keys(parsed.file.renderer).length} 项）← ${path}`);
     return { ok: true, path, renderer: parsed.file.renderer };
   }, log);
-  // ★ 播放网盘资源未绑定 cookie → 从任意窗口请求主窗口跳到「点播页」
-  //   （网盘绑定入口已统一到源内：点播页 → 该源 → 「网盘绑定」按钮；配置页不再放网盘配置）
+  // 播放网盘资源未绑定 cookie → 从任意窗口请求主窗口跳到「配置 → 凭据」的网盘绑定卡片
+  // （源内横幅已取消；配置页是唯一常驻入口 + 播放时自动弹出的绑定窗口）
   registerHandler(IPC.UI_GOTO_DRIVE_BIND, () => {
     const pwin = playerWindow();
     for (const w of BrowserWindow.getAllWindows()) {
@@ -406,7 +409,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return true;
   }, log);
   /**
-   * ★ 2026-09-27（用户要求）：导入**本地 .json 订阅文件**（替代原「粘贴 JSON 文本」入口）。
+   * 导入**本地 .json 订阅文件**（替代原「粘贴 JSON 文本」入口）。
    *   档案名：自填名优先，否则**取原始文件名**（去扩展名）——不再一律「新订阅 xx」。
    */
   registerHandler(IPC.CFG_IMPORT_JSON_LOCAL, async (e: any, customName?: string): Promise<{
@@ -437,8 +440,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
 
   // 本地 .py：复制到安装目录 imports/py 后入库，不依赖原始文件。
-  //   ★ 2026-09-27（用户要求）：源名/源 key 用**原始文件名**（去扩展名）——与本地 .json 同一命名口径
-  //   ★ 2026-10-16（用户要求）：文件选择器支持**按住 Ctrl 多选**——所选 .py 一并导入；
+  // 源名/源 key 用**原始文件名**（去扩展名）——与本地 .json 同一命名口径
+  // 文件选择器支持**按住 Ctrl 多选**——所选 .py 一并导入；
   //     逐个文件独立成败（单个失败只丢弃该文件副本、不影响其余），最后汇总回执。
   registerHandler(IPC.CFG_IMPORT_PY_LOCAL, async (e: any): Promise<{
     ok: boolean; key?: string; keys?: string[]; imported?: number; failed?: { name: string; error: string }[]; error?: string;
@@ -474,7 +477,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
 
   /**
-   * ★ 2026-09-29（用户要求）：导入**本地包**（影视壳/影视仓 目录包）。
+   * 导入**本地包**（壳类目录包）。
    *
    * 链路：选目录 → 在顶层找订阅 JSON → 复制到安装目录 imports/packages 并登记副本
    *   → rewritePkgPaths 展开副本内相对引用（`./py/x.py` → file://；其余 → /pkg/<i>/…）
@@ -534,8 +537,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
 
   /**
-   * ★ 2026-09-30（用户要求）：导入**本地 TXT / M3U 直播源**（配置页按钮）。
-   * ★ 2026-10-14（用户要求）：改为**两步导入**（对齐本地包命名流程）——
+   * 导入**本地 TXT / M3U 直播源**（配置页按钮）。
+   * 改为**两步导入**（对齐本地包命名流程）——
    *   首次（不带 path）：选文件 → 形态校验（#EXTM3U / #genre# / 「频道,http…」至少其一）→
    *     原始字节归一化为 UTF-8 落 `<userData>/local-live/<文件名>`（就地更新，同名覆盖）→
    *     返回 `{ needsName:true, path, name:<原文件名> }`，由渲染层弹框命名；
@@ -569,14 +572,14 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     }
   }, log);
 
-  /** ★ 2026-10-14（用户要求）：删除某条直播线路（配置页直播线路列表） */
+  /** 删除某条直播线路（配置页直播线路列表） */
   registerHandler(IPC.CFG_DELETE_LIVE, (_e: any, index: number) => host.cfgDeleteLive(Number(index)), log);
-  /** ★ 2026-10-16（用户要求）：批量删除直播线路（配置页直播线路列表多选删除） */
+  /** 批量删除直播线路（配置页直播线路列表多选删除） */
   registerHandler(IPC.CFG_DELETE_LIVES, (_e: any, indices: number[]) => host.cfgDeleteLives(Array.isArray(indices) ? indices.map(Number) : []), log);
-  /** ★ 2026-10-14（用户要求）：重命名某条直播线路（导入后允许编辑名称） */
+  /** 重命名某条直播线路（导入后允许编辑名称） */
   registerHandler(IPC.CFG_UPDATE_LIVE, (_e: any, a: { index: number; name: string }) => host.cfgUpdateLiveName(Number(a?.index), String(a?.name ?? '')), log);
 
-  // ★ 2026-09-29（用户要求）本地包「网页源」：点播页「网页」入口 → 独立窗口打开 homePage（preload 注入 window.fm）
+  // 本地包「网页源」：点播页「网页」入口 → 独立窗口打开 homePage（preload 注入 window.fm）
   registerHandler(IPC.WEBHOME_OPEN, (_e: any, init: WebHomeOpenInit) => openWebHomeWindow(init || { url: '' }), log);
   // 以下三条是**网页窗口 preload → 主进程**的桥（渲染层不直接调用；见 WebHomeWindow / webhomePreload.ts）
   registerHandler(IPC.WEBHOME_FM_REQ, (_e: any, payload: FmReqPayload) => webHomeReq(payload || { url: '' }), log);
@@ -588,7 +591,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     host.category(a.key, a.tid, a.pg, a.extend || {}), log);
   registerHandler(IPC.VOD_DETAIL, (_e: any, a: { key: string; ids: string[] }) => host.detail(a.key, a.ids), log);
   registerHandler(IPC.VOD_SEARCH, (_e: any, a: { key: string; wd: string }) => host.search(a.key, a.wd), log);
-  // ★ 聚合搜索：逐源进度经 VOD_SEARCH_ALL_PROGRESS 推给发起窗口 → 渲染层边搜边出
+  // 聚合搜索：逐源进度经 VOD_SEARCH_ALL_PROGRESS 推给发起窗口 → 渲染层边搜边出
   //   参数 { wd, refresh }：refresh=true 忽略本地缓存强制重搜（「重新搜索」按钮）
   registerHandler(IPC.VOD_SEARCH_ALL, async (e: any, a: { wd: string; refresh?: boolean } | string) => {
     const arg = typeof a === 'string' ? { wd: a, refresh: false } : a || { wd: '', refresh: false };
@@ -602,8 +605,8 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
       host.onSearchAllProgress = undefined;
     }
   }, log);
-  // ★ 2026-09-24：vipFlags 由主进程按订阅顶层 flags 自行决定（渲染层不再传）
-  // ★ 2026-09-29：磁力/电驴这类「桌面版无载体」的播放链接 → 顺手复制到剪贴板，
+  // vipFlags 由主进程按订阅顶层 flags 自行决定（渲染层不再传）
+  // 磁力/电驴这类「桌面版无载体」的播放链接 → 顺手复制到剪贴板，
   //   用户看到上屏提示后可直接粘进 qBittorrent / 迅雷等工具（见 engine/vod/playLink.ts）。
   registerHandler(IPC.VOD_PLAY, async (_e: any, a: { key: string; flag: string; id: string }) => {
     const r = await host.play(a.key, a.flag, a.id);
@@ -616,7 +619,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   // ---- 独立播放器窗口 ----
   registerHandler(IPC.PLAYER_OPEN, (_e: any, init: any) => {
     openPlayerWindow(init);
-    // ★ 2026-10-17（B3）：播放器已开 → 通知其余窗口冻结隐藏页的已解码图片
+    // （B3）：播放器已开 → 通知其余窗口冻结隐藏页的已解码图片
     notifyPlayerWindowState(true);
     return { ok: true };
   }, log);
@@ -625,7 +628,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
   registerHandler(IPC.PLAYER_IS_OPEN, () => ({ open: isPlayerOpen() }), log);
   registerHandler(IPC.PLAYER_GET_INIT, () => ({ open: isPlayerOpen() }), log);
-  /** ★ 2026-09-30：渲染层订阅就绪 → 重发最新 init（修新窗口「首推早于订阅」的竞态，见 PlayerWindow.playerResendInit） */
+  /** 渲染层订阅就绪 → 重发最新 init（修新窗口「首推早于订阅」的竞态，见 PlayerWindow.playerResendInit） */
   registerHandler(IPC.PLAYER_READY, () => {
     playerResendInit();
     return { ok: true };
@@ -658,18 +661,18 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return { ok: true };
   }, log);
 
-  // ---- ★ 2026-10-08 MPV 高兼容播放内核（独立播放器窗口内嵌；见 main/player/MpvController）----
+  // ---- MPV 高兼容播放内核（独立播放器窗口内嵌；见 main/player/MpvController）----
   registerHandler(IPC.MPV_STATUS, () => mpv.status(), log);
   registerHandler(IPC.MPV_START, async (e: any, opts: MpvStartOptions) => {
     const w = winOf(e as IpcMainInvokeEvent);
     if (!w) throw new Error('播放器窗口不存在（mpv 无法嵌入）');
-    // ★ 超分插件（M1）：初始着色器链由**主进程**按当前档位解析成绝对路径（渲染层不碰文件系统）
+    // 超分插件（M1）：初始着色器链由**主进程**按当前档位解析成绝对路径（渲染层不碰文件系统）
     const base = opts || ({ url: '' } as MpvStartOptions);
     const shaders = await plugins.srShaders(playerSettings.settings.srMode);
     return mpv.start(w, shaders.length ? { ...base, shaders } : base);
   }, log);
   registerHandler(IPC.MPV_CMD, async (_e: any, cmd: MpvCommand) => {
-    // ★ 超分换档：渲染层只报档位 → 此处解析为着色器绝对路径，再走 glsl-shaders（逐条 clr+append）
+    // 超分换档：渲染层只报档位 → 此处解析为着色器绝对路径，再走 glsl-shaders（逐条 clr+append）
     if (cmd?.type === 'sr-mode') {
       const value = await plugins.srShaders(cmd.value as SrMode);
       return { ok: mpv.command({ type: 'glsl-shaders', value }) };
@@ -681,7 +684,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return { ok: true };
   }, log);
 
-  // ---- ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）----
+  // ---- （R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）----
   /** 内置 2（html5 / mpv）+ 插件 N（`engine:<contributeId>`；未就绪项带 `note`） */
   const engineList = async (): Promise<PlayerEngineView[]> => {
     const st = mpv.status();
@@ -707,7 +710,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
   /**
    * 写启用开关（`playerSettings.engineEnabled`；默认关）。
-   * ★ 关闭正在运行的那个内核 → 立即停会话（不留孤儿进程；与「停用插件」口径一致）。
+   * 关闭正在运行的那个内核 → 立即停会话（不留孤儿进程；与「停用插件」口径一致）。
    */
   registerHandler(IPC.ENGINE_ENABLE, (_e: any, a: { id?: string; enabled?: boolean }) => {
     const id = String(a?.id || '');
@@ -719,7 +722,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
   /**
    * 拉起一次引擎会话。
-   * ★ **授权闸门**：先校验 `playerSettings.engineEnabled[id] === true`，否则**明确拒绝**
+   * **授权闸门**：先校验 `playerSettings.engineEnabled[id] === true`，否则**明确拒绝**
    *   （`{ok:false, reason}` —— 与「点播外部播放器未启用」同一套口径）。
    */
   registerHandler(IPC.ENGINE_START, async (e: any, a: MpvStartOptions & { engineId?: string }) => {
@@ -744,9 +747,9 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
   // 播放器窗口关闭 → 停 mpv（不留孤儿进程）；退出应用再兜一道（will-quit）
   onPlayerWindowClosed(() => mpv.dispose());
-  // ★ R11：播放器窗口关闭 → 一并停插件内核（同口径，不留孤儿进程）
+  // R11：播放器窗口关闭 → 一并停插件内核（同口径，不留孤儿进程）
   onPlayerWindowClosed(() => engines.dispose());
-  // ★ 2026-10-17（B3）：播放器窗口关闭 → 通知其余窗口把 `img.src` 挂回（解冻）
+  // （B3）：播放器窗口关闭 → 通知其余窗口把 `img.src` 挂回（解冻）
   onPlayerWindowClosed(() => notifyPlayerWindowState(false));
   app.on('will-quit', () => {
     try {
@@ -774,7 +777,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
 
   /**
-   * ★ 2026-10-16（用户报「播放时画面突然消失、软件只剩声音」）：渲染层 → 主进程的播放诊断上报。
+   * 渲染层 → 主进程的播放诊断上报。
    *   主窗（内嵌播放）与播放器窗跑同一个 VideoPlayer，故按**窗口身份**区分（排障时一眼看出是哪个窗）。
    *   fire-and-forget（send/on）：不占 IPC 往返、播放路径零负担；落盘与崩溃时带出见 util/mediaDiag。
    */
@@ -783,7 +786,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     const playerWin = isPlayerWindow(w);
     noteMediaState(e.sender.id, playerWin ? 'player' : w ? 'main' : 'gone', ev);
     /**
-     * ★ 2026-10-17：内存基线探针触发点 —— **播放器窗口**（点播 1080P 的主战场）开始播放时，
+     * 内存基线探针触发点 —— **播放器窗口**（点播 1080P 的主战场）开始播放时，
      *   起一轮 60s / 每 5s 的内存采样（Electron 逐进程 + 我们 spawn 的子进程 RSS）。
      *   主窗口内嵌播放（直播 / WebDAV）不触发，避免浏览过程中的噪声；一轮内重复触发会被去重。
      */
@@ -791,14 +794,14 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     if (playerWin && (evType === 'play' || evType === 'playing')) {
       startPlayMemWatch();
       /**
-       * ★ 2026-10-17（B1）：播放期间不会再发搜索请求 → 常驻蜘蛛池纯属白占内存，
+       * （B1）：播放期间不会再发搜索请求 → 常驻蜘蛛池纯属白占内存，
        *   布防「播放期收缩」（整体空闲 30s 后收敛到 1 个热进程）。
        */
       host.onPlaybackStarted();
     }
   });
 
-  // ---- ★ 网络代理（DNS 污染 / TLS SNI 阻断站点用；改后即时生效，无需重启）----
+  // ---- 网络代理（DNS 污染 / TLS SNI 阻断站点用；改后即时生效，无需重启）----
   registerHandler(IPC.PROXY_GET, () => proxySettingsView(), log);
   registerHandler(IPC.PROXY_SET, (_e: any, patch: Partial<ProxySettings>) => {
     const next = setProxySettings(patch || {});
@@ -807,13 +810,13 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return next;
   }, log);
 
-  // ---- ★ 播放偏好（m3u8 去广告开关；本地中继 /play 每轮读一次 → 改后即时生效）----
+  // ---- 播放偏好（m3u8 去广告开关；本地中继 /play 每轮读一次 → 改后即时生效）----
   registerHandler(IPC.PLAYER_PREFS_GET, () => playerSettings.settings, log);
   registerHandler(IPC.PLAYER_PREFS_SET, (_e: any, patch: Partial<PlayerSettings>) => playerSettings.update(patch || {}), log);
-  // ---- ★ 2026-10-16 插件系统（M1）：登记 / 安装（弹选择框）/ 卸载 / 启停 / 超分状态 ----
+  // ---- 插件系统（M1）：登记 / 安装（弹选择框）/ 卸载 / 启停 / 超分状态 ----
   registerHandler(IPC.PLUGIN_LIST, () => plugins.list(), log);
   /**
-   * ★ 2026-10-18（R10）安装**两段式**第 ① 段：弹文件框 + 干跑校验（**不落盘**）→ 返回权限清单。
+   * （R10）安装**两段式**第 ① 段：弹文件框 + 干跑校验（**不落盘**）→ 返回权限清单。
    * 渲染层据 `kind`/`permissions`/`permissionNotes` 弹确认框；确认后再调 `plugin:install`（第 ② 段）。
    */
   registerHandler(IPC.PLUGIN_INSPECT, async (e: any) => {
@@ -849,22 +852,22 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   registerHandler(IPC.PLUGIN_SET_ENABLED, async (_e: any, a: { id: string; enabled: boolean }) => plugins.setEnabled(String(a?.id || ''), !!a?.enabled), log);
   registerHandler(IPC.PLUGIN_SR, () => plugins.srState(playerSettings.settings.srMode), log);
   registerHandler(IPC.PLUGIN_THEMES, () => plugins.themeSkins(), log);
-  // ★ 2026-10-18 受限动作按钮（`contributes.ui.command`）：主进程只装配，动作由渲染层按词表执行
+  // 受限动作按钮（`contributes.ui.command`）：主进程只装配，动作由渲染层按词表执行
   registerHandler(IPC.PLUGIN_COMMANDS, () => plugins.uiCommands(), log);
-  // ★ 2026-10-18 追加快捷键（`contributes.keymap`）：主进程只装配 + 归一键位串，分发/执行均由渲染层完成
+  // 追加快捷键（`contributes.keymap`）：主进程只装配 + 归一键位串，分发/执行均由渲染层完成
   registerHandler(IPC.PLUGIN_KEYMAPS, () => plugins.keymaps(), log);
-  // ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）：主进程装配 + 代持久化；表单渲染/写回由渲染层完成
+  // 插件设置面板（`contributes.settings.panel`）：主进程装配 + 代持久化；表单渲染/写回由渲染层完成
   registerHandler(IPC.PLUGIN_SETTINGS, () => plugins.settingsPanels(), log);
   registerHandler(IPC.PLUGIN_SETTINGS_SET, (_e: any, a: any) => plugins.setPluginSetting(a || {}), log);
-  // ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：主进程只装配，组件树渲染由渲染层按页面语义名落槽
+  // 受限 UI 槽位（`contributes.ui.slot`）：主进程只装配，组件树渲染由渲染层按页面语义名落槽
   registerHandler(IPC.PLUGIN_SLOTS, () => plugins.uiSlots(), log);
-  // ---- ★ 2026-09-29 磁力外部播放器探测（MKV/HEVC 接力用；只列本机已安装的，不启动）----
+  // ---- 磁力外部播放器探测（MKV/HEVC 接力用；只列本机已安装的，不启动）----
   registerHandler(
     IPC.BT_DETECT_PLAYERS,
     () => detectPlayers(playerSettings.settings.btExternalPlayer).map((p) => ({ id: p.id, name: p.name, path: p.path })),
     log,
   );
-  // ---- ★ 2026-09-30（用户要求）：点播外部播放器（绑定值 vodExternalPlayer，与磁力分开）----
+  // ---- 点播外部播放器（绑定值 vodExternalPlayer，与磁力分开）----
   /** 探测本机已安装的外部播放器（点播用；配置页可指定路径，留空 = 自动探测） */
   registerHandler(
     IPC.VOD_DETECT_PLAYERS,
@@ -873,10 +876,9 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   );
   /**
    * 用本机外部播放器打开当前点播地址（a.path 指定本次用哪个播放器；地址是本机 /play 中继时 header/cookie 已由中继注入）。
-   * ★ 2026-09-30（用户要求）：`a.seek`（秒）= 续播位置 —— 按播放器类型拼成命令行参数传给播放器（见 seekArgs）。
+   * `a.seek`（秒）= 续播位置 —— 按播放器类型拼成命令行参数传给播放器（见 seekArgs）。
    */
   registerHandler(IPC.VOD_OPEN_EXTERNAL, (_e: any, a: { url?: string; path?: string; seek?: number }) => {
-    // ★ 2026-10-08（用户要求「换成勾选项；就算填了路径，不勾选依旧不使用第三方播放器」）：
     //   总开关在**主进程兜一道** —— 任何调用方都不得绕过：未勾选 = 拒绝拉起（渲染层同判据，见 externalPlay.ts）。
     if (!playerSettings.settings.vodExternalPlayerEnabled) {
       return { ok: false, error: '点播外部播放器未启用（请在配置页「播放」中勾选「启用点播外部播放器」）' };
@@ -921,7 +923,7 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return { ok: false, error: `网页版配置中心不可达（已试 ${cands.length} 个地址）` };
   }, log);
 
-  // ★ 2026-09-29 WebDAV 存储（只读）：服务器管理 + 目录浏览；取流走 `/play?dav=<id>`（中继注入 Authorization）
+  // WebDAV 存储（只读）：服务器管理 + 目录浏览；取流走 `/play?dav=<id>`（中继注入 Authorization）
   registerHandler(IPC.DAV_LIST, () => dav.list(), log);
   registerHandler(IPC.DAV_SET, (_e: any, s: DavServer) => dav.set(s || ({} as DavServer)), log);
   registerHandler(IPC.DAV_REMOVE, (_e: any, id: string) => {
@@ -944,14 +946,14 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
     return started ? { ok: true, player: p.name } : { ok: false, error: `无法启动「${p.name}」` };
   }, log);
 
-  // ★ 2026-09-29 DLNA 投屏：SSDP 发现局域网 MediaRenderer + AVTransport 三动作投屏
+  // DLNA 投屏：SSDP 发现局域网 MediaRenderer + AVTransport 三动作投屏
   registerHandler(IPC.DLNA_DISCOVER, () => dlna.discover(), log);
   registerHandler(IPC.DLNA_CAST, (_e: any, a: { device: DlnaDevice; target: DlnaCastTarget }) =>
     dlna.cast(a?.device, a?.target || ({ url: '', name: '', positionMs: 0 } as DlnaCastTarget)), log);
 
-  // ★ 2026-09-29 启动更新：检查（失败不影响使用）→ 用户确认后代理加速下载 Setup（进度推送）→ 拉起安装程序
+  // 启动更新：检查（失败不影响使用）→ 用户确认后代理加速下载 Setup（进度推送）→ 拉起安装程序
   registerHandler(IPC.UPDATE_CHECK, () => updater.check(), log);
-  // ★ 2026-10-16（用户要求）：界面缩放 —— 读当前状态 / 改档位（改档位时主进程立即套用并重排窗口尺寸）
+  // 界面缩放 —— 读当前状态 / 改档位（改档位时主进程立即套用并重排窗口尺寸）
   registerHandler(IPC.UI_GET_SCALE, () => uiScaleState(), log);
   registerHandler(IPC.UI_SET_SCALE, (_e: unknown, v: unknown) => setUiScalePref(v), log);
   registerHandler(IPC.UPDATE_DOWNLOAD, async () => {
@@ -983,23 +985,23 @@ export function registerIpc(host: SpiderHost, dav: DavService, dlna: DlnaService
   }, log);
 
   registerHandler(IPC.LIVE_LOAD, (_e: any, index: number) => host.loadLive(index), log);
-  // ★ 2026-09-29 EPG：渲染层把当前分组的频道引用传进来（免再拉一次直播源）
+  // EPG：渲染层把当前分组的频道引用传进来（免再拉一次直播源）
   registerHandler(
     IPC.LIVE_EPG,
     (_e: any, a: { index: number; channels: EpgChannelRef[] }) => host.loadLiveEpg(Number(a?.index) || 0, a?.channels || []),
     log,
   );
   registerHandler('live:meta', () => host.lives, log);
-  // ★ 2026-10-18 直播输出模板（内置 2 个 + 插件 `contributes.live.template`）
+  // 直播输出模板（内置 2 个 + 插件 `contributes.live.template`）
   registerHandler(IPC.LIVE_TEMPLATES, () => host.liveTemplates(), log);
-  // ★ 2026-10-18 按模板渲染导出文本（**纯本地无副作用**：不取数、不发请求、不弹框；供 `live:export` 与验收用）
+  // 按模板渲染导出文本（**纯本地无副作用**：不取数、不发请求、不弹框；供 `live:export` 与验收用）
   registerHandler(
     IPC.LIVE_RENDER,
     (_e: any, a: { templateId?: string; groups?: LiveGroup[] }) =>
       host.renderLiveExport(String(a?.templateId || ''), a?.groups || []),
     log,
   );
-  // ★ 2026-10-18 导出直播线路：按模板渲染（**纯本地**，不发请求）→ 保存对话框 → 只写新文件
+  // 导出直播线路：按模板渲染（**纯本地**，不发请求）→ 保存对话框 → 只写新文件
   registerHandler(
     IPC.LIVE_EXPORT,
     async (_e: any, a: { templateId?: string; groups?: LiveGroup[]; defaultName?: string }) => {

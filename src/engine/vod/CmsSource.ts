@@ -22,7 +22,7 @@ function withQuery(api: string, params: Record<string, string>): string {
 }
 
 /**
- * ★ 2026-09-25：响应是否「像 CMS 数据」（XML / JSON）。
+ * 响应是否「像 CMS 数据」（XML / JSON）。
  * 用来识别 **DNS 污染**：系统 DNS 被解到劫持 IP 时，返回的是运营商反诈页/落地页（HTML），
  * 换 DoH 重取即可恢复。`<!DOCTYPE html>` / `<html` 明确判为「不是数据」。
  */
@@ -66,7 +66,7 @@ export class CmsSource {
     };
     const text = await get(0);
     if (looksLikeCmsBody(text)) return text;
-    // ★ 2026-09-25：响应不像 XML/JSON（多半是**域名被 DNS 污染**后拿到的运营商劫持页/落地页）
+    // 响应不像 XML/JSON（多半是**域名被 DNS 污染**后拿到的运营商劫持页/落地页）
     //   → 用 DoH 解析真实 IP 再取一次；DoH 也不成则交回第一次的结果（保持原有错误路径与文案）。
     try {
       const t2 = await get(1);

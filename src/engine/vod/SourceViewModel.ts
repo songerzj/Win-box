@@ -1,5 +1,5 @@
 // src/engine/vod/SourceViewModel.ts
-// ★ type 分发的 TS 等价（SourceViewModel.java）。home/category/detail/search/player。
+// type 分发的 TS 等价（SourceViewModel.java）。home/category/detail/search/player。
 // type 0/1 → CmsSource（内联，与安卓一致）；type 3 → SpiderFactory.getCSP()；
 // type 2/4/-1 → 桌面版无分发实现，抛 SourceProblemError(TYPE_UNSUPPORTED) 让 UI 上屏（任务 A1）。
 import type { EngineHost } from '../ports';
@@ -20,11 +20,11 @@ export { sourceAvailability, type SourceAvailability };
 
 /**
  * 「一页」的量级（TVBox 源常见页大小 20/24/30/40/60/90）。
- * ★ 2026-10-16（用户报「很多源，如玩偶、木偶，点播分类一页都填不满、既没有分页也不能瀑布」）：
- *   一大批 jar/壳源（`csp_*` 家族，如 Wogg/PanWebShare）的 `categoryContent` **只回 `list`**，
+ *
+ *   一大批 jar/壳源（`csp_*` 家族，如 某壳源/PanWebShare）的 `categoryContent` **只回 `list`**，
  *   `pagecount / total / page` 全缺（归一后 = 0），但**翻页其实是真能用的**（实测 `pg=2` 返回的是
  *   全新一页）。若把 0 原样透传给 UI，UI 的「翻页 / 瀑布」闸门 `pagecount > 1` 恒不成立
- *   ⇒ 用户永远停在第一页，且**连瀑布入口都不出现**（- 也即用户说的"一页都填不满"的观感）。
+ *   ⇒ 用户永远停在第一页，且**连瀑布入口都不出现**（也即"一页都填不满"的观感）。
  */
 const PAGE_ITEMS_ONE_PAGE = 20;
 /**
@@ -129,7 +129,7 @@ export class SourceViewModel {
   }
 
   /**
-   * ★ 2026-10-09：该源蜘蛛 JVM 宿主代理端口（仅 type=3 jar 蜘蛛、且调用过一次后有值）。
+   * 该源蜘蛛 JVM 宿主代理端口（仅 type=3 jar 蜘蛛、且调用过一次后有值）。
    * 宿主（SpiderHost）把 jar 产出的 `127.0.0.1:9978/proxy?…` 播放地址改写成
    * `/proxy/<port>` 转发回该 JVM 自解链（jar 的 `Pan.proxy` 才知道 shareid/uk）。
    */
@@ -185,12 +185,12 @@ export class SourceViewModel {
     } catch {
       return null;
     }
-    // ★ 2026-10-16：`.py` 蜘蛛里 `homeVideoContent` 常写成 `pass`（Python 返回 `None`）→ 序列化成字面量
+    // `.py` 蜘蛛里 `homeVideoContent` 常写成 `pass`（Python 返回 `None`）→ 序列化成字面量
     //   `null`；此前直接 `o['class']` 会抛 `Cannot read properties of null (reading 'class')`
-    //   （用户侧：homeVideoContent 回退失败 + 日志噪声）。按「非法 JSON → null（不抛）」同口径吞掉。
+    // （homeVideoContent 回退失败 + 日志噪声）。按「非法 JSON → null（不抛）」同口径吞掉。
     if (!o || typeof o !== 'object') return null;
     // 分类 id 保留原样字符串（蜘蛛源存在非数字 id，Number 化会丢分类）；type_flag 透传供筛选联动。
-    // ★ 2026-10-15：class 的形态兜底（对象 map 等非数组写法不再被整段丢弃）见 normalizeClassList；
+    // class 的形态兜底（对象 map 等非数组写法不再被整段丢弃）见 normalizeClassList；
     //   filters 的形态兜底（**顶层按 type_id 键控** 那一份不再被丢掉）见 classFiltersFor。
     const classes = normalizeClassList(o['class']).map((c, i) => {
       const id = String(c['type_id'] ?? c['id'] ?? c['tid'] ?? '').trim();
@@ -204,7 +204,7 @@ export class SourceViewModel {
       };
     });
     const list = Array.isArray(o['list']) ? (o['list'] as Record<string, unknown>[]) : [];
-    // ★ 字段名多键兜底（对齐 normalizeSpiderDetail）：部分 py 源/蜘蛛返回 `name`/`pic` 而非
+    // 字段名多键兜底（对齐 normalizeSpiderDetail）：部分 py 源/蜘蛛返回 `name`/`pic` 而非
     //   vod_name/vod_pic —— 缺失会让列表 name 空 → 首页 TMDB 封面补全不触发 → 长期无封面。
     const items: VodItem[] = list.map((v) => {
       const rawPic = String(
@@ -216,15 +216,15 @@ export class SourceViewModel {
           '',
       );
       const name = String(v['vod_name'] ?? v['name'] ?? '');
-      // ★ 2026-09-30（用户报「其他接口的盘搜类型源搜索结果看不了内容」）：
+      //
       //   透传源侧 vod_tag（`folder` = 文件夹条目）。渲染层据此走 categoryContent 展开
       //   而不是进详情页（详情必空）；存进 DTO 里也让 UI 能给文件夹卡加 📁 标识。
       const tag = String(v['vod_tag'] ?? '');
       return {
-        // ★ 空 id → 片名兜底（片单类蜘蛛没有 vod_id；空串会让「按 id 记的坏图/补图/key」全塌到同一键）
+        // 空 id → 片名兜底（片单类蜘蛛没有 vod_id；空串会让「按 id 记的坏图/补图/key」全塌到同一键）
         id: normalizeVodId(v['vod_id'] ?? v['id'], name),
         name,
-        // ★ 拆上游 `@Referer=…` 尾巴（否则图床 404 → 全列表封面坏 → 补图串到所有卡片）
+        // 拆上游 `@Referer=…` 尾巴（否则图床 404 → 全列表封面坏 → 补图串到所有卡片）
         pic: normalizeVodPic(rawPic),
         remarks: String(v['vod_remarks'] ?? v['remarks'] ?? ''),
         year: String(v['vod_year'] ?? v['year'] ?? ''),
@@ -289,7 +289,7 @@ export class SourceViewModel {
   }
 
   /**
-   * ★ 2026-10-16：**分页元数据兜底**（只用于 type3 的 category —— 首页/搜索没有页码语义，见 §C78）。
+   * **分页元数据兜底**（只用于 type3 的 category —— 首页/搜索没有页码语义）。
    *   源没给总页数（`pagecount <= 1`）却回了「装得满一页」的列表 → 报 `PAGE_COUNT_UNKNOWN`，
    *   让 UI 放开「下一页 / 瀑布」；真的只有寥寥几条 → 保持原样（多半确实只有一页）。
    *   判据必须**同时**满足两条，避免把「真·单页源」也放开（放开后到底与否由 UI 的零新增护栏判定）。
@@ -308,18 +308,18 @@ export class SourceViewModel {
    * ④ 兜底后仍全空 → EMPTY_RESULT（homeContent 合法）/ SPIDER_ERROR（空或非法）。
    * 注：sp.homeContent 自身抛错（.py / 无桥 jar 的 PY_UNSUPPORTED / JAR_NO_RUNTIME）必须原样上抛。
    *
-   * ★ 2026-10-16（用户报「玩偶/木偶等源，点播分类选『全部』展示的内容也十分有限，一页都填不满」）：
+   * （部分源点播分类选『全部』时内容极少，一页都填不满）：
    *   判据由「`list` 非空」放宽为「`list` **装得满一页**（≥ {@link PAGE_ITEMS_ONE_PAGE}）」——
-   *   实测玩偶的 `homeContent` 只回 12 条（源侧本身就这么少，且有时抖动到 0/3 条），
+   *   实测该源 `homeContent` 只回 12 条（源侧本身就这么少，且有时抖动到 0/3 条），
    *   而它的首个分类第 1 页有 70 条 ⇒ 继续沿用既有「分类兜底」口径取到能填满的内容。
-   *   ★ 任何兜底都**只取更丰富的那份**（回退结果条目数必须严格多于首页自带），不会把列表换小。
+   *   任何兜底都**只取更丰富的那份**（回退结果条目数必须严格多于首页自带），不会把列表换小。
    */
   private async spiderHome(bean: SourceBean, timeoutMs: number): Promise<HomeResult> {
     const key = bean.key;
     const sp = this.factory.getCSP(bean, this.host);
     // P2-3：此预算仅约束 homeVideoContent / 分类兜底（homeContent 无独立超时，由上层 / 体检 30s race 兜底）
     const deadline = Date.now() + timeoutMs;
-    const homeJson = await Promise.resolve(sp.homeContent(true)); // ★ 抛错向上传播（UnsupportedSpider 行为不变）
+    const homeJson = await Promise.resolve(sp.homeContent(true)); // 抛错向上传播（UnsupportedSpider 行为不变）
     const parsed = this.parseSpiderJson(homeJson, key);
 
     // A：homeContent 自带列表**装得满一页** → 直接用，绝不触发回退（不打 homeFallback 标）
@@ -338,7 +338,7 @@ export class SourceViewModel {
     const baseItems = parsed?.items ?? [];
     const recItems = await this.tryHomeRec(sp, key, deadline);
     const classes = parsed?.classes ?? [];
-    // ★ 只采纳「更丰富」的回退结果（严格多于首页自带），避免把已有内容换小
+    // 只采纳「更丰富」的回退结果（严格多于首页自带），避免把已有内容换小
     let items = recItems.length > baseItems.length ? recItems : baseItems;
     let fallbackKind: 'rec' | 'class' | '' = recItems.length > baseItems.length ? 'rec' : '';
 
@@ -355,7 +355,7 @@ export class SourceViewModel {
 
     if (classes.length === 0 && items.length === 0) {
       // 蜘蛛端能报告具体原因时（jar 蜘蛛：源站超时/非 JSON/内部参数异常/加固壳…），
-      // ★ 直接用**它**做提示文案，不再前缀「蜘蛛返回空结果（可能源站失效或需配置 ext）」。
+      // 直接用**它**做提示文案，不再前缀「蜘蛛返回空结果（可能源站失效或需配置 ext）」。
       //
       //   历史问题：原先是 `${SPIDER_ERROR} —— 蜘蛛日志：${reason}`，于是实机日志/UI 出现
       //   「蜘蛛返回空结果（…）—— 蜘蛛日志：蜘蛛返回空结果（…）—— 蜘蛛日志：该源为安卓加固/壳…」
@@ -422,7 +422,7 @@ export class SourceViewModel {
       };
     } catch (e) {
       this.host.logger.w(`vm:home type3 ${key} 分类兜底失败: ${(e as Error).message}`);
-      return null; // ★ 兜底失败静默降级，保留分类骨架
+      return null; // 兜底失败静默降级，保留分类骨架
     }
   }
 
@@ -445,7 +445,7 @@ export class SourceViewModel {
       return p.items;
     } catch (e) {
       this.host.logger.w(`vm:home type3 ${key} homeVideoContent 回退失败: ${(e as Error).message}`);
-      return []; // ★ 回退失败静默降级，绝不整体报错
+      return []; // 回退失败静默降级，绝不整体报错
     }
   }
 
@@ -482,7 +482,7 @@ export class SourceViewModel {
         }
       }
       const detail: VodDetail = {
-        // ★ 空 id → 片名兜底、封面拆 `@Referer=` 尾巴（同列表页归一，见 parseSpiderJson）
+        // 空 id → 片名兜底、封面拆 `@Referer=` 尾巴（同列表页归一，见 parseSpiderJson）
         id: normalizeVodId(v['vod_id'] ?? v['id'], v['vod_name'] ?? v['name']),
         name: String(v['vod_name'] ?? v['name'] ?? ''),
         pic: normalizeVodPic(
@@ -494,7 +494,7 @@ export class SourceViewModel {
               (Array.isArray(v['vod_pic_thumb']) ? v['vod_pic_thumb'][0] : '') ??
               '',
           ),
-        ), // ★ fty 等蜘蛛 detail 偶发把封面放在别名键，做兜底；列表页走同一归一（见 parseSpiderJson）
+        ), // 部分蜘蛛 detail 偶发把封面放在别名键，做兜底；列表页走同一归一（见 parseSpiderJson）
         type: String(v['type_name'] ?? ''),
         year: String(v['vod_year'] ?? ''),
         area: String(v['vod_area'] ?? ''),
@@ -505,7 +505,7 @@ export class SourceViewModel {
         flags,
         episodes,
       };
-      // ★ 2026-09-24：字段错位纠偏（如「立播」源把地区名塞进导演/演员、类型串塞进年份/地区）
+      // 字段错位纠偏（如某源把地区名塞进导演/演员、类型串塞进年份/地区）
       return fixDetailFields(detail);
     } catch {
       return null;
@@ -544,7 +544,7 @@ export class SourceViewModel {
     if (arr) {
       const resolvedArr = arr.map((u) => this.resolvePlayUrl(String(u ?? ''), undefined));
       /**
-       * ★ 2026-10-16（用户报「这种 PY 直播源无法观看」）：
+       *
        *   TVBox 生态里 `playerContent` 的 `url` 数组**两种写法都有** ——
        *     ① 纯地址列表 `["https://a","https://b"]`；
        *     ② **「名称 / 地址」交替对** `["蓝光4M","https://a","超清","https://b"]`（虎牙/斗鱼/网易/B站
@@ -558,7 +558,7 @@ export class SourceViewModel {
        */
       const playable = resolvedArr.filter((r) => directPlayUrlError(r.url) === '');
       const picked = playable.length > 0 ? playable : resolvedArr;
-      // ★ 数组分支此前**丢掉了**对象里的显式 `header/headers`（虎牙/斗鱼的播放头 UA/Referer 全靠它，
+      // 数组分支此前**丢掉了**对象里的显式 `header/headers`（虎牙/斗鱼的播放头 UA/Referer 全靠它，
       //   丢了会让 CDN 按来源拒绝）—— 与对象分支同口径合并：地址尾巴拆出的头 < 显式 header。
       const arrHdr = {
         ...(picked.find((r) => r.header)?.header || {}),
@@ -579,7 +579,7 @@ export class SourceViewModel {
         ? undefined
         : Number(o['parse']) || 0;
     const resolved = this.resolvePlayUrl(String(o['url'] ?? ''), declared);
-    // ★ 蜘蛛显式 header 优先，其次才是地址尾巴 `@Referer=…` 拆出来的头
+    // 蜘蛛显式 header 优先，其次才是地址尾巴 `@Referer=…` 拆出来的头
     const hdr = { ...(resolved.header || {}), ...(this.normalizePlayHeader(o['header'] ?? o['headers']) || {}) };
     return {
       parse: resolved.parse,
@@ -603,7 +603,7 @@ export class SourceViewModel {
     raw: string,
     declaredParse: number | undefined,
   ): { url: string; parse: number; hint?: string; header?: Record<string, string> } {
-    // ★ 上游约定：`url@Referer=…@User-Agent=…` → 拆出真实地址 + 取流所需请求头
+    // 上游约定：`url@Referer=…@User-Agent=…` → 拆出真实地址 + 取流所需请求头
     //   （头由 SpiderHost 经 /play 中继注入；不拆则整串当地址 → 取流必失败）
     const split = splitUrlHeaders(raw);
     const url = split.url;

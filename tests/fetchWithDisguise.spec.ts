@@ -1,5 +1,5 @@
 // tests/fetchWithDisguise.spec.ts
-// ★ 2026-09-29：「请求伪装阶梯」回归（用户报「很多接口要 okhttp 或更多限制」）。
+// 「请求伪装阶梯」回归。
 //   · 纯函数：响应嗅探 / 协议互换 / 站根 / Set-Cookie 解析 / 阶梯档位
 //   · 阶梯行为：用假 HttpClient 验证「逐档升级 → 命中即停」「全失败换协议」「Cookie 档带 Cookie」
 import { describe, it, expect } from 'vitest';

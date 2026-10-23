@@ -1,5 +1,5 @@
 // tests/multiRepo.spec.ts
-// 多仓（影视仓/多仓盒子 {urls:[...]}）订阅格式识别纯函数单测。
+// 多仓（某影视壳/多仓盒子 {urls:[...]}）订阅格式识别纯函数单测。
 import { describe, expect, it } from 'vitest';
 import { parseMultiRepo, isFetchedRepoUrl, repoDisplayName, splitRepoLine, pickRepoLine } from '../src/engine/config/multiRepo';
 
@@ -33,10 +33,10 @@ describe('parseMultiRepo', () => {
     expect(parseMultiRepo('{"urls":[{"name":"无url"},{"url":""}]}')).toBeNull();
   });
 
-  // ★ 2026-09-26：线上多仓（实测 18CR.json）在 urls 里夹 `//注释` 行，严格 JSON.parse 必挂 →
+  // 线上多仓（实测 18CR.json）在 urls 里夹 `//注释` 行，严格 JSON.parse 必挂 →
   //   旧实现返回 null → 落到 parseSiteConfig（没有 sites）→ **导入"成功"但 0 个源**
   //   → 用户看到「整份配置一个源都没有、搜也搜不了」。
-  it('★ 带 // 注释的多仓仍能识别（注释行不是有效项，被忽略）', () => {
+  it('带 // 注释的多仓仍能识别（注释行不是有效项，被忽略）', () => {
     const text = [
       '{',
       '  "urls": [',
@@ -55,14 +55,14 @@ describe('parseMultiRepo', () => {
     });
   });
 
-  it('★ 剥注释不会破坏字符串里的 URL（https:// 的 // 必须留着）', () => {
+  it('剥注释不会破坏字符串里的 URL（https:// 的 // 必须留着）', () => {
     const r = parseMultiRepo('{"urls":[{"url":"https://a.example/x.json","name":"带//的名称"}]}');
     expect(r?.items?.[0]?.url).toBe('https://a.example/x.json');
     expect(r?.items?.[0]?.name).toBe('带//的名称');
   });
 });
 
-// ★ 2026-09-29：多仓选线路 `#line=N`（对位 CatClaw `TvBoxSubscriptionManager.SplitLine` /
+// 多仓选线路 `#line=N`（对位 CatClaw `TvBoxSubscriptionManager.SplitLine` /
 //   `lines[Math.Clamp(lineIndex, 0, lines.Count - 1)]`）—— 拉取前剥掉、越界收敛、非法不处理。
 describe('splitRepoLine / pickRepoLine（#line=N 选线路）', () => {
   it('剥离尾部 #line=N（大小写不敏感）并给出下标', () => {

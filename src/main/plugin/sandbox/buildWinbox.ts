@@ -1,5 +1,5 @@
 // src/main/plugin/sandbox/buildWinbox.ts
-// ★★ L4 沙箱的**权限门禁**（纯函数、无 electron / 无 node:vm 依赖，可单测）★★
+// L4 沙箱的**权限门禁**（纯函数、无 electron / 无 node:vm 依赖，可单测）
 //
 // 铁律（R10，规范 §6.2）：沙箱内**未授权的 `winbox.*` 根本不存在**（`typeof === 'undefined'`，
 //   调用即 `TypeError`），**不是**「存在但抛错」。→ 由本文件的**挂载表**保证：
@@ -61,7 +61,7 @@ export function buildWinbox(permissions: readonly PermissionId[], call: SandboxC
       call({ t: 'http', id: nextId(), url: String(url ?? ''), opts: (opts ?? undefined) as PluginHttpOpts | undefined })
         .then((res) => {
           const r = res as { status: number; headers: Record<string, string | string[]>; content: string };
-          // ★ text() 在**沙箱内**包装（宿主回的是纯数据，函数不可跨 worker 传递）
+          // text() 在**沙箱内**包装（宿主回的是纯数据，函数不可跨 worker 传递）
           return { status: r.status, headers: r.headers, text: (): string => r.content };
         });
   }

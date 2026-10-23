@@ -520,7 +520,7 @@ describe('PluginHost — 插件直播输出模板（contributes.live.template，
           group: '== {group} ==',
           line: '{index} | {name} | {url}',
         },
-        // ★ 一个插件可声明**多个**输出模板（各自独立 id）
+        // 一个插件可声明**多个**输出模板（各自独立 id）
         {
           type: 'live.template',
           id: 'my-m3u',
@@ -584,7 +584,7 @@ describe('PluginHost — 插件受限动作按钮（contributes.ui.command）', 
       name: '我的命令插件',
       contributes: [
         { type: 'ui.command', id: 'open-site', label: '打开官网', placement: ['config'], action: 'open-url', url: 'https://example.com/' },
-        // ★ 一个插件可声明**多个**命令（各自独立 id）
+        // 一个插件可声明**多个**命令（各自独立 id）
         { type: 'ui.command', id: 'go-live', label: '去直播', placement: ['player'], action: 'navigate', to: 'live' },
       ],
       ...over,
@@ -631,7 +631,7 @@ describe('PluginHost — 插件受限动作按钮（contributes.ui.command）', 
     writeFileSync(pj, JSON.stringify(m));
     const h2 = host();
     await h2.init();
-    // ★ 篡改后的清单过不了 `validatePluginManifest` ⇒ `PluginRegistry` 读该目录清单为 null
+    // 篡改后的清单过不了 `validatePluginManifest` ⇒ `PluginRegistry` 读该目录清单为 null
     //   （不再作为已物化条目登记，落回「随包 zip 未就位」态）⇒ 装配层拿不到可用的贡献项。
     expect(await h2.uiCommands()).toEqual([]);
     expect((await h2.list())[0]?.ready).toBe(false);
@@ -645,7 +645,7 @@ describe('PluginHost — 插件快捷键（contributes.keymap）', () => {
       name: '我的快捷键插件',
       contributes: [
         { type: 'keymap', id: 'go-discover', label: '去发现页', scope: ['app'], key: 'Ctrl+Alt+F', action: 'navigate', to: 'discover' },
-        // ★ 一个插件可声明**多条**快捷键（各自独立 id）；键位串会被归一化
+        // 一个插件可声明**多条**快捷键（各自独立 id）；键位串会被归一化
         { type: 'keymap', id: 'open-help', label: '打开帮助', scope: ['app', 'player'], key: 'alt+ctrl+1', action: 'open-url', url: 'https://example.com/help' },
       ],
       ...over,
@@ -663,7 +663,7 @@ describe('PluginHost — 插件快捷键（contributes.keymap）', () => {
     expect(list[0].action).toBe('navigate');
     expect(list[0].to).toBe('discover');
     expect(list[0].scope).toEqual(['app']);
-    // ★ 键位串归一：`alt+ctrl+1` → `Ctrl+Alt+1`
+    // 键位串归一：`alt+ctrl+1` → `Ctrl+Alt+1`
     expect(list[1].key).toBe('Ctrl+Alt+1');
     expect(list[1].scope).toEqual(['app', 'player']);
     expect(list[1].url).toBe('https://example.com/help');
@@ -695,7 +695,7 @@ describe('PluginHost — 插件快捷键（contributes.keymap）', () => {
     writeFileSync(pj, JSON.stringify(m));
     const h2 = host();
     await h2.init();
-    // ★ 篡改后的清单过不了 `validatePluginManifest` ⇒ `PluginRegistry` 读该目录清单为 null
+    // 篡改后的清单过不了 `validatePluginManifest` ⇒ `PluginRegistry` 读该目录清单为 null
     //   （不再作为已物化条目登记，落回「随包 zip 未就位」态）⇒ 装配层拿不到可用的贡献项。
     expect(await h2.keymaps()).toEqual([]);
     expect((await h2.list())[0]?.ready).toBe(false);
@@ -708,7 +708,7 @@ describe('PluginHost — 插件设置面板（contributes.settings.panel）', ()
       id: 'my-settings-pack',
       name: '我的设置插件',
       contributes: [
-        // ★ 一个插件可声明**多个**面板（各自独立 id）
+        // 一个插件可声明**多个**面板（各自独立 id）
         {
           type: 'settings.panel',
           id: 'general',
@@ -749,7 +749,7 @@ describe('PluginHost — 插件设置面板（contributes.settings.panel）', ()
     const r = await h.setPluginSetting({ id: 'my-settings-pack', panelId: 'general', key: 'mode', value: 'b' });
     expect(r.ok).toBe(true);
     expect(r.panels?.[0].fields.map((f) => f.value)).toEqual([true, 'b']);
-    // ★ 落盘取证：设置文件里按 pluginId → panelId → fieldKey 分桶
+    // 落盘实测：设置文件里按 pluginId → panelId → fieldKey 分桶
     const file = join(root, 'plugin-settings.json');
     expect(existsSync(file)).toBe(true);
     const saved = JSON.parse(readFileSync(file, 'utf-8')) as Record<string, string>;
@@ -817,7 +817,7 @@ describe('PluginHost — 插件受限 UI 槽位（contributes.ui.slot）', () =>
             { type: 'link', label: '打开帮助', action: 'open-url', url: 'https://example.com/help' },
           ],
         },
-        // ★ 一个插件可声明**多个**槽位（各自独立 id）
+        // 一个插件可声明**多个**槽位（各自独立 id）
         { type: 'ui.slot', id: 'live-tip', slot: ['live'], items: [{ type: 'text', text: '直播页插件提示' }] },
       ],
       ...over,
@@ -864,7 +864,7 @@ describe('PluginHost — 插件受限 UI 槽位（contributes.ui.slot）', () =>
     writeFileSync(pj, JSON.stringify(m));
     const h2 = host();
     await h2.init();
-    // ★ 篡改后清单过不了 `validatePluginManifest` ⇒ 该目录不再登记为已物化条目（ready:false）⇒ 装配层拿不到
+    // 篡改后清单过不了 `validatePluginManifest` ⇒ 该目录不再登记为已物化条目（ready:false）⇒ 装配层拿不到
     expect(await h2.uiSlots()).toEqual([]);
     expect((await h2.list())[0]?.ready).toBe(false);
   });
@@ -879,7 +879,7 @@ describe('PluginHost — 目录整洁', () => {
   });
 });
 
-// ★ 2026-10-18（R10）L4 沙箱：生命周期接线（注入**假 factory**，不起真 worker）
+// （R10）L4 沙箱：生命周期接线（注入**假 factory**，不起真 worker）
 class FakeSandbox implements SandboxLike {
   running = false;
   error: string | undefined;
@@ -1006,7 +1006,7 @@ describe('PluginHost — L4 沙箱（kind:"code"）', () => {
   });
 });
 
-// ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`）：宿主只做「exe 就绪判定 + 摊平」
+// （R11）第三方播放内核（`contributes.player.engine`）：宿主只做「exe 就绪判定 + 摊平」
 describe('PluginHost — 插件播放内核（contributes.player.engine）', () => {
   /** 直接把插件目录写到磁盘（不走安装校验，模拟「已装」/「磁盘篡改」两种情形） */
   function writeEngine(id: string, over: Record<string, unknown> = {}, files: Record<string, string> = { 'files/mpv.exe': 'MZ' }): void {

@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.Locale;
 
 /**
- * Formatter stub —— ★ 2026-09-27 新补（真机取证：wex 仓指纹助手把
+ * Formatter stub —— 新补（实测：某第三方源仓指纹助手把
  *   `WifiInfo.getIpAddress()` 的 int 交给 `Formatter.formatIpAddress(int)` 转成 "a.b.c.d"；
  *   缺类时整源 `ClassNotFoundException: android.text.format.Formatter`）。
  *

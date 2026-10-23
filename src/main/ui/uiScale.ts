@@ -1,6 +1,6 @@
 // src/main/ui/uiScale.ts
 /**
- * ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：界面缩放的**主进程侧**。
+ * 界面缩放的**主进程侧**。
  *
  * 职责：
  *  ① 偏好落盘（`<userData>/ui-scale.json`，与 bosskey.json / proxy.json 同一套 JsonStore 口径）；
@@ -9,11 +9,11 @@
  *     用 `webContents.setZoomFactor` 把整套 UI（字号/间距/圆角）等比放大；
  *  ④ 配置页改档位时**顺带把主窗口按新倍率改尺寸**（未最大化时），否则大倍率下窗口只装得下半个界面。
  *
- * ★ 为什么不用 CSS `zoom`/根字号：全项目尺寸都是 px（不是 rem），CSS `zoom` 还会把
+ * 为什么不用 CSS `zoom`/根字号：全项目尺寸都是 px（不是 rem），CSS `zoom` 还会把
  *   `html{height:100%}` 这类百分比高度算错（根元素缩放后仍按未缩放的 ICB 解析 → 溢出）。
  *   `setZoomFactor` 是 Chromium 的**页面缩放**（等同 Ctrl+滚轮），视口/ICB 一起缩，布局不会走样。
  *
- * ★ 网页源窗口（`webbridge/WebHomeWindow`）加载的是**外部网页**，不参与缩放（不登记即可）。
+ * 网页源窗口（`webbridge/WebHomeWindow`）加载的是**外部网页**，不参与缩放（不登记即可）。
  */
 import { BrowserWindow, screen } from 'electron';
 import { join } from 'node:path';
@@ -33,7 +33,7 @@ import {
 const KEY = 'uiScale';
 
 /**
- * ★ 惰性建 store：**不在模块导入期**碰 `app.getPath`（`userDataDir()` 依赖它）——
+ * 惰性建 store：**不在模块导入期**碰 `app.getPath`（`userDataDir()` 依赖它）——
  *   否则任何 import 本模块的单元测试都得先把 electron 的 `app` 桩补全（本次就踩过）。
  */
 let storeRef: JsonStore | null = null;

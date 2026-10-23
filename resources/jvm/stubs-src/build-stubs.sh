@@ -6,7 +6,7 @@
 # **字段/方法签名完整**，否则蜘蛛运行期抛 NoSuchFieldError / NoSuchMethodError
 # （类比 ClassNotFoundException 更隐蔽）。
 #
-# ★ 本机（Git Bash on Windows）注意：
+# 本机（Git Bash on Windows）注意：
 #   - javac/jar 是 Windows 原生程序，收到的路径必须是 Windows 风格。
 #     MSYS 会把 `/c/...` 转成 `C:\...`，但会把 `@/tmp/files.txt` 里的
 #     POSIX 路径原样传过去导致"找不到文件"。因此这里全部用 Windows 路径。
@@ -44,9 +44,9 @@ rm -f "$WORK/com/github/catvod/spider/DexNative.class"
 # 2) 编译本目录全部 android.* / androidx.* / com.github.catvod.* 源码
 #    -cp    指向基线解包目录（历史类）+ libs（gson/okhttp/jsoup/json）
 #    -sourcepath 指向源码根（同包互引解析）
-#    ★ 文件清单必须写**绝对 Windows 路径**：javac 是原生程序，配合 -sourcepath
+#    文件清单必须写**绝对 Windows 路径**：javac 是原生程序，配合 -sourcepath
 #      用相对路径会解析到 -sourcepath + 相对路径，导致"找不到文件"。
-#    ★ libs 必须上 classpath：SpiderApi/PushAgent 依赖 gson + okhttp + jsoup，
+#    libs 必须上 classpath：SpiderApi/PushAgent 依赖 gson + okhttp + jsoup，
 #      缺失会在编译期报"程序包 com.google.gson 不存在"。
 WIN_LIBS=""
 for j in "$HERE/../libs"/*.jar; do

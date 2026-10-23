@@ -12,7 +12,7 @@ export const META_KEY = 'meta';
 export interface MetaCacheEntry {
   t: number;
   hit: MetaHit | null;
-  /** ★ 封面经 verifyPoster 校验通过的写入时间；缺失或超 24h 视为需重新校验（坏图不再被旧缓存永久固化） */
+  /** 封面经 verifyPoster 校验通过的写入时间；缺失或超 24h 视为需重新校验（坏图不再被旧缓存永久固化） */
   vv?: number;
 }
 

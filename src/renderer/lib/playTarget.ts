@@ -1,5 +1,5 @@
 // src/renderer/lib/playTarget.ts — 播放判型前的 URL 还原（纯函数、零副作用，供组件与单测共用）。
-// ★ py 蜘蛛带 UA/Referer 时，播放 URL 被 wrapPlayUrlWithHeaders 包成
+// py 蜘蛛带 UA/Referer 时，播放 URL 被 wrapPlayUrlWithHeaders 包成
 //   `http://127.0.0.1:9978/play?url=<encoded>`（不以 .m3u8/.flv 结尾）——若拿「/play」
 //   判扩展名会漏掉 m3u8/flv → 落入原生直连 → 黑屏/一直加载（py 源播放失败根因）。
 /**

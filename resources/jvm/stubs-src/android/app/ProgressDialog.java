@@ -11,7 +11,7 @@ import android.view.View;
  * {@code setMessage}、{@code setTitle}、{@code setCancelable}、{@code show()}、
  * {@code dismiss()}、{@code isShowing()}、{@code setProgress(int)}。
  *
- * <p>★ 桌面上没有 UI，但 {@code isShowing()} 必须**如实反映 show/dismiss 状态**：
+ * <p>桌面上没有 UI，但 {@code isShowing()} 必须**如实反映 show/dismiss 状态**：
  * 蜘蛛常写 {@code if (!dialog.isShowing()) return;} 这类守卫，恒返回 false
  * 会让它的正常路径被跳过（"蜘蛛返回空结果"的元凶之一）。
  */

@@ -1,6 +1,6 @@
-// tests/mediaKind.spec.ts — ★ 2026-09-30：播放地址判型（图片/音频/直播分流）纯函数回归。
+// tests/mediaKind.spec.ts — 播放地址判型（图片/音频/直播分流）纯函数回归。
 //
-// 用户报「本地包里的图片、音乐、直播没有对应的播放器」：
+// 「本地包里的图片、音乐、直播没有对应的播放器」
 //   图片地址（图集源每「集」= 一张图）进 `<video>` 必黑屏、音频只闻其声、直播无直播态。
 //   这里锁住判型口径：扩展名优先、中继 URL 先还原、rtmp/rtsp 判为无载体、判不准回落 video。
 import { describe, it, expect } from 'vitest';
@@ -47,7 +47,7 @@ describe('detectMediaKind — 图片 / 音频 / 直播 / 视频分流', () => {
     }
   });
 
-  it('★ /play 中继包装（py 蜘蛛带 UA/Referer）→ 先还原再判型', () => {
+  it('/play 中继包装（py 蜘蛛带 UA/Referer）→ 先还原再判型', () => {
     expect(detectMediaKind(wrap('https://img.test/a.jpg'))).toBe('image');
     expect(detectMediaKind(wrap('https://m.test/a.mp3'))).toBe('audio');
     expect(detectMediaKind(wrap('https://v.test/index.m3u8'))).toBe('hls');
@@ -63,6 +63,21 @@ describe('detectMediaKind — 图片 / 音频 / 直播 / 视频分流', () => {
     expect(detectMediaKind('https://v.test/proxy?do=m3u8&url=https%3A%2F%2Fimg.test%2Fa.jpg')).toBe('image');
   });
 
+  it('udpxy「组播转 HTTP」（/udp/、/rtp/ + IP:端口，无扩展名）→ mpegts', () => {
+    // 实测的那条真实源：http://14.127.213.91:4022/udp/239.77.0.244:5146（实测 200 + octet-stream，内容是 MPEG-TS）
+    expect(detectMediaKind('http://14.127.213.91:4022/udp/239.77.0.244:5146')).toBe('mpegts');
+    expect(detectMediaKind('http://10.0.0.2:4022/rtp/239.1.1.1:1234')).toBe('mpegts');
+    expect(detectMediaKind('http://ip.test/udp/239.77.0.244:5146?token=abc')).toBe('mpegts');
+    // 经本机 /play 中继包装后仍判得出
+    expect(detectMediaKind(wrap('http://14.127.213.91:4022/udp/239.77.0.244:5146'))).toBe('mpegts');
+  });
+
+  it('不误伤：`/udp/` 只出现在 query、或本来就带扩展名/清单特征时按原规则', () => {
+    expect(detectMediaKind('https://v.test/api?next=/udp/239.1.1.1:5146')).toBe('video');
+    expect(detectMediaKind('https://v.test/udp/index.m3u8')).toBe('hls'); // 有 m3u8 特征 ⇒ 仍走 HLS
+    expect(detectMediaKind('https://v.test/udp/ch.ts')).toBe('mpegts'); // 有 .ts 后缀 ⇒ 照旧
+  });
+
   it('判不准的一律回落 video（含空串、裸 id、无扩展名 http）', () => {
     expect(detectMediaKind('')).toBe('video');
     expect(detectMediaKind('1001')).toBe('video');
@@ -74,6 +89,10 @@ describe('isLikelyLive — 直播态提前判定（时长是最终判据，见 V
   it('flv / ts 视为直播（点播极少用裸流）', () => {
     expect(isLikelyLive('https://v.test/a.flv')).toBe(true);
     expect(isLikelyLive('http://ip:8080/live/ch.ts')).toBe(true);
+  });
+
+  it('udpxy 组播转 HTTP → 预判直播（它一定没有 ENDLIST）', () => {
+    expect(isLikelyLive('http://14.127.213.91:4022/udp/239.77.0.244:5146')).toBe(true);
   });
 
   it('带 /live/ 或 ip:port 特征的 m3u8 → 预判直播', () => {

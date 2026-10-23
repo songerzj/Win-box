@@ -1,6 +1,5 @@
 // src/renderer/lib/mediaKind.ts — 播放地址的**媒体类型判定**（纯函数，供播放器与单测共用）。
 //
-// ★ 2026-09-30（用户报「本地包里的图片/音乐/直播没有对应的播放器」）：
 //   `<video>` 只能放视频；图片地址（图集源的每一「集」就是一张图）会黑屏、音乐地址只能听个响、
 //   直播地址（无 ENDLIST 的 m3u8 / flv / ts）没有直播态。这里先把地址判型，
 //   再分别交给 ImageViewer / AudioPlayer / 直播态的 VideoPlayer。
@@ -17,6 +16,15 @@ const AUDIO_EXT = new Set(['mp3', 'flac', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'op
 const NO_CARRIER_PROTO = /^(rtmps?|rtsp|rtp|mmsh?|ed2k|magnet|thunder|ftp):/i;
 /** 直播路径特征（仅用于**提前**进直播态；时长才是最终判据，见 VideoPlayer.onDuration） */
 const LIVE_PATH_HINT = /(\/live(s)?\b|\/live\.|\/iptv\b|:\d{4,5}\/)/i;
+/**
+ * 
+ *   **udpxy / rtsp-to-http 的「组播转 HTTP」路径** —— `/udp/<组播IP>:<端口>` 或 `/rtp/<组播IP>:<端口>`。
+ *   实测（`http://14.127.213.91:4022/udp/239.77.0.244:5146`）返回 200 + `application/octet-stream`，
+ *   内容就是 **MPEG-TS 裸流**，但**没有扩展名** ⇒ 旧判型落到 'video' → 交给原生 `<video>`，
+ *   而 Chromium 解不了 TS ⇒ 12 秒后报「视频流无法解析」（用户看到的"不支持"就是这个）。
+ *   只认**路径**里的 `/udp/`|`/rtp/` + `IP:端口` 形态（query 里出现不算），避免误伤。
+ */
+const UDPXY_TS_PATH = /\/(?:udp|rtp)\/[^/?#]+:\d{2,5}(?:[/?#]|$)/i;
 
 /** 取扩展名（先剥 query/hash） */
 function extOf(low: string): string {
@@ -55,6 +63,8 @@ export function detectMediaKind(url: string): MediaKind {
   if (ext === 'm3u8' || /m3u8|\/hls\//.test(low) || /[?&](?:type|format)=(?:hls|m3u8)\b/.test(queryHint)) return 'hls';
   if (ext === 'flv') return 'flv';
   if (ext === 'ts' || ext === 'm2ts' || /mpegts/.test(low)) return 'mpegts';
+  // udpxy 组播转 HTTP（无扩展名，但出来的就是 MPEG-TS 裸流）—— 见 UDPXY_TS_PATH 注释
+  if (UDPXY_TS_PATH.test(low.split(/[?#]/)[0])) return 'mpegts';
   return 'video';
 }
 

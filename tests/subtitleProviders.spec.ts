@@ -1,5 +1,5 @@
 // tests/subtitleProviders.spec.ts
-// ★ 2026-09-28：外挂字幕「多源」框架回归。
+// 外挂字幕「多源」框架回归。
 //   · 网页源（SubtitleCat）的 HTML 解析 / 相关性过滤 / 语言优先级 —— 用**离线 fixture**，不联网；
 //   · 多源聚合：逐源并行、单源失败不影响其它源、跳过与失败区分、候选排序；
 //   · 下载按候选 provider 路由；
@@ -20,8 +20,8 @@ import { DEFAULT_SUBTITLE_SETTINGS, type SubtitleSettings } from '../src/shared/
 const settings: SubtitleSettings = { ...DEFAULT_SUBTITLE_SETTINGS, providers: { assrt: false, subtitlecat: true } };
 const ctx = (title: string, keywords: string[]): SubtitleSearchContext => ({ title, keywords, ep: '12', settings });
 
-// ---- SubtitleCat 搜索页（结构对齐 2026-09-28 **线上实测**页面）----
-//   ★ 关键：线上 href 是**不带前导斜杠**的相对路径（`subs/1594/xxx.html`）——
+// ---- SubtitleCat 搜索页（结构对齐 **线上实测**页面）----
+//   关键：线上 href 是**不带前导斜杠**的相对路径（`subs/1594/xxx.html`）——
 //     曾按“想象”写成 `/subs/`，选择器会一条都匹配不到；这里同时保留两种形态作为回归护栏。
 const SEARCH_HTML = `
 <table id="search_results">

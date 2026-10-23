@@ -1,5 +1,5 @@
 // tests/playDiag.spec.ts
-// ★ 2026-09-28：播放/落盘诊断的纯函数（脱敏、短哈希、JSONL 行）—— 诊断本身也要可回归。
+// 播放/落盘诊断的纯函数（脱敏、短哈希、JSONL 行）—— 诊断本身也要可回归。
 import { describe, it, expect } from 'vitest';
 import { redactUrl, shortHash, formatDiagLine, diagTimer } from '../src/main/util/playDiag';
 

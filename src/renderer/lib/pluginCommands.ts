@@ -1,7 +1,7 @@
 // src/renderer/lib/pluginCommands.ts
 // 插件受限动作按钮的**执行器**（渲染层侧）：把 `UiCommandView` 映射为宿主**受控动作**。
 //
-// ★ 插件**不跑代码** —— 这里就是「宿主动作词表」的唯一实现处（主进程只做校验 + 装配）。
+// 插件**不跑代码** —— 这里就是「宿主动作词表」的唯一实现处（主进程只做校验 + 装配）。
 //   动作 = `open-url`（开外部链接）/ `navigate`（跳宿主页，可带配置页锚点）/
 //          `export-live`（复用直播导出）/ `set-theme`（复用皮肤切换）。
 // 事实源：docs/design/插件制作规范.md §5.9；机器契约见 src/shared/plugin.ts。
@@ -16,7 +16,7 @@ export function commandsFor(list: UiCommandView[] | undefined, placement: 'confi
 }
 
 /**
- * ★ 动作执行参数（`ui.command` 按钮 与 `keymap` 快捷键 **共用**）——
+ * 动作执行参数（`ui.command` 按钮 与 `keymap` 快捷键 **共用**）——
  *   动作是宿主**预定义能力**，与触发方式（点按钮 / 按键盘）无关，故两处走**同一实现**。
  *   `UiCommandView` / `KeymapView` 都满足本形状。
  */
@@ -40,7 +40,7 @@ export interface CommandOutcome {
 
 /**
  * 执行一条插件命令。
- * ★ 全部走**宿主既有能力**（不新造网络 / 不注入组件）；目标不存在时**明确失败**，不静默"成功"。
+ * 全部走**宿主既有能力**（不新造网络 / 不注入组件）；目标不存在时**明确失败**，不静默"成功"。
  */
 export async function runPluginCommand(cmd: PluginActionSpec): Promise<CommandOutcome> {
   if (cmd.confirm && !window.confirm(`${cmd.title || cmd.label}？`)) return { ok: true, message: '已取消' };

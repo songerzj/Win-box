@@ -1,5 +1,5 @@
 // src/main/torrent/torrentPlay.ts
-// ★ 2026-09-29：磁力播放编排（磁力 B）——「magnet → 起任务 → 选片 → 等首段可读 → 交播放器」。
+// 磁力播放编排（磁力 B）——「magnet → 起任务 → 选片 → 等首段可读 → 交播放器」。
 //
 // 两条出口（按容器/编码自动选，见 engine/torrent/magnet 的 webPlayBlockReason）：
 //   · **内联**：mp4/webm 等 Chromium 能播的形态 → 返回本机中继地址 `http://127.0.0.1:9978/bt/<hash>/<idx>`，

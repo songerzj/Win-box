@@ -1,10 +1,10 @@
 // src/renderer/lib/playerPrefs.ts
-// ★ 2026-09-24（用户要求）：**播放器设置记忆** —— 下次打开播放器保持上次的设置。
+// **播放器设置记忆** —— 下次打开播放器保持上次的设置。
 //   这里只负责「纯渲染层」的几项（localStorage，主窗口与独立播放器窗口同源共享）：
 //     · 音量（0 = 静音；与播放器内「点喇叭」的实现一致，不用 video.muted）
 //     · 倍速
 //     · 字幕时间偏移
-//   ★ 不在此重复持久化的项：字幕字号/位置/开关（主进程 subtitleSet → subtitle.json）、
+//   不在此重复持久化的项：字幕字号/位置/开关（主进程 subtitleSet → subtitle.json）、
 //     弹幕设置（主进程 danmakuSet → danmaku.json），二者已是跨窗口持久的。
 import { isEngineKernel, type KernelPref } from './kernel';
 import { normalizeSpdif } from '../../shared/player';
@@ -16,20 +16,20 @@ export interface PlayerPrefs {
   rate: number;
   /** 字幕时间偏移（秒） */
   subOffset: number;
-  /** ★ 2026-09-26 新增：画面比例（见 PlayerFit） */
+  /** 新增：画面比例（见 PlayerFit） */
   fit: PlayerFit;
-  /** ★ 2026-10-08 新增：播放内核偏好（auto = 按资源形态自动；手动切换后记住显式值） */
+  /** 新增：播放内核偏好（auto = 按资源形态自动；手动切换后记住显式值） */
   kernel: KernelPref;
   /**
-   * ★ 2026-10-17（阶段3b，用户要求「音频直通开关」）：MPV 内核的**音频源码直通**档位
+   * （阶段3b）：MPV 内核的**音频源码直通**档位
    *   （值 = mpv `audio-spdif` 的编解码列表串；'' = 关闭，见 shared/player.ts 的 SPDIF_OPTIONS）。
-   *   ★ 只在 MPV 内核生效；每次起播时按此偏好下发一次（HTML5 内核无关）。
+   *   只在 MPV 内核生效；每次起播时按此偏好下发一次（HTML5 内核无关）。
    */
   spdif: string;
 }
 
 /**
- * ★ 2026-09-26（用户要求）：**画面比例** —— 部分片源比例特殊（竖屏/超宽）时画面与 UI 互相干扰，
+ * **画面比例** —— 部分片源比例特殊（竖屏/超宽）时画面与 UI 互相干扰，
  *   给用户一个显式控制：适应（默认）/ 拉伸填满 / 裁剪填满 / 强制 16:9 / 强制 4:3 / 原始尺寸。
  *   语义对齐安卓 TVBox 的「画面比例」菜单（默认 / 16:9 / 4:3 / 填充 / 原始），
  *   另加「裁剪填满」（等价 object-fit: cover，去黑边）。
@@ -53,7 +53,7 @@ export function normalizeFit(v: unknown): PlayerFit {
 
 /**
  * 内核偏好兜底：非法/未知值一律回落「自动」（见 lib/kernel.ts）。
- * ★ R11：`engine:<id>` 形态**保留**（插件引擎是否可用要到渲染时才知 ——
+ * R11：`engine:<id>` 形态**保留**（插件引擎是否可用要到渲染时才知 ——
  *   由 `resolveKernel(pref, url, { engines })` 按「已启用且就绪」集合收敛，不可用则回落 auto 结果）。
  */
 export function normalizeKernelPref(v: unknown): KernelPref {
@@ -62,7 +62,7 @@ export function normalizeKernelPref(v: unknown): KernelPref {
 }
 
 /**
- * ★ 2026-10-17（用户要求「音轨设置」）：**本会话内**记住的音轨（语言 → 标题 → id 的标识）。
+ * **本会话内**记住的音轨（语言 → 标题 → id 的标识）。
  *
  * 刻意**不落盘**（选了某语言不该影响别的片），但必须是**模块级变量**：播放器组件在换集时会
  * 重挂载（实测：`pref` 被重置成空 → 下一集不再自动沿用），组件内的 ref 扛不住。

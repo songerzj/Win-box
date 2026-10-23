@@ -1,5 +1,5 @@
 // src/main/store/UserConfigManager.ts
-// ★ 用户配置文件管理器（任务 B2）。
+// 用户配置文件管理器（任务 B2）。
 // 存储：JsonStore 的 'user-config' 键（物理文件 <userData>/user-config.json）。
 // 语义：
 //   - 每次 URL/JSON 导入 = replaceFromImport（用新配置全量替换 sources+lives+global，apiUrl 记录来源）；
@@ -81,7 +81,7 @@ export function subscriptionStamp(d = new Date()): string {
 }
 
 /**
- * ★ 2026-09-24：取订阅里**真实**的解析接口列表（滤掉合成的「超级解析」type=4）。
+ * 取订阅里**真实**的解析接口列表（滤掉合成的「超级解析」type=4）。
  *   理由：type=4 是本机内置解析（桌面版由 ParseService 的隐藏窗口嗅探承担），
  *   若把它持久化，每次 config 往返（serializeImport → parseSiteConfig）都会被 parseParses
  *   再 unshift 一遍 → 列表里越积越多重复项。
@@ -124,7 +124,7 @@ function clampIndex(i: number, len: number): number {
 }
 
 /**
- * 变更类别（★ 2026-09-27）：
+ * 变更类别：
  * - `'content'`：源 / 解析 / 直播 / 全局（运行期配置真的变了）→ 宿主需要重放配置、丢弃蜘蛛实例、重新预热；
  * - `'ui'`：**只换了「选中的源 / 直播线路」**（`ui.*`）→ 运行期配置一字未变，
  *   宿主**不得**做任何重活（否则「切一次源」= 重放整份配置 + 清空实例缓存 + 清空搜索缓存 + 预热别的源）。
@@ -169,12 +169,12 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-09-29 设置备份还原：整份替换（走与启动读取同一条归一化 + 落盘 + 变更回调路径）。
+   * 设置备份还原：整份替换（走与启动读取同一条归一化 + 落盘 + 变更回调路径）。
    * 与导入（replaceFromImport）不同：这里是**还原**，保留备份里的 sources/lives/profiles/ui 原样。
    */
   restore(raw: UserConfig): void {
     const restored = this.normalizeLoaded(raw);
-    // ★ 2026-10-15：备份还原同样把「本机导入的本地直播线路」并回来（见 withLocalLives），
+    // 备份还原同样把「本机导入的本地直播线路」并回来（见 withLocalLives），
     //   并按**备份自带的**「已删除源」墓碑过滤（备份里若同时有该源与墓碑，以墓碑为准）。
     const merged = this.withLocalLives({ ...restored, sources: this.withoutDeletedSources(restored.sources, '备份还原', restored.deletedSourceKeys) });
     this.apply(merged);
@@ -202,7 +202,7 @@ export class UserConfigManager {
    * apiUrl 为订阅地址；粘贴 JSON 导入传 ''（手动管理）。
    */
   replaceFromImport(parsed: SiteConfig, apiUrl: string): void {
-    // ★ 2026-10-15（用户报「配置里删掉的源，换源下拉里还在」）：订阅全量替换前，先按「已删除源」墓碑
+    // 订阅全量替换前，先按「已删除源」墓碑
     //   把用户删过的 key 挡掉（否则导入 / 启动 7 天自动刷新一跑，删掉的源就回来了）。
     const sources = this.withoutDeletedSources(parsed.sites.map((s) => ({ ...s })), '订阅导入');
     // 同一份导入 = 更新当前/活跃档案的 json；由调用方在需要时先 createProfile
@@ -224,7 +224,7 @@ export class UserConfigManager {
     if (!next.activeProfileId && (next.sources.length > 0 || next.lives.length > 0) && next.profiles.length === 0) {
       const first: UserProfile = {
         id: slug(apiUrl) || 'default',
-        // ★ 2026-09-26：首次导入也按「新订阅 xx」命名（后续再导入会把当前档案改名为「旧订阅 xx」）
+        // 首次导入也按「新订阅 xx」命名（后续再导入会把当前档案改名为「旧订阅 xx」）
         name: `新订阅 ${subscriptionStamp()}`,
         apiUrl: apiUrl || '',
         json: serializeImport({ ...parsed, sites: sources }),
@@ -237,7 +237,7 @@ export class UserConfigManager {
     if (!next.sources.some((s) => s.key === next.ui.activeSourceKey)) {
       next.ui.activeSourceKey = '';
     }
-    // ★ 2026-10-15（用户报「导入的 TXT 直播源重启后消失」）：订阅导入 / 自动刷新只替换**订阅自带**的线路，
+    // 订阅导入 / 自动刷新只替换**订阅自带**的线路，
     //   本机导入的 TXT / M3U 线路属于独立的一份「本地订阅」，必须并回来（否则下一次订阅往返即丢失）。
     const merged = this.withLocalLives(next);
     merged.ui.activeLiveIndex = clampIndex(merged.ui.activeLiveIndex, merged.lives.length);
@@ -260,7 +260,7 @@ export class UserConfigManager {
       id: slug(name) + '-' + Date.now().toString(36).slice(-4),
       name: name.trim() || '未命名配置',
       apiUrl,
-      // ★ 2026-10-15：档案存档不烤入「本机导入的本地直播线路」——它们不随档案切换走（见 withLocalLives）
+      // 档案存档不烤入「本机导入的本地直播线路」——它们不随档案切换走（见 withLocalLives）
       json: serializeImport({ ...parsed, lives: this.serializableLives(parsed.lives) } as SiteConfig),
       sourceCount: parsed.sites.length,
       importedAt: new Date().toISOString(),
@@ -274,7 +274,7 @@ export class UserConfigManager {
         ? {
             apiUrl,
             global: { spider: parsed.spider || '', flags: Array.isArray(parsed.flags) ? [...parsed.flags] : [] },
-            // ★ 2026-10-15：同样按「已删除源」墓碑过滤（否则另存为新档案会把删掉的源带回来）
+            // 同样按「已删除源」墓碑过滤（否则另存为新档案会把删掉的源带回来）
             sources: this.withoutDeletedSources(parsed.sites.map((s) => ({ ...s })), '另存档案'),
             lives: parsed.lives.map((l) => ({ ...l })),
             parses: realParses(parsed.parses),
@@ -288,7 +288,7 @@ export class UserConfigManager {
 
   /**
    * 切换档案：解析其 json 全量恢复 sources/lives/global。json 为空/解析失败抛中文错。
-   * ★ 2026-09-30（用户要求）：`pickKey` 非空时在**同一次 apply 内**把选中源落到该档案下的这个 key
+   * `pickKey` 非空时在**同一次 apply 内**把选中源落到该档案下的这个 key
    *   （换源弹层「左订阅 → 右源」一步点选完成；两次调用会触发两轮内容变更与宿主重活）。
    */
   activateProfile(id: string, pickKey = ''): void {
@@ -306,12 +306,12 @@ export class UserConfigManager {
       activeProfileId: id,
       apiUrl: p.apiUrl || this.snap.apiUrl,
       global: { spider: parsed.spider || '', flags: Array.isArray(parsed.flags) ? [...parsed.flags] : [] },
-      // ★ 2026-10-15：切换档案也从存档 json 全量重建 sources —— 同样按「已删除源」墓碑过滤
+      // 切换档案也从存档 json 全量重建 sources —— 同样按「已删除源」墓碑过滤
       sources: this.withoutDeletedSources(parsed.sites.map((s) => ({ ...s })), '档案切换'),
       lives: parsed.lives.map((l) => ({ ...l })),
       parses: realParses(parsed.parses),
     };
-    // ★ 2026-10-15：档案切换会从存档 json 全量重建 lives —— 本机导入的本地直播线路不随档案走，并回来
+    // 档案切换会从存档 json 全量重建 lives —— 本机导入的本地直播线路不随档案走，并回来
     const merged = this.withLocalLives(next);
     if (pickKey && merged.sources.some((s) => s.key === pickKey)) merged.ui.activeSourceKey = pickKey;
     else if (!merged.sources.some((s) => s.key === merged.ui.activeSourceKey)) merged.ui.activeSourceKey = '';
@@ -320,7 +320,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-10-16（用户报「本地包删掉订阅后重新导入、订阅里一个源都没有」）：**清除指定 key 的删除墓碑**。
+   * **清除指定 key 的删除墓碑**。
    *   只在「用户**主动导入**订阅」时调用 —— 那是明确的「我要这份订阅」意图（自动刷新不会走这里），
    *   与 `addSource` 手动重加同一 key 时清墓碑同源（"删了想要回来"的明确路径）。
    *   无变化则不写盘。
@@ -335,7 +335,7 @@ export class UserConfigManager {
 
   /**
    * 删除档案。
-   * ★ 2026-10-16（用户要求）：**允许删除当前生效的配置，也允许删除唯一一份配置**（此前生效档案会抛错、
+   * **允许删除当前生效的配置，也允许删除唯一一份配置**（此前生效档案会抛错、
    *   唯一一份时界面上根本没有「删」按钮，用户无法清掉误导入的订阅）。规则：
    *   - 删的是**非生效**档案 → 直接移除（生效档案与运行期内容一字不动）；
    *   - 删的是**生效**档案且还有其它档案 → 移除后自动切到剩下的第一份（按其存档 json 重建 sources/lives/global）；
@@ -418,7 +418,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-09-26（用户口径）：导入新订阅时，把当前生效档案改名为「旧订阅 xx」。
+   * 导入新订阅时，把当前生效档案改名为「旧订阅 xx」。
    * 仅当它还是**自动命名**（默认名 / URL 尾段 / 「旧订阅·新订阅 xx」）时才改；
    * 用户手动命名（存为新配置 / 重命名过）的档案保留原名，不覆盖用户的命名。
    */
@@ -434,7 +434,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-09-30（用户要求）：换源弹层的「左订阅 / 右源」视图。
+   * 换源弹层的「左订阅 / 右源」视图。
    * 当前生效档案取**运行期真实源列表**（含手动增删改/排序）；其余档案解析其存档 JSON。
    * 解析失败给空清单（弹层照常显示该订阅，只是没有源）——不因单份坏档整体失败。
    */
@@ -483,7 +483,7 @@ export class UserConfigManager {
     if (!parsed.bean) {
       throw new Error(`源校验失败：${parsed.report.message}`);
     }
-    // ★ 2026-10-15：手动**重新添加**同一 key = 用户明确要它回来 → 清掉对应墓碑
+    // 手动**重新添加**同一 key = 明确要它回来 → 清掉对应墓碑
     //   （否则订阅往返时会再被过滤掉，用户会觉得"加了又没了"）
     const deletedSourceKeys = this.snap.deletedSourceKeys.filter((k) => k !== parsed.bean!.key);
     const next: UserConfig = { ...this.snap, sources: [...this.snap.sources, parsed.bean], deletedSourceKeys };
@@ -529,7 +529,7 @@ export class UserConfigManager {
     const next: UserConfig = {
       ...this.snap,
       sources: this.snap.sources.filter((s) => !removing.has(s.key)),
-      // ★ 2026-10-15（用户报「配置里删掉的源，换源下拉里还在」）：把删掉的 key 记成墓碑 ——
+      // 把删掉的 key 记成墓碑 ——
       //   否则下一次订阅往返（导入 / 启动 7 天自动刷新 / 档案切换）会把它们原样带回来。
       deletedSourceKeys: Array.from(new Set([...this.snap.deletedSourceKeys, ...removing])),
     };
@@ -559,7 +559,7 @@ export class UserConfigManager {
     if (!key) return;
     if (!this.snap.sources.some((s) => s.key === key)) return;
     if (this.snap.ui.activeSourceKey === key) return;
-    // ★ 'ui'：只动了 ui.activeSourceKey → 运行期配置未变（见 ConfigChangeKind）
+    // 'ui'：只动了 ui.activeSourceKey → 运行期配置未变（见 ConfigChangeKind）
     this.apply({ ...this.snap, ui: { ...this.snap.ui, activeSourceKey: key } }, 'ui');
   }
 
@@ -567,12 +567,12 @@ export class UserConfigManager {
   setActiveLiveIndex(i: number): void {
     const clamped = clampIndex(i, this.snap.lives.length);
     if (clamped === this.snap.ui.activeLiveIndex) return;
-    // ★ 'ui'：同上
+    // 'ui'：同上
     this.apply({ ...this.snap, ui: { ...this.snap.ui, activeLiveIndex: clamped } }, 'ui');
   }
 
   /**
-   * ★ 2026-09-30（用户要求）：追加/更新一条**本地导入的直播源**（TXT / M3U）。
+   * 追加/更新一条**本地导入的直播源**（TXT / M3U）。
    * 同 url（= 同一个本地文件）视为同一条：只更新 name，不产生重复线路；
    * 返回该线路下标与是否命中已有条目（UI 提示用）。
    */
@@ -594,7 +594,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-10-14（用户要求）：删除某条**直播线路**（下标越界静默 no-op）。
+   * 删除某条**直播线路**（下标越界静默 no-op）。
    * 同步收敛 activeLiveIndex，避免删除后选中态悬空（越界 clamp 到末条）。
    */
   deleteLive(index: number): void {
@@ -606,7 +606,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-10-16（用户要求）：**批量**删除直播线路（配置页「直播线路」多选删除）。
+   * **批量**删除直播线路（配置页「直播线路」多选删除）。
    * 按下标集合一次移除（越界忽略），并收敛 activeLiveIndex（避免选中态悬空）。
    */
   deleteLives(indices: readonly number[]): void {
@@ -620,7 +620,7 @@ export class UserConfigManager {
     this.apply({ ...this.snap, lives, ui: { ...this.snap.ui, activeLiveIndex } });
   }
 
-  /** ★ 2026-10-14（用户要求）：重命名某条直播线路（空名/越界静默 no-op）。 */
+  /** 重命名某条直播线路（空名/越界静默 no-op）。 */
   updateLiveName(index: number, name: string): void {
     const i = Math.floor(index);
     const t = (name || '').trim();
@@ -630,7 +630,7 @@ export class UserConfigManager {
 
   // ---------------------------------------------------------------
   private apply(next: UserConfig, kind: ConfigChangeKind = 'content'): void {
-    // ★ 2026-09-30：内容型变更必须把「当前生效档案」的存档 json 一起对齐（见 withActiveProfileSynced）
+    // 内容型变更必须把「当前生效档案」的存档 json 一起对齐（见 withActiveProfileSynced）
     this.snap = kind === 'content' ? this.withActiveProfileSynced(next) : next;
     this.loaded = true;
     this.persist();
@@ -638,12 +638,11 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-09-30（用户报「切换订阅时，源列表里偶尔会残留上一个订阅的部分源」）：
    *   档案存档 json 与**运行期源列表必须始终一致**。
    *
    *   此前只在「导入 / 存为新配置 / 激活档案」时写 json，之后用户手动增删改/排序源只落在
    *   `snap.sources`；一旦切到别的订阅再切回来，`activateProfile` 会用**旧 json 重建**
-   *   → 手动删掉的源又冒出来、手动加的源消失（用户观感 = 列表里混着上一份订阅的源）。
+   * → 手动删掉的源又冒出来、手动加的源消失（典型表现 = 列表里混着上一份订阅的源）。
    *   这里每次内容型变更都把生效档案的 json 重新序列化（幂等：activateProfile 从 json 重建后
    *   再序列化结果相同，不会来回抖动）。
    */
@@ -652,7 +651,7 @@ export class UserConfigManager {
     if (!id || !next.profiles.some((p) => p.id === id)) return next;
     const json = serializeImport({
       sites: next.sources,
-      // ★ 2026-10-15：本地导入的直播线路不写进档案 json（它们由 withLocalLives 独立保住）
+      // 本地导入的直播线路不写进档案 json（它们由 withLocalLives 独立保住）
       lives: this.serializableLives(next.lives),
       spider: next.global.spider,
       flags: next.global.flags,
@@ -665,7 +664,6 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-10-15（用户报「导入的 TXT 直播源重启后消失」）：
    *   本机导入的 TXT / M3U 直播线路（url = `…/file/local-live/<文件>`）是**一份独立于订阅的本地订阅**。
    *   订阅导入（`replaceFromImport`）、启动时的 7 天自动刷新、「新订阅另存为新档案」（`saveAsProfile`）
    *   与档案切换（`activateProfile`）都会用「订阅自带线路」**全量替换** `lives` —— 若不单独并回来，
@@ -769,7 +767,7 @@ export class UserConfigManager {
       },
       profiles,
       activeProfileId,
-      // ★ 2026-10-15：用户删除过的源 key 墓碑（见 UserConfig.deletedSourceKeys）
+      // 用户删除过的源 key 墓碑（见 UserConfig.deletedSourceKeys）
       deletedSourceKeys: Array.from(
         new Set((Array.isArray((raw as { deletedSourceKeys?: unknown })?.deletedSourceKeys)
           ? ((raw as { deletedSourceKeys: unknown[] }).deletedSourceKeys)
@@ -786,7 +784,7 @@ export class UserConfigManager {
   }
 
   /**
-   * ★ 2026-10-15（用户报「配置里删掉的源，换源下拉里还在」）：按「用户删除过的 key 墓碑」过滤掉随订阅
+   * 按「用户删除过的 key 墓碑」过滤掉随订阅
    *   往返一起回来的源。订阅语义是全量替换（导入 / 启动 7 天自动刷新 / 档案切换 / 备份还原），
    *   若不过滤，用户删掉的源会在任何一次订阅往返后复活 —— 与「本地直播线路要留住」同一口径。
    *   仅过滤「墓碑里有」的 key；订阅新增的源照常进列表（被删过的 key 需用户手动添加才会回来）。

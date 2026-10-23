@@ -1,5 +1,5 @@
 // src/engine/config/ApiConfigParser.ts
-// ★ 站源 JSON 解析总入口。1:1 对齐 ApiConfig.java 的 trimJsonObject / parseApiCollection / parseJson。
+// 站源 JSON 解析总入口。1:1 对齐 ApiConfig.java 的 trimJsonObject / parseApiCollection / parseJson。
 import { safeJsonString, safeJsonStringList, parseJsonLenient } from '../util/json';
 import { parseSite } from './SiteParser';
 import { parseParses } from './ParseConfigParser';
@@ -28,7 +28,7 @@ export function trimJsonObject(content: string | null | undefined): string {
 }
 
 /**
- * ★ fixContentPath（ApiConfig.java:1788 / Box ApiConfig.java:863）
+ * fixContentPath（ApiConfig.java:1788 / Box ApiConfig.java:863）
  *
  * 上游在**解析前的原始文本层**把配置里的相对路径改写为绝对 URL：
  *   - 命中条件：文本含 `"./` 或 `"../`（即 JSON 字符串值里出现相对路径）
@@ -36,7 +36,7 @@ export function trimJsonObject(content: string | null | undefined): string {
  *   - `../` 先按 `UriUtil.resolve(url, "../")` 解析，再解析 `./`
  *   - 非 http/clan 开头（如本地文件路径）补 `http://`
  *
- * 这是桌面版此前完全缺失的一环：少了它，`spider: "./fty.jar;md5;xxx"` /
+ * 这是桌面版此前完全缺失的一环：少了它，`spider: "./spider.jar;md5;xxx"` /
  * `jar: "./libs/jar/XBPQ.jar"` 会被当成字面 URL → `Invalid URL` → jar 加载失败
  * → 蜘蛛返回空串 → 首页报「蜘蛛返回空结果」。
  *
@@ -137,7 +137,7 @@ export function parseSiteConfig(jsonStr: string): ParseResult {
 }
 
 /**
- * ★ 2026-09-24：判断响应文本「像不像订阅 JSON」。
+ * 判断响应文本「像不像订阅 JSON」。
  * 用途：识别「按 UA 分流」的订阅站点 —— 浏览器 UA 得到网页落地页，TVBox 客户端（okhttp）UA
  * 才返回订阅 JSON（例 `http://www.y456y.com`）。拉订阅拿到 HTML 时用它决定是否换 UA 重试。
  * 只做形状判断（对象 + 订阅关键字段），不追求严格解析。
@@ -158,7 +158,7 @@ export function parseSiteConfigWithBase(jsonStr: string, apiUrl: string): ParseR
 
 function parseSiteConfigInternal(jsonStr: string, apiUrl: string): ParseResult {
   const warnings: string[] = [];
-  // ★ 0) 相对路径归一（必须发生在任何解析之前——上游同序）
+  // 0) 相对路径归一（必须发生在任何解析之前——上游同序）
   const text = fixContentPath(apiUrl, jsonStr);
 
   // 1) 先判多仓订阅格式

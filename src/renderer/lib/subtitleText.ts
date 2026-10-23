@@ -1,5 +1,5 @@
 // src/renderer/lib/subtitleText.ts
-// ★ 2026-09-28：字幕面板的纯文本工具（可单测）—— 多源之后「没搜到」必须说清是哪一步的问题。
+// 字幕面板的纯文本工具（可单测）—— 多源之后「没搜到」必须说清是哪一步的问题。
 import type { SubtitleSearchReport } from '../../shared/subtitle';
 
 /** 字幕源 id → 展示名（未知 id 原样显示；与主进程 Provider 的 id 对应） */

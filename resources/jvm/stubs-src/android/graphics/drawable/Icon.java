@@ -9,7 +9,7 @@ import android.os.Parcelable;
 /**
  * Icon stub —— 应用图标（android.graphics.drawable.Icon）。
  *
- * ★ 真实调用面（扫描确认）：`getResId()I`
+ * 真实调用面（扫描确认）：`getResId()I`
  *   桌面版无资源体系：getResId() 返回 0（"无资源 ID"），
  *   所有 loadDrawable 返回 null。调用方拿到 0 通常会跳过图标绘制。
  */
@@ -61,7 +61,7 @@ public class Icon implements Parcelable {
         return type;
     }
 
-    /** ★ 返回 0 = 无资源 ID（桌面版无资源表），调用方据此跳过图标加载 */
+    /** 返回 0 = 无资源 ID（桌面版无资源表），调用方据此跳过图标加载 */
     public int getResId() {
         return resId;
     }

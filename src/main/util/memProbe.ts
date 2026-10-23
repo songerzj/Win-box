@@ -1,6 +1,5 @@
 // src/main/util/memProbe.ts
 /**
- * ★ 2026-10-17（用户报「播放 1080P 时吃数百 MB 内存、后台跑着五六个子进程，太臃肿」）：
  *   **内存基线探针**（诊断专用，不改任何功能行为）。
  *
  * 口径（先量化再优化，别盲猜）：
@@ -134,8 +133,8 @@ function withDeadline<T>(p: Promise<T>, ms: number): Promise<T | null> {
 
 /**
  * 按「父进程 = mainPid」归集我们 spawn 的子进程；排除 Electron 自身与探针外壳。
- * ★ 每一步都有硬截止（4s / 6s）：wmic 在系统繁忙时可能长时间无响应，
- *   没有截止会让本轮采样整体卡住（实测踩过：采到第 6 条后不再出数）。
+ * 每一步都有硬截止（4s / 6s）：wmic 在系统繁忙时可能长时间无响应，
+ *   没有截止会让本次采样整体卡住（实测踩过：采到第 6 条后不再出数）。
  */
 export async function childRows(mainPid: number, exclude: Set<number>): Promise<Row[]> {
   let rows: Row[] = [];
@@ -198,7 +197,7 @@ let watchInFlight = false;
  */
 export function startPlayMemWatch(): void {
   const now = Date.now();
-  if (now < watchUntil) return; // 本轮窗口内重复触发 → 忽略
+  if (now < watchUntil) return; // 本次窗口内重复触发 → 忽略
   watchUntil = now + PLAY_WATCH_MS + SAMPLE_EVERY_MS;
   const total = Math.floor(PLAY_WATCH_MS / SAMPLE_EVERY_MS);
   fileLogger.i(`[mem] 播放内存基线开始（${PLAY_WATCH_MS / 1000}s 窗口 / 每 ${SAMPLE_EVERY_MS / 1000}s 一次）`);

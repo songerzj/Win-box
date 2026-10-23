@@ -1,5 +1,5 @@
 /* apple.css — Win-Box 皮肤：Apple（macOS · Liquid Glass）风格
-   2026-10-18：迁移为「纯令牌皮肤」—— 本文件只声明令牌，结构样式见 global.css（宿主结构层）。
+迁移为「纯令牌皮肤」—— 本文件只声明令牌，结构样式见 global.css（宿主结构层）。
    原规范：Liquid Glass（macOS Tahoe）半透明材质 + Apple TV app 布局 + HIG 侧边栏；
    亮色外观（Apple TV app / 系统设置观感）：品牌色 = 系统蓝 #007aff / 靛蓝 #5e5ce6。 */
 :root[data-theme='apple'] {

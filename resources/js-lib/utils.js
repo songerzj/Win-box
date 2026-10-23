@@ -1,6 +1,6 @@
 // utils.js —— 自研「常用子集」实现（覆盖原 QuickJS 字节码，恢复 JS 蜘蛛对 utils 的 require）。
 //
-// ★ 诚实说明：原 `utils.js` 是打包者用 QuickJS 编译的 //bb 字节码，Node/VM 无法执行，
+// 诚实说明：原 `utils.js` 是打包者用 QuickJS 编译的 //bb 字节码，Node/VM 无法执行，
 //   JS 蜘蛛 `$.require('utils.js')` 因此一直报 UNSUPPORTED_BYTECODE。本实现依据字节码
 //   头部可读符号表（getSize/removeExt/jsonParse/debug/isVideoFormat + 视频扩展正则）与
 //   TVBox 生态常见用法还原的「常用子集」，**非 1:1**；蜘蛛若调用本实现未覆盖的函数，

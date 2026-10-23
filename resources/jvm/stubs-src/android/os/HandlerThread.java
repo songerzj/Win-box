@@ -1,7 +1,7 @@
 package android.os;
 
 /**
- * HandlerThread stub —— ★ 2026-09-27 新补（真机取证：解密 dex 里打包的 picasso
+ * HandlerThread stub —— 新补（实测：解密 dex 里打包的 picasso
  *   `Dispatcher` 直接 `new HandlerThread("Picasso-Dispatcher")` 并 `start()`；
  *   缺类时整条图片/请求线程池初始化失败）。
  *

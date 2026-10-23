@@ -1,6 +1,6 @@
-// tests/btE2E.spec.ts — 磁力播放**端到端**回归（★ 2026-09-29 磁力 B）。
+// tests/btE2E.spec.ts — 磁力播放**端到端**回归（磁力 B）。
 //
-// 默认**跳过**（需要公网 BT 连接，离线环境必然红）：只作人工/发布前取证用：
+// 默认**跳过**（需要公网 BT 连接，离线环境必然红）：只作人工/发布前实测用：
 //   BT_E2E=1 node node_modules/vitest/vitest.mjs run tests/btE2E.spec.ts
 // 它跑的是**真 aria2c + 真 /bt 路由 + 真磁盘读取**（只 mock electron 的 userData 路径），
 // 验证链路：magnet → 元数据 → 选片 → 起播门控 → /bt Range 取到**真实 mp4 头**。
@@ -36,7 +36,7 @@ const logger: Logger = {
   e: (t, err) => console.log(`[E] ${t} ${err instanceof Error ? err.message : ''}`),
 };
 
-// webtorrent 官方测试种子（Sintel，公共做种多；真机实测元数据 2~8s）
+// webtorrent 官方测试种子（Sintel，公共做种多；实测元数据 2~8s）
 const SINTEL =
   'magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel' +
   '&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce' +

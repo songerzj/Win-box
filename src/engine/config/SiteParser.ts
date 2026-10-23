@@ -100,7 +100,7 @@ export function parseSite(obj: unknown, index: number): SiteParseResult {
     timeout: clampTimeout(safeJsonInt(o, 'timeout', 0)),
     click: safeJsonString(o, 'click', ''),
     style: safeJsonString(o, 'style', ''),
-    // ★ 2026-09-29（用户要求）本地包「网页源」：homePage 缺省为空串（普通源），有值 = 点播页出「网页」入口
+    // 本地包「网页源」：homePage 缺省为空串（普通源），有值 = 点播页出「网页」入口
     homePage: safeJsonString(o, 'homePage', ''),
   };
 

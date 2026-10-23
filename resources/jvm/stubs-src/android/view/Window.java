@@ -3,7 +3,7 @@ package android.view;
 /**
  * Window stub —— 窗口对象。
  *
- * 桌面 TVBox 无 UI 窗口，但 fty 系蜘蛛的弹幕初始化（ProxyOrigin.getan）会走
+ * 桌面 TVBox 无 UI 窗口，但 某第三方源系蜘蛛的弹幕初始化（ProxyOrigin.getan）会走
  * Activity.getWindow().getDecorView() 遍历视图树查找 TextView。为让这条链不 NPE，
  * 这里给 getDecorView() 一个空 View（非 null、非 ViewGroup 非 TextView）——
  * 递归查找会直接返回空结果，等价"桌面上没有弹幕 UI"。

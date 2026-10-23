@@ -7,7 +7,7 @@ package android.widget;
  * {@code startScroll(int,int,int,int)} / {@code computeScrollOffset()} /
  * {@code getCurrX()} / {@code getCurrY()} / {@code isFinished()} / {@code abortAnimation()}。
  *
- * <p>★ {@code computeScrollOffset()} 必须返回 {@code false}：返回 true 会让调用方
+ * <p>{@code computeScrollOffset()} 必须返回 {@code false}：返回 true 会让调用方
  * 进入"滚动尚未结束 → 继续算下一帧"的循环；桌面端没有垂直同步信号，返回 true
  * 会造成忙等。这是"看着没报错但卡住/空结果"的典型来源。
  */

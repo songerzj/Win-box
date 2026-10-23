@@ -1,5 +1,5 @@
 // src/main/store/LocalPkgStore.ts
-// ★ 2026-09-29（用户要求）：本地包登记表（<userData>/local-pkgs.json）。
+// 本地包登记表（<userData>/local-pkgs.json）。
 //
 // 为什么需要登记：导入本地包后，订阅里展开出的 `http://127.0.0.1:9978/pkg/<i>/<rel>`
 // 要能被 LocalProxyServer 反查到真实目录；且重启后仍要有效（磁盘持久化）。

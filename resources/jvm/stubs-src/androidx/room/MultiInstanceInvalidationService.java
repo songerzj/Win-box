@@ -5,7 +5,7 @@ import android.os.IBinder;
 /**
  * MultiInstanceInvalidationService stub —— Room 多进程失效通知服务。
  *
- * ★ 扫描确认：**只有混淆工具库**（com.github.catvod.spider.merge.*，≈ shadow 版
+ * 扫描确认：**只有混淆工具库**（com.github.catvod.spider.merge.*，≈ shadow 版
  *   OkHttp/Gson）引用它，点播主链路（房数据库初始化）并不触达。
  *   因此这里只保证：类可加载 + 内部接口可加载 + 方法签名齐全，不做任何实际逻辑。
  *

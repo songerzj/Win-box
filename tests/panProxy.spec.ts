@@ -1,6 +1,6 @@
-// tests/panProxy.spec.ts — jar 的 `do=pan` 网盘代理地址 → 桌面端原生解链接线（★ 2026-10-08）。
+// tests/panProxy.spec.ts — jar 的 `do=pan` 网盘代理地址 → 桌面端原生解链接线。
 //
-// 背景（用户日志实证：玩偶/花卷/木偶「百度无限」线路全部 parse:0 黑屏）：
+// 背景（实测：部分源「某网盘线路」全部 parse:0 黑屏）
 //   ① 分享链接被 percent-encode 塞进 query 参数值 → 旧裸正则匹配不到 → 静默 return null；
 //   ② 桌面端当时只有百度兜底，jar 给 UC 分享的线路必然「视为无地址」；
 //   ③ 两处失败都不落日志、不上屏 → 用户只看到黑屏。
@@ -137,7 +137,7 @@ describe('parsePanProxyQuery（端口 -1，不能用 new URL）', () => {
   it('非法百分号序列保留原文（不抛）', () => {
     expect(parsePanProxyQuery('http://x/p?do=pan&fileId=%zz%').fileId).toBe('%zz%');
   });
-  // ★ 裸（未编码）fileId 值里还有自己的 `?`：旧实现 split('?')[1] 会在这儿截断、丢失后续参数
+  // 裸（未编码）fileId 值里还有自己的 `?`：旧实现 split('?')[1] 会在这儿截断、丢失后续参数
   it('裸 fileId 的 ? 不截断后续参数', () => {
     const q = parsePanProxyQuery('http://127.0.0.1:-1/proxy?do=pan&site=baidu&shareId=&fileId=https://pan.baidu.com/s/1abc?pwd=moCu&fileToken=');
     expect(q.fileId).toBe('https://pan.baidu.com/s/1abc?pwd=moCu');
@@ -146,7 +146,7 @@ describe('parsePanProxyQuery（端口 -1，不能用 new URL）', () => {
 });
 
 describe('SpiderHost：do=pan → 原生解链', () => {
-  it('潇洒玩偶 UC 复合选集 3→5→3 保留原始 fid/name，不进入 jar 或夸克', async () => {
+  it('某壳源 UC 复合选集 3→5→3 保留原始 fid/name，不进入 jar 或夸克', async () => {
     const { host, key } = makeHost('', { uc: 'uc-cookie', quark: 'quark-cookie' });
     const vm = (host as any).vm;
     vm.play = vi.fn();
@@ -162,7 +162,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(vm.play).not.toHaveBeenCalled();
   });
 
-  it('潇洒玩偶夸克复合选集直接走原生目标，不丢分享 ID', async () => {
+  it('某壳源夸克复合选集直接走原生目标，不丢分享 ID', async () => {
     const { host, key } = makeHost('', { quark: 'quark-cookie' });
     const vm = (host as any).vm;
     vm.play = vi.fn();
@@ -184,7 +184,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.message).toContain('UC');
     expect(hoisted.quark.calls.length).toBe(quarkStart);
   });
-  it('FTY 优汐 sId/fid 描述先走 UC，切不同文件保持分享上下文，不调用夸克或 jar', async () => {
+  it('某壳源 sId/fid 描述先走 UC，切不同文件保持分享上下文，不调用夸克或 jar', async () => {
     const { host, key } = makeHost('');
     const store = (host as unknown as { drives: { set: (k: string, v: string) => void } }).drives;
     store.set('uc', 'uc-cookie');
@@ -207,7 +207,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     seKey: sharedFile.sekey, surl: '1cP37TojYh6xoMuxzHxpPMg', path: '/1-100/01.mp4', isdir: '0',
   });
 
-  it('FTY 完整详情描述 → 直接转存所选文件，不等待 jar playerContent 超时', async () => {
+  it('某壳源 完整详情描述 → 直接转存所选文件，不等待 jar playerContent 超时', async () => {
     hoisted.baiduShared.resolve.mockReset().mockResolvedValue({ ...hoisted.baidu.result });
     const { host, key } = makeHost('', { baidu: 'BDUSS=t' });
     const play = vi.fn(async () => { throw new Error('playerContent timeout'); });
@@ -219,7 +219,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(play).not.toHaveBeenCalled();
   });
 
-  it('FTY 转存空间不足 → 准确原因上屏，不再重复转存或等待 jar 超时', async () => {
+  it('某壳源 转存空间不足 → 准确原因上屏，不再重复转存或等待 jar 超时', async () => {
     hoisted.baiduShared.resolve.mockReset().mockResolvedValue({ ok: false, url: '', header: {}, reason: '剩余空间不足，无法转存' });
     const { host, key } = makeHost('', { baidu: 'BDUSS=t' });
     const play = vi.fn();
@@ -336,7 +336,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.needDriveCookieBind).toBeUndefined();
   });
 
-  it('★ 2026-10-09：site=quark 的 do=pan → 走夸克通道（此前必然「双未识别」）', async () => {
+  it('site=quark 的 do=pan → 走夸克通道（此前必然「双未识别」）', async () => {
     hoisted.quark.calls.length = 0;
     const pan =
       'http://127.0.0.1:-1/proxy?do=pan&type=2&site=quark&shareId=&fileId=https%3A%2F%2Fpan.quark.cn%2Fs%2Fa1b2c3d4&fileToken=';
@@ -368,7 +368,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.needDriveCookieBind).toBe('uc');
   });
 
-  it('★ 2026-10-09：site=quark 识别但未绑定 → needDriveCookieBind=quark（绑定引导）', async () => {
+  it('site=quark 识别但未绑定 → needDriveCookieBind=quark（绑定引导）', async () => {
     const pan = 'http://127.0.0.1:-1/proxy?do=pan&site=quark&shareId=&fileId=pan.quark.cn/s/zz9988';
     const { host, key } = makeHost(pan);
     const store = (host as unknown as { drives: { remove: (k: string) => void } }).drives;
@@ -381,7 +381,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.message).toContain('网盘绑定');
   });
 
-  it('★ 2026-10-09：fast.uc.cn（UC 短域名）的 encoded fileId 也能识别并解链', async () => {
+  it('fast.uc.cn（UC 短域名）的 encoded fileId 也能识别并解链', async () => {
     hoisted.uc.calls.length = 0;
     const pan = 'http://127.0.0.1:-1/proxy?do=pan&site=uc&fileId=' + encodeURIComponent('https://fast.uc.cn/s/abc9x9?pwd=q1w2');
     const { host, key } = makeHost(pan, { uc: 'uc_ck=2' });
@@ -390,7 +390,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.parse).toBe(0);
   });
 
-  it('★ 2026-10-09：带提取码的夸克分享 → passcode 透传到 quarkTransfer（第三方文档参考 + 实证点）', async () => {
+  it('带提取码的夸克分享 → passcode 透传到 quarkTransfer（第三方文档参考 + 实证点）', async () => {
     hoisted.quark.calls.length = 0;
     const pan =
       'http://127.0.0.1:-1/proxy?do=pan&site=quark&fileId=' + encodeURIComponent('https://pan.quark.cn/s/zz9988?pwd=q1w2');
@@ -422,7 +422,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.parse).toBe(0);
   });
 
-  it('★ 2026-10-09：jar 把「百度网盘播放描述 JSON」当播放地址返回（嘟嘟无限）→ 走百度通道并按 path 选集', async () => {
+  it('jar 把「百度网盘播放描述 JSON」当播放地址返回（某壳源）→ 走百度通道并按 path 选集', async () => {
     hoisted.baidu.calls.length = 0;
     const desc =
       '{"pg":"","parent":"","share_id":"33432245846","uk":"1099891027153","surl":"1DssJrJXy-2W4yPXvwew5QA",' +
@@ -435,7 +435,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(decodeURIComponent(r.url)).toContain('https://d11.baidu-cdn.test/file/x.mp4?token=1');
   });
 
-  it('★ 2026-10-09：site=quark 的裸参数（shareId=pwd_id / fileId=fid）→ 走夸克通道（此前必然「未识别」）', async () => {
+  it('site=quark 的裸参数（shareId=pwd_id / fileId=fid）→ 走夸克通道（此前必然「未识别」）', async () => {
     hoisted.quark.calls.length = 0;
     const pan =
       'http://127.0.0.1:-1/proxy?do=pan&type=2&site=quark&shareId=e8ac5a87aa2e&fileId=2e3ad195e9834c9a8f71f4abef80d30d&fileToken=';
@@ -446,7 +446,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.url).toContain('http://127.0.0.1:9978/play?');
   });
 
-  it('★ 2026-10-09：site=baidu 只给纯数字 fileId（= fs_id，旧 -1 形态）→ filemetas 直取 dlink', async () => {
+  it('site=baidu 只给纯数字 fileId（= fs_id，旧 -1 形态）→ filemetas 直取 dlink', async () => {
     hoisted.baiduFsid.calls.length = 0;
     const pan = 'http://127.0.0.1:-1/proxy?do=pan&type=2&site=baidu&shareId=-&fileId=282416417661934&fileToken=';
     const { host, key } = makeHost(pan, { baidu: 'BDUSS=t; STOKEN=s' });
@@ -457,7 +457,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(decodeURIComponent(r.url)).toContain('https://d12.baidu-cdn.test/f/own.mp4?token=9');
   });
 
-  it('★ 2026-10-09：9978 do=pan 地址 + 端口已知 + 预检通过 → 改写 /proxy/<port> 交 jar 自解链', async () => {
+  it('9978 do=pan 地址 + 端口已知 + 预检通过 → 改写 /proxy/<port> 交 jar 自解链', async () => {
     const pan =
       'http://127.0.0.1:9978/proxy?do=pan&type=2&site=baidu&shareId=-&fileId=861118710311033&fileToken=';
     const { host, key } = makeHost(pan, { baidu: 'BDUSS=t' });
@@ -468,7 +468,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(r.url).toBe('http://127.0.0.1:9978/proxy/20042?do=pan&type=2&site=baidu&shareId=-&fileId=861118710311033&fileToken=');
   });
 
-  it('★ 2026-10-09：端口已知但 jar 预检失败（如「播放链接为空」/412）→ 回落原生通道（quark 裸参数 → quarkTransfer）', async () => {
+  it('端口已知但 jar 预检失败（如「播放链接为空」/412）→ 回落原生通道（quark 裸参数 → quarkTransfer）', async () => {
     hoisted.quark.calls.length = 0;
     const pan = 'http://127.0.0.1:9978/proxy?do=pan&type=2&site=quark&shareId=2e11c90d4ae8&fileId=672fb1e3c12249dd83f88262794405b1&fileToken=1562c273d1e618ee2f3df20a';
     const { host, key } = makeHost(pan, { quark: 'q=1' });
@@ -481,7 +481,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(decodeURIComponent(r.url)).toContain('https://quark-cdn.test/f/x.mp4?token=3');
   });
 
-  it('★ 2026-10-09：百度描述 JSON + 端口已知 + 预检通过 → 合成 do=pan 交 jar 自解链（嘟嘟无限）', async () => {
+  it('百度描述 JSON + 端口已知 + 预检通过 → 合成 do=pan 交 jar 自解链（某壳源）', async () => {
     const desc =
       '{"pg":"","parent":"","share_id":"8022538919","uk":"1101351086228","surl":"1a6ELVSVQAohuuU8qf8B-sw",' +
       '"fs_id":"861118710311033","shareUser":"","path":"%2Fsharelink0-211447811381911%2Ftest%2FE01.mp4"}';
@@ -507,7 +507,7 @@ describe('SpiderHost：do=pan → 原生解链', () => {
     expect(probe).not.toHaveBeenCalled();
   });
 
-  it('★ 2026-10-09：9978 do=pan 地址但端口未知 → 回退原生解链（fs_id → filemetas）', async () => {
+  it('9978 do=pan 地址但端口未知 → 回退原生解链（fs_id → filemetas）', async () => {
     hoisted.baiduFsid.calls.length = 0;
     const pan = 'http://127.0.0.1:9978/proxy?do=pan&type=2&site=baidu&shareId=-&fileId=861118710311033&fileToken=';
     const { host, key } = makeHost(pan, { baidu: 'BDUSS=t' });

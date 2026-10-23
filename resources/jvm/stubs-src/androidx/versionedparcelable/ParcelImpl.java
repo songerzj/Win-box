@@ -6,7 +6,7 @@ import android.os.Parcelable;
 /**
  * ParcelImpl stub —— androidx versionedparcelable 的 Parcel 包装。
  *
- * ★ 扫描确认：**只有混淆工具库**引用它，点播主链路不触达。
+ * 扫描确认：**只有混淆工具库**引用它，点播主链路不触达。
  *   这里做最小实现：可加载 + Parcelable 契约完整 + getParcel() 返回可用的空 Parcel。
  */
 public class ParcelImpl implements Parcelable {

@@ -1,5 +1,5 @@
 // src/engine/torrent/magnet.ts
-// ★ 2026-09-29：磁力（BT）播放的**纯函数层** —— 用户选定「方案 B：内置 aria2c sidecar + 外部播放器接力」。
+// 磁力（BT）播放的**纯函数层** —— 采用「内置 aria2c sidecar + 外部播放器接力」方案。
 //
 // 分工（本文件不碰 electron / node 子进程 / 文件系统，全部可离线单测）：
 //   · magnet URI 解析与 infoHash 归一（40 hex / 32 base32 → 40 hex 小写）；

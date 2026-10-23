@@ -1,9 +1,9 @@
 // src/main/plugin/pluginMetaProvider.ts
 // 插件元数据源适配层：把 `contributes.meta.provider`（L2 **声明式**）适配为宿主的元数据来源。
 //
-// ★ 与字幕源同形态：宿主按 **URL 模板** 代发请求、按 **JSON 路径** 取数，**不执行插件的代码**。
-// ★ 命中口径 = 宿主既有 `MetaHit`（标题 / 年份 / 海报 / 简介 / 类型 / 可选横图）；**v1 不含评分**。
-// ★ 位置：插件元数据源是**兜底**（内置 TMDB → 豆瓣 都未命中时才轮到它；见 SpiderHost.metaSearch）——
+// 与字幕源同形态：宿主按 **URL 模板** 代发请求、按 **JSON 路径** 取数，**不执行插件的代码**。
+// 命中口径 = 宿主既有 `MetaHit`（标题 / 年份 / 海报 / 简介 / 类型 / 可选横图）；**v1 不含评分**。
+// 位置：插件元数据源是**兜底**（内置 TMDB → 豆瓣 都未命中时才轮到它；见 SpiderHost.metaSearch）——
 //   不抢占内置来源，也不写入内置的 `meta.json` 查询缓存（避免停用插件后仍被旧缓存命中）。
 // 事实源：docs/design/插件制作规范.md §5.5；机器契约见 src/shared/plugin.ts。
 import { expandSubTemplate, jsonPathGet, type MetaProviderContribute } from '../../shared/plugin';

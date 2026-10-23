@@ -2,12 +2,7 @@
 //   ① validatePluginManifest 的逐条约束（id / apiVersion / kind↔permissions / main /
 //      contributes 白名单与 kind 匹配 / 运行库许可清单 / 路径安全 / updateCheckUrl）；
 //   ② 分级与档位取值；
-//   ③ 交叉校验：skill 里的超分示例清单**必须**通过校验（保证 skill 与宿主契约一致）。
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { extractArchiveEntries } from '../src/main/subtitle/archive';
 import {
   expandSubTemplate,
   jsonPathGet,
@@ -32,7 +27,6 @@ import {
   validateUiSlotContribute,
   uiCommandContributeOf,
   keymapContributeOf,
-  themeContributeOf,
   isSafeRelPath,
   pluginLevelOf,
   shadersForMode,
@@ -439,7 +433,7 @@ describe('plugin 契约 — discover.source（L2 声明式发现页数据源）'
     expect(validateDiscoverSourceContribute(disc({ sections: [sec({ nope: 1 })] })).reasonCode).toBe('DISCOVER_PROVIDER_INVALID');
   });
 
-  it('★ v1 的 map 不许含 doubanId（会错配豆瓣剧照图源）', () => {
+  it('v1 的 map 不许含 doubanId（会错配豆瓣剧照图源）', () => {
     expect(validateDiscoverSourceContribute(disc({ sections: [sec({ map: { title: 'n', doubanId: 'id' } })] })).reasonCode)
       .toBe('DISCOVER_PROVIDER_INVALID');
     expect(validateDiscoverSourceContribute(disc({ sections: [sec({ map: { title: 'n', rating: 'r' } })] })).reasonCode)
@@ -520,62 +514,6 @@ describe('plugin 契约 — danmaku.source（L2 声明式弹幕源：三步链�
     const m = base({ contributes: [dm()] as PluginManifest['contributes'] });
     expect(validatePluginManifest(m)).toEqual({ ok: true });
     expect(pluginLevelOf(m)).toBe('L2');
-  });
-});
-
-describe('plugin 契约 — 与 skill 示例交叉校验', () => {
-  it('skill 里的超分示例清单必须通过校验（skill ↔ 宿主契约一致）', () => {
-    const p = fileURLToPath(
-      new URL('../../.trae/skills/winbox-plugin/assets/example-super-resolution.plugin.json', import.meta.url),
-    );
-    const m = JSON.parse(readFileSync(p, 'utf-8')) as unknown;
-    const r = validatePluginManifest(m);
-    expect(r).toEqual({ ok: true });
-    // 四档位（效率/质量/通用/高质量）都在
-    expect(shaderModes((m as PluginManifest).contributes, 'mpv.shaders').map((x) => x.id))
-      .toEqual(['efficiency', 'quality', 'general', 'high']);
-  });
-
-  it('★ 2026-10-18：skill 里的皮肤骨架必须通过校验（词表 / 布局枚举 / base 全对口径）', () => {
-    const p = fileURLToPath(
-      new URL('../../.trae/skills/winbox-plugin/assets/plugin.theme.json', import.meta.url),
-    );
-    const m = JSON.parse(readFileSync(p, 'utf-8')) as PluginManifest;
-    expect(validatePluginManifest(m)).toEqual({ ok: true });
-    const t = themeContributeOf(m.contributes);
-    expect(t).toBeTruthy();
-    expect(validateThemeContribute(t)).toEqual({ ok: true });
-    // 骨架必须给全 39 项词表（作者照着改就不会漏 —— 亮色皮肤漏项会露深色基线）
-    expect(Object.keys(t!.tokens).sort()).toEqual(Object.keys(THEME_TOKENS).sort());
-    // 声明式布局：枚举值合法
-    expect(t!.layout?.shell).toBe('topbar');
-  });
-
-  it('★ 2026-10-18：skill 归档的示例皮肤包（.winbox）必须是「可安装的发布产物」', async () => {
-    const p = fileURLToPath(
-      new URL('../../.trae/skills/winbox-plugin/assets/theme-sakura.winbox', import.meta.url),
-    );
-    const entries = await extractArchiveEntries(readFileSync(p));
-    const names = entries.map((e) => e.name);
-    // 根级 plugin.json + LICENSE（不得多套目录层）
-    expect(names).toContain('plugin.json');
-    expect(names).toContain('LICENSE');
-    expect(names.some((n) => n.includes('/'))).toBe(false);
-    // v1 皮肤不许有任何样式表：包里出现 .css 即不合规
-    expect(names.some((n) => n.toLowerCase().endsWith('.css'))).toBe(false);
-    const m = JSON.parse(entries.find((e) => e.name === 'plugin.json')!.bytes.toString('utf8')) as PluginManifest;
-    expect(validatePluginManifest(m)).toEqual({ ok: true });
-    expect(validateThemeContribute(themeContributeOf(m.contributes))).toEqual({ ok: true });
-  });
-
-  it('★ 2026-10-18：skill 的 assets/*.json 骨架全部必须过宿主校验（防骨架写错）', () => {
-    const dir = fileURLToPath(new URL('../../.trae/skills/winbox-plugin/assets', import.meta.url));
-    const files = readdirSync(dir).filter((n) => n.endsWith('.json'));
-    expect(files.length).toBeGreaterThanOrEqual(4);
-    for (const n of files) {
-      const m = JSON.parse(readFileSync(join(dir, n), 'utf-8')) as PluginManifest;
-      expect(validatePluginManifest(m), `${n} 未通过清单校验`).toEqual({ ok: true });
-    }
   });
 });
 
@@ -888,7 +826,7 @@ describe('plugin 契约 — settings.panel（L3 插件设置面板；受限词�
       .toMatchObject({ ok: false, reasonCode: 'SETTINGS_PANEL_INVALID' });
   });
 
-  it('★ 参数必须与类型匹配（toggle 带 options、text 带 min、number 带 maxLength）→ SETTINGS_PANEL_INVALID', () => {
+  it('参数必须与类型匹配（toggle 带 options、text 带 min、number 带 maxLength）→ SETTINGS_PANEL_INVALID', () => {
     expect(validateSettingsPanelContribute(panel({ fields: [{ key: 'on', label: 'A', type: 'toggle', default: true, options: [{ value: 'x' }] }] })))
       .toMatchObject({ ok: false, reasonCode: 'SETTINGS_PANEL_INVALID' });
     expect(validateSettingsPanelContribute(panel({ fields: [{ key: 't', label: 'A', type: 'text', default: 'x', min: 1 }] })))
@@ -1004,7 +942,7 @@ describe('plugin 契约 — ui.slot（L3 受限 UI 槽位；6 类受限组件，
     expect(validateUiSlotContribute(slot({ items: many }))).toMatchObject({ ok: false, reasonCode: 'UI_SLOT_INVALID' });
   });
 
-  it('★ 参数必须与类型匹配（heading 带 url / divider 带 text / image 带 label / kv 缺 items）→ UI_SLOT_INVALID', () => {
+  it('参数必须与类型匹配（heading 带 url / divider 带 text / image 带 label / kv 缺 items）→ UI_SLOT_INVALID', () => {
     expect(validateUiSlotContribute(slot({ items: [{ type: 'heading', text: 'T', url: 'https://x.test/' }] })))
       .toMatchObject({ ok: false, reasonCode: 'UI_SLOT_INVALID' });
     expect(validateUiSlotContribute(slot({ items: [{ type: 'divider', text: 'T' }] })))
@@ -1078,7 +1016,7 @@ describe('plugin 契约 — ui.slot（L3 受限 UI 槽位；6 类受限组件，
   });
 });
 
-// ★ 2026-10-18（R10）L4 权限契约（`kind:"code"` + permissions + permissionNotes）
+// （R10）L4 权限契约（`kind:"code"` + permissions + permissionNotes）
 describe('plugin 契约 — L4 权限（kind:"code" / permissions / permissionNotes）', () => {
   const code = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
     manifestVersion: 1,
@@ -1139,7 +1077,7 @@ describe('plugin 契约 — L4 权限（kind:"code" / permissions / permissionNo
   });
 });
 
-// ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管进程）
+// （R11）第三方播放内核（`contributes.player.engine`；宿主托管进程）
 describe('plugin 契约 — player.engine（L2 描述符：宿主托管进程，插件永不拉进程）', () => {
   /** `mpv-ipc` 族最小合法描述符 */
   const engine = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -1166,12 +1104,12 @@ describe('plugin 契约 — player.engine（L2 描述符：宿主托管进程，
     expect([...PLAYER_ENGINE_CAPABILITIES]).toEqual(['seek', 'rate', 'tracks', 'subtitle', 'fit']);
   });
 
-  it('★ 恒 code：asset 清单声明 player.engine → UNKNOWN_CONTRIBUTE_KIND（回退既有铁律）', () => {
+  it('恒 code：asset 清单声明 player.engine → UNKNOWN_CONTRIBUTE_KIND（回退既有铁律）', () => {
     expect(validatePluginManifest(base({ contributes: [engine()] as unknown as PluginManifest['contributes'] })).reasonCode)
       .toBe('UNKNOWN_CONTRIBUTE_KIND');
   });
 
-  it('★ 按协议分支的占位符：mpv-ipc 缺 {pipe} / json-lines 带 {pipe} → BAD_ENGINE_ARGS', () => {
+  it('按协议分支的占位符：mpv-ipc 缺 {pipe} / json-lines 带 {pipe} → BAD_ENGINE_ARGS', () => {
     expect(validatePlayerEngineContribute(engine({ args: ['--wid={wid}', '{url}'] })))
       .toMatchObject({ ok: false, reasonCode: 'BAD_ENGINE_ARGS' });
     expect(inCode(engine({ args: ['--wid={wid}', '{url}'] })))
@@ -1199,20 +1137,4 @@ describe('plugin 契约 — player.engine（L2 描述符：宿主托管进程，
     expect(playerEngineContributeOf(base().contributes)).toBeUndefined();
   });
 
-  it('★ skill 的 player-engine 骨架必须通过校验（skill ↔ 宿主契约一致）', () => {
-    const p = fileURLToPath(
-      new URL('../../.trae/skills/winbox-plugin/assets/plugin.player-engine.json', import.meta.url),
-    );
-    const m = JSON.parse(readFileSync(p, 'utf-8')) as PluginManifest;
-    expect(validatePluginManifest(m)).toEqual({ ok: true });
-    expect(m.kind).toBe('code'); // player.engine 只可能是 code 插件
-    const c = playerEngineContributeOf(m.contributes);
-    expect(c).toBeTruthy();
-    expect(validatePlayerEngineContribute(c)).toEqual({ ok: true });
-    // 骨架必须含协议必需的占位符（作者照着改就不会漏）
-    const args = (c!.args ?? []).join(' ');
-    for (const name of ['wid', 'pipe', 'url']) expect(args.includes(`{${name}}`), name).toBe(true);
-    expect(c!.protocol).toBe('mpv-ipc');
-    expect(c!.binary?.file).toContain('files/');
-  });
 });

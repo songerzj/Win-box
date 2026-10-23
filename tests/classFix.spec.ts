@@ -1,9 +1,9 @@
 // tests/classFix.spec.ts
-// ★ 2026-09-30：dex2jar 的「super 调用被转成自递归 invokespecial」修补（见 src/engine/spider/classFix.ts）。
+// dex2jar 的「super 调用被转成自递归 invokespecial」修补（见 src/engine/spider/classFix.ts）。
 //
 // 事故背景：DEX 的 `invoke-super {p0}, L<当前类>;->m(...)`（源码 `super.m(...)`）被转成
 //   `invokespecial <当前类>.m` ⇒ JVM 解析到方法自身 ⇒ 无限递归 ⇒ StackOverflowError。
-//   实测潇洒订阅（sun.json）全局 jar 的 `com.github.catvod.spider.Pan.init` 一处命中，
+//   实测某第三方源订阅（sun.json）全局 jar 的 `com.github.catvod.spider.Pan.init` 一处命中，
 //   导致 MiPan/PanSou/Baiku/KuLe/… 整族盘搜蜘蛛「进源即崩、搜都搜不出来」。
 //
 // 本测试用**手工构造的最小 class 文件**（不依赖任何真实 jar）覆盖：
@@ -324,12 +324,12 @@ describe('instrLen — 指令长度表（tableswitch / wide 特判）', () => {
     expect(instrLen(wide, 0)).toBe(6);
   });
 
-  // ★★ 2026-10-08（用户报「打开就卡死/闪退」的真根因）：畸形/错位字节码里
+  // （「打开就卡死/闪退」的真根因）：畸形/错位字节码里
   //   `tableswitch` 的 hi < lo、`lookupswitch` 的 npairs < 0 会算出**负数长度** ——
   //   调用方 `i += len` 原地打转（负跳后又被逐字节推回原处）⇒ **死循环**。
   //   实测：某 227KB 混淆类（merge/A/f1.class）在 auto-dex2jar 产物里必现；
   //   而这条链跑在主进程（jar 收编 → classFix）⇒ 整个应用冻结，且收编永远完不成
-  //   ⇒ 每次启动都在同一处卡死（用户侧看到的就是「崩溃/闪退」）。
+  // ⇒ 每次启动都在同一处卡死（看到的就是「崩溃/闪退」）。
   //   口径：长度**恒 ≥ 1**（宁可漏修，绝不卡死）。
   it('畸形 tableswitch（hi < lo）→ 长度钳到 ≥1（旧实现返回负数 ⇒ 扫描死循环）', () => {
     const code = Buffer.alloc(64);

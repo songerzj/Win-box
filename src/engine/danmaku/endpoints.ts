@@ -10,7 +10,7 @@ export function normalizeEndpointBase(url: string): string {
   const s = (url || '').trim();
   if (!s) return '';
   const withScheme = SCHEME_RE.test(s) ? s : `https://${s}`;
-  // ★ 先按「原文」校验主机段：WHATWG 会把中文/乱码行转成 punycode 域名（ASCII），
+  // 先按「原文」校验主机段：WHATWG 会把中文/乱码行转成 punycode 域名（ASCII），
   //   只看解析结果会把「不是地址的一行」这类文字误当合法接口 → 必须拦在解析之前。
   const hostPart = withScheme.replace(SCHEME_RE, '').split(/[/?#]/, 1)[0] || '';
   if (!/^[a-z0-9.\-:@[\]%]+$/i.test(hostPart)) return '';
@@ -161,7 +161,7 @@ export function seasonRankOf(title: string, season?: number): number {
 /**
  * 候选番剧排序 + 去重（同来源同名的只留首个）：
  * 档 0 = 净化后完全同名；档 1 = 一方包含另一方；档 2 = 其它。
- * ★ 2026-09-26 增补：给了期望季号时，**同季的排前面、不同季的排后面**（实测「绝命毒师」：某聚合源
+ * 增补：给了期望季号时，**同季的排前面、不同季的排后面**（实测「绝命毒师」：某聚合源
  *   前几条全是"from tencent"的花絮条目（每集 1 条弹幕），真季集（360，7 集 8396 条）排在第 14 位）；
  *   同档同季内再按 `episodeCount` 多者优先（真季集 vs 单条特别节目）。未给季号时保持原有稳定顺序。
  */
@@ -210,7 +210,7 @@ export function pickAnimesForExpand(list: DanmakuAnime[], max: number): DanmakuA
 
 /** 从剧集标题里提集号（返回 null = 没集号）：接口 `episodeNumber` 优先，其次标题显式写法。 */
 function epNumber(c: DanmakuCandidateLike): number | null {
-  // ★ 2026-09-29：接口给的集号字段优先（tencent 等条目标题可能不提集号，只靠标题会漏）
+  // 接口给的集号字段优先（tencent 等条目标题可能不提集号，只靠标题会漏）
   const num = Number(c.episodeNumber);
   if (c.episodeNumber && Number.isFinite(num) && num > 0) return num;
   const t = (c.episodeTitle || '').trim();
@@ -223,7 +223,7 @@ function epNumber(c: DanmakuCandidateLike): number | null {
     const n = Number(m[1]);
     return Number.isFinite(n) && n > 0 ? n : null;
   }
-  // ★ 2026-10-18（用户报「集号 4 却自动匹配到错误的剧集」）：兜底只认「独立数字」，
+  // 兜底只认「独立数字」，
   //   并**排除分辨率标记与年份** —— 旧口径 `(?:^|\D)(\d{1,4})(?:\D|$)` 会把 `4K` 的 4、
   //   `2024` 的 4 当集号（`4K` 后接字母算 `\D`，照样命中），使「第4集」误判到别的集。
   const tail = /(?<![0-9A-Za-z])(\d{1,4})(?![0-9A-Za-z])/.exec(t);
@@ -233,7 +233,7 @@ function epNumber(c: DanmakuCandidateLike): number | null {
 }
 
 /**
- * ★ 2026-10-18：候选是否为「第 targetEp 集」—— 接口集号字段优先，标题显式集号兜底（排除 `4K`/年份等噪声）。
+ * 候选是否为「第 targetEp 集」—— 接口集号字段优先，标题显式集号兜底（排除 `4K`/年份等噪声）。
  * 自动匹配据此**只用同集候选**：实测正确集若慢/无弹幕，旧的「取弹幕最多者」会被别集（常是第1集）
  * 的丰富弹幕顶替 → 用户看到「自动匹配到错误的剧集」。
  */
@@ -251,7 +251,7 @@ interface DanmakuCandidateLike {
 }
 
 /**
- * ★ 2026-09-28（用户要求）：候选列表**显示排序** —— **有集数的按集号升序排前面，没集数的保持原顺序放后面**。
+ * 候选列表**显示排序** —— **有集数的按集号升序排前面，没集数的保持原顺序放后面**。
  *   与 {@link rankDanmakuAnimes}（搜索阶段的剧名/季/集数排序）不同：这里作用于「拉平后的剧集候选」，
  *   目标是列表一眼可见「第1集、第2集…」，不被无集号条目（花絮/预告/整季条目）混在中间。
  *   同集号时保持原相对顺序（= 来源多样性优先），排序稳定。

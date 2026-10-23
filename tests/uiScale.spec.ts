@@ -1,5 +1,5 @@
 // tests/uiScale.spec.ts
-// ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：界面缩放档位的纯函数口径。
+// 界面缩放档位的纯函数口径。
 import { describe, expect, it } from 'vitest';
 import {
   autoUiScale,
@@ -22,7 +22,7 @@ describe('autoUiScale（按显示器工作区推倍率）', () => {
     expect(autoUiScale(work(2560, 1440))).toBe(1.25);
   });
 
-  it('4K@100%（3840×2160）→ 175%（用户报「4K 特别小」的那一档，往上顶）', () => {
+  it('4K@100%（3840×2160）→ 175%（「4K 特别小」的那一档，往上顶）', () => {
     expect(autoUiScale(work(3840, 2160))).toBe(1.75);
   });
 

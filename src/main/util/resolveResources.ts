@@ -1,7 +1,7 @@
 // src/main/util/resolveResources.ts
-// ★ 纯逻辑：资源根目录候选路径计算（不 import electron，便于单测）。
+// 纯逻辑：资源根目录候选路径计算（不 import electron，便于单测）。
 //
-// 背景（2026-09-10 第五轮 bug）：
+// 背景（一次资源路径解析 bug）
 //   portable 单文件的 NSIS 解压脚本（app-builder-lib / templates/nsis/include/
 //   extractAppPackage.nsh → extractUsing7za）执行的是：
 //       CreateDirectory "$PLUGINSDIR\7z-out"
@@ -80,7 +80,7 @@ export function resourceRootCandidates(ctx: ResolveCtx): string[] {
   if (rp) {
     // 1) NSIS 安装 / --dir 解包：<root>/resources/app.asar.unpacked/resources
     push(join(rp, rel));
-    // 2) ★ portable 实测：resourcesPath 停在 <tmp>\resources（外层缺 7z-out）
+    // 2) portable 实测：resourcesPath 停在 <tmp>\resources（外层缺 7z-out）
     push(join(rp, '..', '7z-out', 'resources', 'app.asar.unpacked', 'resources'));
     push(join(rp, '..', '7z-out', rel));
     // 3) 若 resourcesPath 直接是 <tmp>（不同版本差异）

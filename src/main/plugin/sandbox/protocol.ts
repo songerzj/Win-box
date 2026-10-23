@@ -1,12 +1,12 @@
 // src/main/plugin/sandbox/protocol.ts
 // L4 沙箱的消息协议（worker ↔ 主进程）。
 //
-// ★ 取向（R10 拍板）：**全异步消息往返，不用 SharedArrayBuffer/Atomics**。
+// 取向（R10 拍板）：**全异步消息往返，不用 SharedArrayBuffer/Atomics**。
 //   引擎侧 `JsWorkerPool` 需要 SAB 是因为 drpy/hiker 蜘蛛有**同步 `req()`**；
 //   而 L4 的作者 API 形如 `winbox.http(url).text()`（fetch 风格，天然异步）——
 //   没有同步语义需求，纯 `postMessage` 往返即可，少一条共享内存路径 = 少一类竞态。
 //
-// ★ 权限门禁**不在本文件**：它由 worker 侧 `buildWinbox(permissions, call)` 构造 globals 实现
+// 权限门禁**不在本文件**：它由 worker 侧 `buildWinbox(permissions, call)` 构造 globals 实现
 //   （未授权的组**根本不挂** → 调用即 TypeError）。本文件只是能力**调用**的线格式。
 //
 // 事实源：docs/design/插件制作规范.md §6.1；docs/spec/R10-l4-sandbox-api/spec.md §3。
@@ -23,8 +23,8 @@ export interface PluginHttpOpts {
 
 /**
  * `winbox.player.*` 的动作词表（宿主转发给播放器窗口执行，插件不碰内核）。
- * ★ 与规范 §6.1「play / pause / seek / next / 音轨 / 字幕 / 音量」对齐（`prev` 为自然补全）。
- * ★ 刻意**不含** `toggle` / `stop` —— 渲染层无对应的受控实现，不提供假能力。
+ * 与规范「play / pause / seek / next / 音轨 / 字幕 / 音量」对齐（`prev` 为自然补全）。
+ * 刻意**不含** `toggle` / `stop` —— 渲染层无对应的受控实现，不提供假能力。
  */
 export type PlayerOp =
   | 'play' | 'pause' | 'seek' | 'volume' | 'next' | 'prev'
@@ -63,7 +63,7 @@ export interface PluginWorkerData {
   pluginDir: string;
   /** 沙箱入口相对名（`manifest.main`，如 `main.js`） */
   mainFile: string;
-  /** 已授权权限（★ 决定 globals 里挂哪些 `winbox.*`） */
+  /** 已授权权限（决定 globals 里挂哪些 `winbox.*`） */
   permissions: PermissionId[];
 }
 
@@ -72,7 +72,7 @@ export type SandboxCall = (call: HostCall) => Promise<unknown>;
 
 /**
  * 宿主能力实现面（**主进程侧**；由 `main/index.ts` 组装 → 沙箱管理器 → worker 回调）。
- * ★ 这是「宿主唯一对外暴露的沙箱能力面」——`PluginSandbox` 只依赖它，便于单测注入假件。
+ * 这是「宿主唯一对外暴露的沙箱能力面」——`PluginSandbox` 只依赖它，便于单测注入假件。
  */
 export interface PluginSandboxApi {
   /** 经宿主 HttpClient 的 HTTP（返回文本；`text()` 由 worker 侧包装） */

@@ -1,7 +1,7 @@
 /* douban.css — Win-Box 皮肤：**大豆**（Material 3 Expressive × 豆瓣，浅色）
-   2026-10-18：迁移为「纯令牌皮肤」—— 本文件只声明令牌，结构样式见 global.css 的宿主结构层。
-   ★ 配色口径（2026-10-09 整体重做）：豆绿 #2E9629 主色 / 豆瓣橙 #F0641E 点缀 / 暖纸白 #F2F4EF 底。
-   ★ 大豆是**亮色**皮肤：颜色类令牌必须给全（surface×5 / accent×6 / text×3 / border×3 / 语义×4），
+迁移为「纯令牌皮肤」—— 本文件只声明令牌，结构样式见 global.css 的宿主结构层。
+   配色口径（整体重做）：豆绿 #2E9629 主色 / 豆瓣橙 #F0641E 点缀 / 暖纸白 #F2F4EF 底。
+   大豆是**亮色**皮肤：颜色类令牌必须给全（surface×5 / accent×6 / text×3 / border×3 / 语义×4），
      否则未覆盖项会漏出 global.css 的深色基线。 */
 :root[data-theme='douban'] {
   /* ---- 表面与层级 ---- */
@@ -11,12 +11,12 @@
   --surface-3: #ffffff;                           /* 更高抬升 / 浮层 */
   --surface-glass: rgba(252, 253, 250, .93);       /* 玻璃层（搜索 / 换源弹层、字幕面板） */
   /* ---- 品牌与强调 ---- */
-  --accent: #2E9629;                              /* ★ 豆瓣绿（主色） */
+  --accent: #2E9629;                              /* 豆瓣绿（主色） */
   --accent-strong: #1F7A1B;                       /* 主色深档（hover / 按下） */
   --accent-container: #DCF2D8;                    /* M3 primary container：浅绿容器底 */
   --accent-soft: rgba(46, 150, 41, .13);          /* 状态层 / 焦点环（原浅绿 hover 底并入） */
   --on-accent: #ffffff;                           /* 主色之上的前景色 */
-  --accent-2: #F0641E;                            /* ★ 豆瓣橙（点缀：remarks / 评分 / 开启态） */
+  --accent-2: #F0641E;                            /* 豆瓣橙（点缀：remarks / 评分 / 开启态） */
   /* ---- 文本 ---- */
   --text: #1A1D19;                                /* M3 on-surface */
   --text-dim: #5F675D;                            /* M3 on-surface-variant（灰绿） */

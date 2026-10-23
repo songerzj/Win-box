@@ -32,7 +32,7 @@ import type {
   SubtitleSettings,
 } from '../../shared/subtitle';
 import type { DanmakuAnime, DanmakuCandidate, DanmakuSettings } from '../../shared/danmaku';
-import type { MetaHit, MetaExtra, DiscoverSection, DiscoverGenre, DiscoverGenrePage, MetaImages, MovieHotList } from '../../shared/types';
+import type { MetaHit, MetaExtra, DoubanDetailExtra, DoubanReviewDetail, DiscoverSection, DiscoverGenre, DiscoverGenrePage, MetaImages, MovieHotList } from '../../shared/types';
 import type { MetaSettings, MetaSettingsView, MetaSuggestion } from '../../shared/meta';
 import type { ExploreQuery, ExplorePage, ExploreVocabulary } from '../../shared/discover';
 import type { PlayerSettings, MpvStatus, MpvStartOptions, MpvCommand, MpvStateEvent, MediaStateEvent } from '../../shared/player';
@@ -81,27 +81,27 @@ declare global {
         setActiveSource: (key: string) => Promise<IpcResult<void>>;
         setActiveLive: (index: number) => Promise<IpcResult<void>>;
         importUrl: (url: string, name?: string) => Promise<IpcResult<ImportReturn>>;
-        // ★ 2026-09-27：本地 .json 订阅文件导入（文件选择器；档案名默认取原始文件名）
+        // 本地 .json 订阅文件导入（文件选择器；档案名默认取原始文件名）
         importJsonLocal: (name?: string) =>
           Promise<IpcResult<{ ok: boolean; file?: string; name?: string; error?: string; result?: ImportReturn }>>;
-        /** ★ 2026-10-16：文件选择器支持多选，一次性导入多个 .py（`imported` 数量 / `failed` 明细） */
+        /** 文件选择器支持多选，一次性导入多个 .py（`imported` 数量 / `failed` 明细） */
         importPyLocal: () => Promise<IpcResult<{ ok: boolean; key?: string; keys?: string[]; imported?: number; failed?: { name: string; error: string }[]; error?: string }>>;
         /**
-         * ★ 2026-09-30（用户要求）：导入本地 TXT / M3U 直播源。
-         * ★ 2026-10-14：两步导入 —— 首次返回 `needsName` 由渲染层弹框命名，二次带 `{ path, name }` 登记。
+         * 导入本地 TXT / M3U 直播源。
+         * 两步导入 —— 首次返回 `needsName` 由渲染层弹框命名，二次带 `{ path, name }` 登记。
          */
         importLiveLocal: (args?: { name?: string; path?: string }) =>
           Promise<IpcResult<{ ok: boolean; needsName?: boolean; path?: string; name?: string; index?: number; replaced?: boolean; total?: number; error?: string }>>;
-        /** ★ 2026-10-14（用户要求）：删除某条直播线路（下标） */
+        /** 删除某条直播线路（下标） */
         deleteLive: (index: number) => Promise<IpcResult<void>>;
-        /** ★ 2026-10-16（用户要求）：批量删除直播线路（下标数组） */
+        /** 批量删除直播线路（下标数组） */
         deleteLives: (indices: number[]) => Promise<IpcResult<void>>;
-        /** ★ 2026-10-14（用户要求）：重命名某条直播线路 */
+        /** 重命名某条直播线路 */
         updateLive: (a: { index: number; name: string }) => Promise<IpcResult<void>>;
-        /** ★ 2026-09-29：导入本地包（目录包：影视.json + py/js/jar/html/xbpq） */
+        /** 导入本地包（目录包：影视.json + py/js/jar/html/xbpq） */
         importPackage: (args?: { name?: string; root?: string }) =>
           Promise<IpcResult<{ ok: boolean; root?: string; rel?: string; sites?: number; name?: string; needsName?: boolean; error?: string; warnings?: string[]; result?: ImportReturn }>>;
-        /** ★ 2026-09-29 本地包「网页源」：独立窗口打开 homePage html（fm 桥） */
+        /** 本地包「网页源」：独立窗口打开 homePage html（fm 桥） */
         webHomeOpen: (init: { url: string; title?: string; site?: Record<string, string | undefined> }) =>
           Promise<IpcResult<{ ok: boolean; error?: string }>>;
         saveAsProfile: (name: string) => Promise<IpcResult<UserProfile>>;
@@ -109,9 +109,9 @@ declare global {
         deleteProfile: (id: string) => Promise<IpcResult<void>>;
         updateProfileName: (a: { id: string; name: string }) => Promise<IpcResult<void>>;
         cfgProfiles: () => Promise<IpcResult<Omit<UserProfile, 'json'>[]>>;
-        /** ★ 2026-09-30（用户要求）：换源弹层「左订阅 / 右源」视图 */
+        /** 换源弹层「左订阅 / 右源」视图 */
         profileSites: () => Promise<IpcResult<ProfileSitesView>>;
-        /** ★ 2026-09-30（用户要求）：一步完成「切换档案 + 选中该档案下的源」 */
+        /** 一步完成「切换档案 + 选中该档案下的源」 */
         switchProfileSource: (a: { profileId: string; key: string }) => Promise<IpcResult<void>>;
         vodDebug: (key: string) => Promise<IpcResult<SourceDebugReport>>;
         audit: () => Promise<IpcResult<AuditItem[]>>;
@@ -127,12 +127,12 @@ declare global {
         category: (a: { key: string; tid: string; pg: string; extend?: Record<string, string> }) => Promise<IpcResult<HomeResult>>;
         detail: (a: { key: string; ids: string[] }) => Promise<IpcResult<VodDetail | null>>;
         search: (a: { key: string; wd: string }) => Promise<IpcResult<VodItem[]>>;
-        /** ★ 全源搜索：refresh=true 忽略本地缓存强制重搜（「重新搜索」按钮）；默认命中缓存即秒回 */
+        /** 全源搜索：refresh=true 忽略本地缓存强制重搜（「重新搜索」按钮）；默认命中缓存即秒回 */
         searchAll: (wd: string, opts?: { refresh?: boolean }) => Promise<IpcResult<SearchAllReport>>;
-        /** ★ 聚合搜索逐源进度（边搜边出）：返回退订函数 */
+        /** 聚合搜索逐源进度（边搜边出）：返回退订函数 */
         onSearchAllProgress: (cb: (ev: SearchAllProgressEvent) => void) => () => void;
         play: (a: { key: string; flag: string; id: string }) => Promise<IpcResult<PlayResult>>;
-        /** ★ 2026-09-30（用户要求）：点播外部播放器（与磁力分开绑定）——探测本机播放器 / 用当前地址拉起 */
+        /** 点播外部播放器（与磁力分开绑定）——探测本机播放器 / 用当前地址拉起 */
         detectPlayers: () => Promise<IpcResult<Array<{ id: string; name: string; path: string }>>>;
         openExternal: (a: { url: string; path?: string; seek?: number }) => Promise<IpcResult<{ ok: boolean; player?: string; error?: string }>>;
         /**
@@ -144,23 +144,23 @@ declare global {
       live: {
         load: (index: number) => Promise<IpcResult<{ groups: LiveGroup[]; liveName: string }>>;
         meta: () => Promise<IpcResult<LiveBean[]>>;
-        /** ★ 2026-09-29 EPG：传入该线路的频道引用，返回各键（tvg-id/tvg-name/频道名）的「当前 / 下一档」 */
+        /** EPG：传入该线路的频道引用，返回各键（tvg-id/tvg-name/频道名）的「当前 / 下一档」 */
         epg: (index: number, channels: EpgChannelRef[]) => Promise<IpcResult<LiveEpgResult>>;
-        /** ★ 2026-10-18 直播输出模板（内置 2 个 + 插件 `contributes.live.template`） */
+        /** 直播输出模板（内置 2 个 + 插件 `contributes.live.template`） */
         templates: () => Promise<IpcResult<LiveTemplateView[]>>;
-        /** ★ 2026-10-18 按模板渲染导出文本（纯本地无副作用，不弹框） */
+        /** 按模板渲染导出文本（纯本地无副作用，不弹框） */
         render: (a: { templateId: string; groups: LiveGroup[] }) =>
           Promise<IpcResult<LiveTemplateView & { content: string }>>;
-        /** ★ 2026-10-18 导出直播线路：按模板渲染（纯本地）→ 主进程保存对话框 → 只写新文件 */
+        /** 导出直播线路：按模板渲染（纯本地）→ 主进程保存对话框 → 只写新文件 */
         export: (a: { templateId: string; groups: LiveGroup[]; defaultName?: string }) =>
           Promise<IpcResult<{ saved: boolean; path: string }>>;
       };
-      /** ★ 2026-09-29 设置备份（含渲染层 localStorage） */
+      /** 设置备份（含渲染层 localStorage） */
       backup: {
         export: (renderer: Record<string, string>) => Promise<IpcResult<BackupExportResult>>;
         import: () => Promise<IpcResult<BackupImportResult>>;
       };
-      /** ★ 2026-09-29 WebDAV 存储（只读） */
+      /** WebDAV 存储（只读） */
       dav: {
         list: () => Promise<IpcResult<DavServer[]>>;
         set: (s: DavServer) => Promise<IpcResult<DavServer>>;
@@ -168,7 +168,7 @@ declare global {
         browse: (a: { id: string; path?: string }) => Promise<IpcResult<DavBrowseResult>>;
         openExternal: (url: string) => Promise<IpcResult<{ ok: boolean; player?: string; error?: string }>>;
       };
-      /** ★ 2026-09-29 DLNA 投屏（SSDP 发现 + AVTransport 三动作） */
+      /** DLNA 投屏（SSDP 发现 + AVTransport 三动作） */
       dlna: {
         discover: () => Promise<IpcResult<DlnaDevice[]>>;
         cast: (a: { device: DlnaDevice; target: DlnaCastTarget }) => Promise<IpcResult<DlnaCastResult>>;
@@ -176,9 +176,9 @@ declare global {
       subtitle: {
         get: () => Promise<IpcResult<SubtitleSettings>>;
         set: (patch: Partial<SubtitleSettings>) => Promise<IpcResult<SubtitleSettings>>;
-        /** ★ 2026-09-28：各字幕源的开关/可用状态 */
+        /** 各字幕源的开关/可用状态 */
         providers: () => Promise<IpcResult<SubtitleProviderView[]>>;
-        /** ★ 2026-09-28：多源聚合检索（返回 { candidates, providers }） */
+        /** 多源聚合检索（返回 { candidates, providers }） */
         search: (name: string) => Promise<IpcResult<SubtitleSearchReport>>;
         fetch: (cand: SubtitleCandidate) => Promise<IpcResult<SubtitleFetchResult>>;
       };
@@ -191,31 +191,35 @@ declare global {
       };
       meta: {
         search: (name: string, year?: string, provider?: 'tmdb' | 'douban') => Promise<IpcResult<MetaHit | null>>;
-        /** ★ 详情页增强：演职员/类型/相关推荐 */
+        /** 详情页增强：演职员/类型/相关推荐 */
         extra: (name: string, year?: string) => Promise<IpcResult<MetaExtra | null>>;
-        /** ★ 发现页榜单（无源默认主页） */
+        /** 详情页「相关推荐 / 豆瓣影评」tab 区块（豆瓣口径，无需 TMDB 凭据） */
+        doubanExtra: (name: string, year?: string) => Promise<IpcResult<DoubanDetailExtra | null>>;
+        /** 影评全文（点影评行 → 独立小窗口展示；按需拉取） */
+        doubanReview: (reviewId: string) => Promise<IpcResult<DoubanReviewDetail | null>>;
+        /** 发现页榜单（无源默认主页） */
         discover: (refresh?: boolean) => Promise<IpcResult<DiscoverSection[]>>;
         movieHot: () => Promise<IpcResult<MovieHotList>>;
         discoverImages: (name: string, mediaType: 'movie' | 'tv', year?: string, kind?: 'backdrop' | 'poster', doubanId?: string) => Promise<IpcResult<MetaImages>>;
-        /** ★ 发现页「分类」：类型清单与按类型翻页 */
+        /** 发现页「分类」：类型清单与按类型翻页 */
         genres: () => Promise<IpcResult<{ movie: DiscoverGenre[]; tv: DiscoverGenre[] }>>;
         genrePage: (mediaType: 'movie' | 'tv', genreId: number, page: number) => Promise<IpcResult<DiscoverGenrePage>>;
-        /** ★ 2026-10-15（级联分类）：发现页「分类浏览」取一页（豆瓣 recommend，start 偏移分页） */
+        /** （级联分类）：发现页「分类浏览」取一页（豆瓣 recommend，start 偏移分页） */
         discoverQuery: (q: ExploreQuery) => Promise<IpcResult<ExplorePage>>;
-        /** ★ 2026-10-15（级联分类）：级联词表（豆瓣自带的类型/地区 + 排序；发现页与点播页共用） */
+        /** （级联分类）：级联词表（豆瓣自带的类型/地区 + 排序；发现页与点播页共用） */
         exploreVocab: () => Promise<IpcResult<ExploreVocabulary>>;
-        /** ★ 2026-09-24 元数据来源配置（TMDB Key/代理/镜像 + 策略）与搜索联想 */
+        /** 元数据来源配置（TMDB Key/代理/镜像 + 策略）与搜索联想 */
         getSettings: () => Promise<IpcResult<MetaSettingsView>>;
         setSettings: (patch: Partial<MetaSettings>) => Promise<IpcResult<MetaSettingsView>>;
         suggest: (q: string) => Promise<IpcResult<MetaSuggestion[]>>;
-        /** ★ 发现页 Hero 轮播：某部片的横版剧照 / 竖版海报 */
+        /** 发现页 Hero 轮播：某部片的横版剧照 / 竖版海报 */
         images: (mediaType: 'movie' | 'tv', tmdbId: number) => Promise<IpcResult<MetaImages>>;
       };
       drives: {
         get: () => Promise<IpcResult<Record<string, string>>>;
         set: (a: { provider: string; token: string }) => Promise<IpcResult<void>>;
         remove: (provider: string) => Promise<IpcResult<void>>;
-        // ★ 2026-09-30：imageDataUrl = 图片型二维码（百度 passport 直接出图，见 main/net/qr/types.ts）
+        // imageDataUrl = 图片型二维码（百度 passport 直接出图，见 main/net/qr/types.ts）
         qrCreate: (provider?: string) => Promise<IpcResult<{ provider: string; content: string; imageDataUrl?: string; sid: string }>>;
         qrPoll: (
           provider: string,
@@ -224,7 +228,7 @@ declare global {
           IpcResult<{ state: number; token?: string; tokenKind?: 'refresh_token' | 'cookie' | 'access_token'; username?: string; hint?: string }>
         >;
         webLogin: (provider: string) => Promise<IpcResult<void>>;
-        // ★ 2026-10-14 UC TV Token（非会员 UC 原画）扫码授权流
+        // UC TV Token（非会员 UC 原画）扫码授权流
         ucTvStatus: () => Promise<IpcResult<{ bound: boolean }>>;
         ucTvQrCreate: () => Promise<IpcResult<{ imageDataUrl: string }>>;
         ucTvQrPoll: () => Promise<IpcResult<{ state: 'wait' | 'ok' | 'expired' | 'error'; hint?: string }>>;
@@ -235,10 +239,10 @@ declare global {
         maximize: () => Promise<IpcResult<void>>;
         close: () => Promise<IpcResult<void>>;
         isMaximized: () => Promise<IpcResult<boolean>>;
-        // ★ 2026-09-30（用户要求）：播放器置顶按钮
+        // 播放器置顶按钮
         setAlwaysOnTop: (on: boolean) => Promise<IpcResult<boolean>>;
         isAlwaysOnTop: () => Promise<IpcResult<boolean>>;
-        // ★ 2026-10-08（用户要求）：详情页独立窗口（已开则复用并通知换路由）
+        // 详情页独立窗口（已开则复用并通知换路由）
         openDetail: (a: { key: string; id: string; query?: string }) => Promise<IpcResult<{ ok: boolean; reused: boolean }>>;
         openSearch: (term: string) => Promise<IpcResult<{ ok: boolean; reused: boolean }>>;
         routeReady: () => Promise<IpcResult<void>>;
@@ -253,7 +257,7 @@ declare global {
       player: {
         open: (init: unknown) => Promise<IpcResult<void>>;
         switchEp: (request: number | import('../../shared/playerEpisode').PlayerEpisodeSwitch) => Promise<IpcResult<{ switched: boolean }>>;
-        /** ★ 2026-09-30：订阅就绪 → 主进程重发最新 init（新窗口首推与订阅的竞态） */
+        /** 订阅就绪 → 主进程重发最新 init（新窗口首推与订阅的竞态） */
         ready: () => Promise<IpcResult<{ ok: boolean }>>;
         isOpen: () => Promise<IpcResult<{ open: boolean }>>;
         close: () => Promise<IpcResult<void>>;
@@ -266,13 +270,13 @@ declare global {
         onSwitchEp: (cb: (epIndex: number) => void) => () => void;
         onMini: (cb: (mini: boolean) => void) => () => void;
         onFullscreen: (cb: (fullscreen: boolean) => void) => () => void;
-        /** ★ 2026-10-17（B3）：播放器窗口开/关（主窗口据此冻结/解冻隐藏页的已解码图片） */
+        /** （B3）：播放器窗口开/关（主窗口据此冻结/解冻隐藏页的已解码图片） */
         onWindowState: (cb: (s: { open: boolean }) => void) => () => void;
-        /** ★ 2026-10-18（R10）：L4 插件 `winbox.player.*` 的转发事件（播放器窗口渲染层执行） */
+        /** （R10）：L4 插件 `winbox.player.*` 的转发事件（播放器窗口渲染层执行） */
         onCtl: (cb: (a: { op: string; value?: unknown }) => void) => () => void;
       };
       /**
-       * ★ 2026-10-16（用户报「播放时画面突然消失、软件只剩声音」）：播放诊断上报（渲染层 → 主进程）。
+       * 播放诊断上报（渲染层 → 主进程）。
        *   fire-and-forget；主进程落盘为 `media:*` 日志，并在 GPU 崩溃那条日志里带出「当时在放什么」。
        */
       media: { report: (ev: MediaStateEvent) => void };
@@ -289,12 +293,12 @@ declare global {
       quark: {
         cleanup: () => Promise<IpcResult<void>>;
       };
-      // ★ 播放偏好（m3u8 去广告开关；改后本地中继 /play 即时生效）
+      // 播放偏好（m3u8 去广告开关；改后本地中继 /play 即时生效）
       playerPrefs: {
         get: () => Promise<IpcResult<PlayerSettings>>;
         set: (patch: Partial<PlayerSettings>) => Promise<IpcResult<PlayerSettings>>;
       };
-      // ★ 2026-10-08 MPV 高兼容播放内核（独立播放器窗口内嵌；状态经 MPV_STATE 事件推送）
+      // MPV 高兼容播放内核（独立播放器窗口内嵌；状态经 MPV_STATE 事件推送）
       mpv: {
         status: () => Promise<IpcResult<MpvStatus>>;
         start: (opts: MpvStartOptions) => Promise<IpcResult<{ session: number; path: string }>>;
@@ -302,24 +306,24 @@ declare global {
         stop: () => Promise<IpcResult<{ ok: boolean }>>;
         onState: (cb: (s: MpvStateEvent) => void) => () => void;
       };
-      // ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
+      // （R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
       engine: {
         /** 内置 2（html5/mpv）+ 插件 N（`engine:<contributeId>`） */
         list: () => Promise<IpcResult<PlayerEngineView[]>>;
         status: (id: string) => Promise<IpcResult<{ id: string; ready: boolean; path?: string; note?: string }>>;
         /** 写启用开关（`playerSettings.engineEnabled`；默认关） */
         setEnabled: (a: { id: string; enabled: boolean }) => Promise<IpcResult<{ ok: boolean; reason?: string }>>;
-        /** 拉起会话（★ 未启用 → `{ok:false, reason}`；就绪异常 → throw） */
+        /** 拉起会话（未启用 → `{ok:false, reason}`；就绪异常 → throw） */
         start: (opts: MpvStartOptions & { engineId: string }) =>
           Promise<IpcResult<{ ok: boolean; reason?: string; session?: number }>>;
         cmd: (cmd: MpvCommand) => Promise<IpcResult<{ ok: boolean }>>;
         stop: () => Promise<IpcResult<{ ok: boolean }>>;
         onState: (cb: (s: MpvStateEvent) => void) => () => void;
       };
-      // ★ 2026-10-16 插件系统（M1）：列表 / 安装（两段式）/ 卸载 / 启停 / 超分状态
+      // 插件系统（M1）：列表 / 安装（两段式）/ 卸载 / 启停 / 超分状态
       plugins: {
         list: () => Promise<IpcResult<PluginView[]>>;
-        /** ★ 2026-10-18（R10）第 ① 段：干跑校验，返回权限清单供确认（不落盘） */
+        /** （R10）第 ① 段：干跑校验，返回权限清单供确认（不落盘） */
         inspect: () => Promise<IpcResult<PluginInspectResult>>;
         /** 第 ② 段：传干跑选定的 `{path}` 安装 */
         install: (a?: { path?: string }) => Promise<IpcResult<{ ok: boolean; canceled?: boolean; reason?: string; items?: PluginView[] }>>;
@@ -327,18 +331,18 @@ declare global {
         setEnabled: (a: { id: string; enabled: boolean }) => Promise<IpcResult<{ ok: boolean; reason?: string; items?: PluginView[] }>>;
         sr: () => Promise<IpcResult<SrState>>;
         themes: () => Promise<IpcResult<ThemeSkinView[]>>;
-        /** ★ 2026-10-18 受限动作按钮（`contributes.ui.command`）—— 主进程只装配，动作由渲染层执行 */
+        /** 受限动作按钮（`contributes.ui.command`）—— 主进程只装配，动作由渲染层执行 */
         commands: () => Promise<IpcResult<UiCommandView[]>>;
-        /** ★ 2026-10-18 追加快捷键（`contributes.keymap`）—— 主进程只装配，分发/执行由渲染层完成 */
+        /** 追加快捷键（`contributes.keymap`）—— 主进程只装配，分发/执行由渲染层完成 */
         keymaps: () => Promise<IpcResult<KeymapView[]>>;
-        /** ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）—— 主进程装配 + 代持久化 */
+        /** 插件设置面板（`contributes.settings.panel`）—— 主进程装配 + 代持久化 */
         settings: () => Promise<IpcResult<SettingsPanelView[]>>;
         setSetting: (a: { id: string; panelId: string; key: string; value: unknown }) =>
           Promise<IpcResult<{ ok: boolean; reason?: string; panels?: SettingsPanelView[] }>>;
-        /** ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）—— 主进程只装配，渲染层落槽 */
+        /** 受限 UI 槽位（`contributes.ui.slot`）—— 主进程只装配，渲染层落槽 */
         slots: () => Promise<IpcResult<UiSlotView[]>>;
       };
-      // ★ 2026-09-29 磁力（BT）：本机已安装的外部播放器（MKV/HEVC 接力；只探测不启动）
+      // 磁力（BT）：本机已安装的外部播放器（MKV/HEVC 接力；只探测不启动）
       bt: {
         detectPlayers: () => Promise<IpcResult<Array<{ id: string; name: string; path: string }>>>;
       };
@@ -349,7 +353,7 @@ declare global {
         install: () => Promise<IpcResult<{ ok: boolean; path: string }>>;
         onProgress: (cb: (p: UpdateProgress) => void) => () => void;
       };
-      /** ★ 2026-10-16（用户要求）：界面缩放（跟随屏幕 / 指定档位） */
+      /** 界面缩放（跟随屏幕 / 指定档位） */
       ui: {
         getScale: () => Promise<IpcResult<UiScaleState>>;
         setScale: (v: UiScalePref) => Promise<IpcResult<UiScaleState>>;
@@ -384,9 +388,9 @@ export const client = {
   cfgImportUrl: (url: string, name?: string) => unwrap(window.api.config.importUrl(url, name)),
   cfgImportJsonLocal: (name?: string) => unwrap(window.api.config.importJsonLocal(name)),
   cfgImportPyLocal: () => unwrap(window.api.config.importPyLocal()),
-  /** ★ 2026-09-29：导入本地包（目录包）—— 返回包根/命中订阅/源数，用于结果提示 */
+  /** 导入本地包（目录包）—— 返回包根/命中订阅/源数，用于结果提示 */
   cfgImportPackage: (name?: string, root?: string) => unwrap(window.api.config.importPackage({ name, root })),
-  /** ★ 2026-09-29 本地包「网页源」：独立窗口打开 homePage html（fm 桥） */
+  /** 本地包「网页源」：独立窗口打开 homePage html（fm 桥） */
   webHomeOpen: (init: { url: string; title?: string; site?: Record<string, string | undefined> }) =>
     unwrap(window.api.config.webHomeOpen(init)),
   cfgSaveAsProfile: (name: string) => unwrap(window.api.config.saveAsProfile(name)),
@@ -394,30 +398,30 @@ export const client = {
   cfgDeleteProfile: (id: string) => unwrap(window.api.config.deleteProfile(id)),
   cfgUpdateProfileName: (a: { id: string; name: string }) => unwrap(window.api.config.updateProfileName(a)),
   cfgProfiles: () => unwrap(window.api.config.cfgProfiles()),
-  /** ★ 2026-09-30（用户要求）：换源弹层「左订阅 / 右源」视图（每份档案的源 key/name 清单） */
+  /** 换源弹层「左订阅 / 右源」视图（每份档案的源 key/name 清单） */
   cfgProfileSites: () => unwrap(window.api.config.profileSites()),
-  /** ★ 2026-09-30（用户要求）：一步完成「切换档案 + 选中该档案下的源」 */
+  /** 一步完成「切换档案 + 选中该档案下的源」 */
   cfgSwitchProfileSource: (profileId: string, key: string) =>
     unwrap(window.api.config.switchProfileSource({ profileId, key })),
   /**
-   * ★ 2026-09-30（用户要求）：导入本地 TXT / M3U 直播源（配置页按钮）。
-   * ★ 2026-10-14：两步导入 —— 首次返回 `needsName` 由渲染层弹框命名，二次带 `{ path, name }` 登记。
+   * 导入本地 TXT / M3U 直播源（配置页按钮）。
+   * 两步导入 —— 首次返回 `needsName` 由渲染层弹框命名，二次带 `{ path, name }` 登记。
    */
   cfgImportLiveLocal: (args?: { name?: string; path?: string }) => unwrap(window.api.config.importLiveLocal(args)),
-  /** ★ 2026-10-14（用户要求）：删除某条直播线路（下标） */
+  /** 删除某条直播线路（下标） */
   cfgDeleteLive: (index: number) => unwrap(window.api.config.deleteLive(index)),
-  /** ★ 2026-10-16（用户要求）：批量删除直播线路（配置页多选删除） */
+  /** 批量删除直播线路（配置页多选删除） */
   cfgDeleteLives: (indices: number[]) => unwrap(window.api.config.deleteLives(indices)),
-  /** ★ 2026-10-14（用户要求）：重命名某条直播线路 */
+  /** 重命名某条直播线路 */
   cfgUpdateLive: (a: { index: number; name: string }) => unwrap(window.api.config.updateLive(a)),
-  /** ★ 2026-09-30：数据目录信息（安装目录/data；迁移结果与回退原因） */
+  /** 数据目录信息（安装目录/data；迁移结果与回退原因） */
   dataDir: () => unwrap(window.api.system.dataDir()),
   vodDebug: (key: string) => unwrap(window.api.config.vodDebug(key)),
   audit: () => unwrap(window.api.config.audit()),
   cacheClear: () => unwrap(window.api.config.cacheClear()),
-  /** ★ 2026-09-27：已学到的「需要网盘绑定」源 key（源主页显示绑定入口的兜底判据） */
+  /** 已学到的「需要网盘绑定」源 key（源主页显示绑定入口的兜底判据） */
   driveBindKeys: () => unwrap(window.api.config.driveBindKeys()),
-  // ★ 播放网盘资源未绑定 cookie → 让主窗口跳到「点播页」（源主页有「网盘绑定」入口；播放器窗口也走此路径）
+  // 播放网盘资源未绑定 cookie → 让主窗口跳到「点播页」（源主页有「网盘绑定」入口；播放器窗口也走此路径）
   gotoDriveBind: () => unwrap(window.api.config.gotoDriveBind()),
   onNavDriveBind: (cb: () => void) => window.api.config.onNavDriveBind(cb),
   /** ★ macOS 菜单「设置…」（Cmd+,）→ 广播订阅；直接返回 preload 的退订函数（供 useEffect 清理） */
@@ -426,10 +430,10 @@ export const client = {
   winMaximize: () => unwrap(window.api.win.maximize()),
   winClose: () => unwrap(window.api.win.close()),
   winIsMaximized: () => unwrap(window.api.win.isMaximized()),
-  // ★ 2026-09-30（用户要求）：播放器「置顶」按钮
+  // 播放器「置顶」按钮
   winSetAlwaysOnTop: (on: boolean) => unwrap(window.api.win.setAlwaysOnTop(on)),
   winIsAlwaysOnTop: () => unwrap(window.api.win.isAlwaysOnTop()),
-  // ★ 2026-10-08（用户要求）：详情页独立窗口
+  // 详情页独立窗口
   winOpenDetail: (a: { key: string; id: string; query?: string }) => unwrap(window.api.win.openDetail(a)),
   winOpenSearch: (term: string) => unwrap(window.api.win.openSearch(term)),
   winRouteReady: () => unwrap(window.api.win.routeReady()),
@@ -438,12 +442,12 @@ export const client = {
   appQuit: () => unwrap(window.api.system.quit()),
   /** ★ 2026-10-13：重启应用（app.relaunch + 正常退出清理）；「导入设置备份」还原后一键重启 */
   appRestart: (reason?: string) => unwrap(window.api.system.restart(reason)),
-  /** ★ 2026-09-30：本次主进程启动的会话标识（渲染层判定「新一次启动」→ 丢页面状态类记忆） */
+  /** 本次主进程启动的会话标识（渲染层判定「新一次启动」→ 丢页面状态类记忆） */
   systemSessionId: () => unwrap(window.api.system.sessionId()),
   playerOpen: (init: unknown) => unwrap(window.api.player.open(init)),
   playerSwitchEp: async (request: number | import('../../shared/playerEpisode').PlayerEpisodeSwitch) =>
     (await unwrap(window.api.player.switchEp(request))).switched,
-  /** ★ 2026-09-30：播放器窗口订阅就绪 → 重发最新 init（修新窗口「等待播放…」竞态） */
+  /** 播放器窗口订阅就绪 → 重发最新 init（修新窗口「等待播放…」竞态） */
   playerReady: () => unwrap(window.api.player.ready()),
   playerIsOpen: () => unwrap(window.api.player.isOpen()),
   playerClose: () => unwrap(window.api.player.close()),
@@ -456,11 +460,11 @@ export const client = {
   playerSetResizable: (resizable: boolean) => unwrap(window.api.player.setResizable(resizable)),
   playerOnMini: (cb: (mini: boolean) => void) => window.api.player.onMini(cb),
   playerOnFullscreen: (cb: (fullscreen: boolean) => void) => window.api.player.onFullscreen(cb),
-  /** ★ 2026-10-17（B3）：播放器窗口开/关 → 主窗口据此冻结/解冻隐藏页的已解码图片（零重载） */
+  /** （B3）：播放器窗口开/关 → 主窗口据此冻结/解冻隐藏页的已解码图片（零重载） */
   playerOnWindowState: (cb: (open: boolean) => void) => window.api.player.onWindowState((s) => cb(!!s?.open)),
-  /** ★ 2026-10-18（R10）：L4 插件 `winbox.player.*` 转发事件（播放器窗口渲染层执行；不带 `MPV_` 前缀） */
+  /** （R10）：L4 插件 `winbox.player.*` 转发事件（播放器窗口渲染层执行；不带 `MPV_` 前缀） */
   onPlayerCtl: (cb: (a: { op: string; value?: unknown }) => void) => window.api.player.onCtl(cb),
-  /** ★ 2026-10-16（用户报「播放时画面突然消失、只剩声音」）：播放诊断上报（fire-and-forget；见 main/util/mediaDiag.ts） */
+  /** 播放诊断上报（fire-and-forget；见 main/util/mediaDiag.ts） */
   mediaReport: (ev: MediaStateEvent) => window.api.media.report(ev),
   bossGet: () => unwrap(window.api.boss.get()),
   bossSet: (patch: Partial<BossKeySettings>) => unwrap(window.api.boss.set(patch)),
@@ -470,7 +474,7 @@ export const client = {
   mergeSave: (a: { content: string; defaultName?: string }) => unwrap(window.api.merge.save(a)),
   // 夸克落盘文件清理（播放页/播放器页卸载、窗口关闭时触发）
   quarkCleanup: () => unwrap(window.api.quark.cleanup()),
-  // ★ 播放偏好（m3u8 去广告开关；配置页读写，本地中继 /play 即时生效）
+  // 播放偏好（m3u8 去广告开关；配置页读写，本地中继 /play 即时生效）
   playerPrefsGet: () => unwrap(window.api.playerPrefs.get()),
   playerPrefsSet: (patch: Partial<PlayerSettings>) => unwrap(window.api.playerPrefs.set(patch)),
   driveGet: () => unwrap(window.api.drives.get()),
@@ -498,27 +502,27 @@ export const client = {
     unwrap<LiveTemplateView & { content: string }>(window.api.live.render(a)),
   liveExport: (a: { templateId: string; groups: LiveGroup[]; defaultName?: string }) =>
     unwrap<{ saved: boolean; path: string }>(window.api.live.export(a)),
-  /** ★ 2026-09-29 设置备份 */
+  /** 设置备份 */
   backupExport: (renderer: Record<string, string>) => unwrap(window.api.backup.export(renderer)),
   backupImport: () => unwrap(window.api.backup.import()),
-  /** ★ 2026-09-29 WebDAV 存储（只读） */
+  /** WebDAV 存储（只读） */
   davList: () => unwrap(window.api.dav.list()),
   davSet: (s: DavServer) => unwrap(window.api.dav.set(s)),
   davRemove: (id: string) => unwrap(window.api.dav.remove(id)),
   davBrowse: (a: { id: string; path?: string }) => unwrap(window.api.dav.browse(a)),
   davOpenExternal: (url: string) => unwrap(window.api.dav.openExternal(url)),
-  /** ★ 2026-09-29 DLNA 投屏 */
+  /** DLNA 投屏 */
   dlnaDiscover: () => unwrap(window.api.dlna.discover()),
   dlnaCast: (a: { device: DlnaDevice; target: DlnaCastTarget }) => unwrap(window.api.dlna.cast(a)),
   subtitleGet: () => unwrap(window.api.subtitle.get()),
   subtitleSet: (patch: Partial<SubtitleSettings>) => unwrap(window.api.subtitle.set(patch)),
-  /** ★ 2026-09-28：各字幕源的开关/可用状态（配置页渲染） */
+  /** 各字幕源的开关/可用状态（配置页渲染） */
   subtitleProviders: () =>
     unwrap(window.api.subtitle.providers()) as Promise<SubtitleProviderView[]>,
-  /** ★ 2026-09-28：多源聚合检索 → { candidates, providers }（providers 说明逐源状态，用于空结果提示） */
+  /** 多源聚合检索 → { candidates, providers }（providers 说明逐源状态，用于空结果提示） */
   subtitleSearch: (name: string) =>
     unwrap(window.api.subtitle.search(name)) as Promise<SubtitleSearchReport>,
-  /** ★ 2026-09-24：返回 { text, fileName, format, entries, reason } —— 用真实字幕文件名判定格式 */
+  /** 返回 { text, fileName, format, entries, reason } —— 用真实字幕文件名判定格式 */
   subtitleFetch: (cand: SubtitleCandidate) =>
     unwrap(window.api.subtitle.fetch(cand)) as Promise<SubtitleFetchResult>,
   danmakuGet: () => unwrap(window.api.danmaku.get()),
@@ -529,49 +533,53 @@ export const client = {
   danmakuFetch: (episodeId: number, source: string) => unwrap(window.api.danmaku.fetch(episodeId, source)),
   // TMDB 元数据补全（缺封面/缺简介兜底，凭据内置密文）
   metaSearch: (name: string, year?: string, provider?: 'tmdb' | 'douban') => unwrap(window.api.meta.search(name, year, provider)),
-  /** ★ 详情页增强：演职员/类型/相关推荐 */
+  /** 详情页增强：演职员/类型/相关推荐 */
   metaExtra: (name: string, year?: string) => unwrap(window.api.meta.extra(name, year)),
-  /** ★ 发现页榜单（无源默认主页；refresh 绕过 6h 缓存） */
+  /** 详情页「相关推荐 / 豆瓣影评」tab 区块（豆瓣口径） */
+  metaDoubanExtra: (name: string, year?: string) => unwrap(window.api.meta.doubanExtra(name, year)),
+  /** 影评全文（点影评行 → 独立小窗口展示） */
+  metaDoubanReview: (reviewId: string) => unwrap(window.api.meta.doubanReview(reviewId)),
+  /** 发现页榜单（无源默认主页；refresh 绕过 6h 缓存） */
   metaDiscover: (refresh?: boolean) => unwrap(window.api.meta.discover(refresh)),
   metaMovieHot: () => unwrap(window.api.meta.movieHot()),
   metaDiscoverImages: (name: string, mediaType: 'movie' | 'tv', year?: string, kind?: 'backdrop' | 'poster', doubanId?: string) => unwrap(window.api.meta.discoverImages(name, mediaType, year, kind, doubanId)),
-  /** ★ 发现页「分类」：TMDB 类型清单 */
+  /** 发现页「分类」：TMDB 类型清单 */
   metaGenres: () => unwrap(window.api.meta.genres()),
-  /** ★ 发现页「分类」：按类型取一页 */
+  /** 发现页「分类」：按类型取一页 */
   metaGenrePage: (mediaType: 'movie' | 'tv', genreId: number, page: number) => unwrap(window.api.meta.genrePage(mediaType, genreId, page)),
-  /** ★ 2026-10-15（级联分类）：发现页「分类浏览」取一页（豆瓣 recommend） */
+  /** （级联分类）：发现页「分类浏览」取一页（豆瓣 recommend） */
   metaDiscoverQuery: (q: ExploreQuery) => unwrap(window.api.meta.discoverQuery(q)),
-  /** ★ 2026-10-15（级联分类）：级联词表（发现页 / 点播页共用同一份选项） */
+  /** （级联分类）：级联词表（发现页 / 点播页共用同一份选项） */
   metaExploreVocab: () => unwrap(window.api.meta.exploreVocab()),
-  /** ★ 2026-09-24：元数据来源配置（读取返回能力布尔 + 用户自填值，**绝不含内置密文**） */
+  /** 元数据来源配置（读取返回能力布尔 + 用户自填值，**绝不含内置密文**） */
   metaGetSettings: () => unwrap(window.api.meta.getSettings()),
   metaSetSettings: (patch: Partial<MetaSettings>) => unwrap(window.api.meta.setSettings(patch)),
-  /** ★ 搜索面板联想（TMDB / 豆瓣，随来源策略） */
+  /** 搜索面板联想（TMDB / 豆瓣，随来源策略） */
   metaSuggest: (q: string) => unwrap(window.api.meta.suggest(q)),
-  /** ★ 发现页 Hero 轮播：横版剧照（≤6）/ 竖版海报（≤8），已包装 /img 中继 */
+  /** 发现页 Hero 轮播：横版剧照（≤6）/ 竖版海报（≤8），已包装 /img 中继 */
   metaImages: (mediaType: 'movie' | 'tv', tmdbId: number) => unwrap(window.api.meta.images(mediaType, tmdbId)),
   netSpeed: (cb: (kbs: number) => void) => window.api.net.onSpeed(cb),
-  /** ★ 2026-10-08 MPV 高兼容播放内核：探活/路径、启停、控制命令、状态事件（仅独立播放器窗口用） */
+  /** MPV 高兼容播放内核：探活/路径、启停、控制命令、状态事件（仅独立播放器窗口用） */
   mpvStatus: () => unwrap<MpvStatus>(window.api.mpv.status()),
   mpvStart: (opts: MpvStartOptions) => unwrap<{ session: number; path: string }>(window.api.mpv.start(opts)),
   mpvCmd: (cmd: MpvCommand) => unwrap<{ ok: boolean }>(window.api.mpv.cmd(cmd)),
   mpvStop: () => unwrap<{ ok: boolean }>(window.api.mpv.stop()),
   mpvOnState: (cb: (s: MpvStateEvent) => void) => window.api.mpv.onState(cb as (s: unknown) => void),
-  // ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
+  // （R11）第三方播放内核（`contributes.player.engine`；宿主托管，插件只给描述符）
   /** 内置 2（html5/mpv）+ 插件 N（`engine:<contributeId>`）—— 配置页内核列表 / 播放器切换按钮用 */
   engineList: () => unwrap<PlayerEngineView[]>(window.api.engine.list()),
   engineStatus: (id: string) => unwrap<{ id: string; ready: boolean; path?: string; note?: string }>(window.api.engine.status(id)),
   /** 写启用开关（默认关；首次开启的二次确认在渲染层做） */
   engineSetEnabled: (a: { id: string; enabled: boolean }) => unwrap<{ ok: boolean; reason?: string }>(window.api.engine.setEnabled(a)),
-  /** 拉起引擎会话（★ 未启用 → 返回 `{ok:false, reason}`，不抛） */
+  /** 拉起引擎会话（未启用 → 返回 `{ok:false, reason}`，不抛） */
   engineStart: (a: MpvStartOptions & { engineId: string }) =>
     unwrap<{ ok: boolean; reason?: string; session?: number }>(window.api.engine.start(a)),
   engineCmd: (cmd: MpvCommand) => unwrap<{ ok: boolean }>(window.api.engine.cmd(cmd)),
   engineStop: () => unwrap<{ ok: boolean }>(window.api.engine.stop()),
   engineOnState: (cb: (s: MpvStateEvent) => void) => window.api.engine.onState(cb as (s: unknown) => void),
-  // ★ 2026-10-16 插件系统（M1）：列表 / 安装（两段式）/ 卸载 / 启停 / 超分状态
+  // 插件系统（M1）：列表 / 安装（两段式）/ 卸载 / 启停 / 超分状态
   pluginList: () => unwrap<PluginView[]>(window.api.plugins.list()),
-  /** ★ 2026-10-18（R10）安装第 ① 段：干跑校验 → 权限清单（不落盘） */
+  /** （R10）安装第 ① 段：干跑校验 → 权限清单（不落盘） */
   pluginInspect: () => unwrap<PluginInspectResult>(window.api.plugins.inspect()),
   pluginInstall: (a?: { path?: string }) =>
     unwrap<{ ok: boolean; canceled?: boolean; reason?: string; items?: PluginView[] }>(window.api.plugins.install(a)),
@@ -579,22 +587,22 @@ export const client = {
   pluginSetEnabled: (a: { id: string; enabled: boolean }) =>
     unwrap<{ ok: boolean; reason?: string; items?: PluginView[] }>(window.api.plugins.setEnabled(a)),
   pluginSr: () => unwrap<SrState>(window.api.plugins.sr()),
-  /** ★ 插件皮肤列表（`contributes.theme`）—— 渲染层注册表据此并入可选皮肤 */
+  /** 插件皮肤列表（`contributes.theme`）—— 渲染层注册表据此并入可选皮肤 */
   pluginThemes: () => unwrap<ThemeSkinView[]>(window.api.plugins.themes()),
-  /** ★ 2026-10-18 插件受限动作按钮（`contributes.ui.command`）—— 配置页 / 播放器据此渲染 */
+  /** 插件受限动作按钮（`contributes.ui.command`）—— 配置页 / 播放器据此渲染 */
   pluginCommands: () => unwrap<UiCommandView[]>(window.api.plugins.commands()),
-  /** ★ 2026-10-18 追加快捷键（`contributes.keymap`）—— 配置页一览 / 播放器键位面板 + 渲染层分发 */
+  /** 追加快捷键（`contributes.keymap`）—— 配置页一览 / 播放器键位面板 + 渲染层分发 */
   pluginKeymaps: () => unwrap<KeymapView[]>(window.api.plugins.keymaps()),
-  /** ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）—— 配置页每插件卡片内渲染表单 */
+  /** 插件设置面板（`contributes.settings.panel`）—— 配置页每插件卡片内渲染表单 */
   pluginSettings: () => unwrap<SettingsPanelView[]>(window.api.plugins.settings()),
-  /** ★ 写一个设置字段值（宿主代持久化 + 值校验；成功时回带最新面板列表） */
+  /** 写一个设置字段值（宿主代持久化 + 值校验；成功时回带最新面板列表） */
   pluginSettingSet: (a: { id: string; panelId: string; key: string; value: unknown }) =>
     unwrap<{ ok: boolean; reason?: string; panels?: SettingsPanelView[] }>(window.api.plugins.setSetting(a)),
-  /** ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）—— 渲染层 `<PluginSlot slot="…" />` 消费 */
+  /** 受限 UI 槽位（`contributes.ui.slot`）—— 渲染层 `<PluginSlot slot="…" />` 消费 */
   pluginSlots: () => unwrap<UiSlotView[]>(window.api.plugins.slots()),
-  /** ★ 2026-09-29 磁力（BT）：探测本机外部播放器（MKV/HEVC 接力；配置页可指定路径） */
+  /** 磁力（BT）：探测本机外部播放器（MKV/HEVC 接力；配置页可指定路径） */
   btDetectPlayers: () => unwrap(window.api.bt.detectPlayers()),
-  /** ★ 2026-09-30（用户要求）：点播外部播放器（与磁力分开绑定）——探测本机播放器 / 用当前地址拉起 */
+  /** 点播外部播放器（与磁力分开绑定）——探测本机播放器 / 用当前地址拉起 */
   vodDetectPlayers: () => unwrap(window.api.vod.detectPlayers()),
   /** `seek`（秒）：显式绑定外部播放器时，从历史续播的位置（按播放器类型拼起播参数） */
   vodOpenExternal: (url: string, path?: string, seek?: number) => unwrap(window.api.vod.openExternal({ url, path, seek })),
@@ -603,15 +611,15 @@ export const client = {
    * `key` 必填（用于解析该源 JVM 的真实可用地址）；`url` 是蜘蛛自报地址，仅作兜底候选。
    */
   vodConfigCenter: (key: string, url?: string) => unwrap(window.api.vod.configCenter({ key, url })),
-  /** ★ 2026-09-29 启动强制更新：检查 / 下载 / 拉起安装程序（进度走 onUpdateProgress） */
+  /** 启动更新：检查 / 下载 / 拉起安装程序（进度走 onUpdateProgress） */
   updateCheck: () => unwrap(window.api.update.check()),
   updateDownload: () => unwrap(window.api.update.download()),
   updateInstall: () => unwrap(window.api.update.install()),
   onUpdateProgress: (cb: (p: UpdateProgress) => void) => window.api.update.onProgress(cb),
-  /** ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：界面缩放读/写 */
+  /** 界面缩放读/写 */
   uiGetScale: () => unwrap(window.api.ui.getScale()),
   uiSetScale: (v: UiScalePref) => unwrap(window.api.ui.setScale(v)),
-  /** ★ 网络代理设置（DNS 污染 / SNI 阻断站点用） */
+  /** 网络代理设置（DNS 污染 / SNI 阻断站点用） */
   proxyGet: () => unwrap<{ enabled: boolean; url: string }>(window.api.net.proxyGet()),
   proxySet: (patch: { enabled?: boolean; url?: string }) =>
     unwrap<{ enabled: boolean; url: string }>(window.api.net.proxySet(patch)),

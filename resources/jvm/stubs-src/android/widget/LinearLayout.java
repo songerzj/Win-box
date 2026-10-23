@@ -5,7 +5,7 @@ import android.util.AttributeSet;
 import android.view.ViewGroup;
 
 /**
- * LinearLayout stub —— 消除 fty 后台线程加载 android.widget.LinearLayout 的
+ * LinearLayout stub —— 消除 某第三方源后台线程加载 android.widget.LinearLayout 的
  * NoClassDefFoundError 噪声。继承既有 ViewGroup stub；方法默认返回。
  */
 public class LinearLayout extends ViewGroup {

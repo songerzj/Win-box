@@ -1,4 +1,4 @@
-// src/main/subtitle/index.ts — ★ 2026-09-28：多字幕源聚合入口（新增源只需实现 provider.ts 的接口并登记到 SUBTITLE_PROVIDERS）。
+// src/main/subtitle/index.ts — 多字幕源聚合入口（新增源只需实现 provider.ts 的接口并登记到 SUBTITLE_PROVIDERS）。
 //
 // 行为：
 //   · 逐源并行检索（每源独立 + 超时预算），**单源失败不影响其它源**；

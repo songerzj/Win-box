@@ -1,15 +1,15 @@
 // src/renderer/lib/kernel.ts
-// ★ 2026-10-08（用户拍板「内置官方构建」）：播放内核选择的**纯函数**（可单测）。
+// 播放内核选择的**纯函数**（可单测）。
 //
-// 双内核口径（调研结论，见 .workbuddy/memory/2026-10-08.md §二）：
+// 双内核口径（调研结论，见 .workbuddy/memory/.md §二）
 //   · HTML5（hls.js / mpegts.js / 原生 <video>）继续做默认内核，零依赖兜底；
 //   · MPV 为**高兼容内核**：已知 Chromium 播不好的容器（MKV/AVI/WMV/RMVB 等）自动改走 mpv，
 //     其余资源可一键手动切换；4K / HEVC / HDR 这类「只有解了才知道播不动」的场景，
 //     HTML5 失败时也有一键/自动（pref='auto'）转 mpv 的兜底。
 //
-// ★ 2026-10-18（R11）：内核从「双选」扩为「内置 2 + 插件 N」——
+// （R11）：内核从「双选」扩为「内置 2 + 插件 N」——
 //   插件引擎的渲染层内核值 = `engine:<contributeId>`（见 插件制作规范 §6.3 / shared/plugin.ts 的 PlayerEngineView）。
-//   ★ `auto` 语义**不变**：插件引擎**不参与 auto**（必须用户在配置页/控制条显式选），
+//   `auto` 语义**不变**：插件引擎**不参与 auto**（必须用户在配置页/控制条显式选），
 //     自动切换只在 html5 ↔ mpv 之间发生（插件内核涉及执行本机程序，不做隐式选择）。
 import { detectMediaKind } from './mediaKind';
 import { resolvePlayTarget } from './playTarget';

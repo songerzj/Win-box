@@ -1,9 +1,9 @@
 // src/main/net/configDecrypt.ts
-// ★ 2026-09-29：订阅/接口的**解密兜底**（用户口径：「用解密来兜底」）。
+// 订阅/接口的**解密兜底**（「用解密来兜底」）。
 //
-// 缘起：用户拿来 `饭太硬` 的「全能接口解密」工具（https://www.xn--sss604efuw.cc/jm/）——
+// 缘起：一个「全能接口解密」工具（https://www.xn--sss604efuw.cc/jm/）——
 //   该工具**本体是服务端 PHP**（前端只转发 `jiemi.php?url=`），算法不公开、前端拿不到，
-//   因此无法照搬实现。用户明确要求：不要做成可选项开关，直接把「解密」当最后一档兜底。
+//   因此无法照搬实现，也不做成可选项开关：直接把「解密」当最后一档兜底。
 //
 // 本模块两级兜底（都是"最后手段"，只有在「伪装阶梯全部失败」后才会走到）：
 //   ① **本地可解释编码/封装**：整体 base64 / hex，以及携带 key/IV 的 2423 AES-CBC 封装；不联网；
@@ -16,7 +16,7 @@ import { looksLikeSubscribeJson } from '../../engine/config/ApiConfigParser';
 import { sniffBody } from '../../engine/util/fetchWithDisguise';
 import { createDecipheriv } from 'node:crypto';
 
-/** 远程解密服务（饭太硬「全能接口解密」的后端；仅作最后兜底） */
+/** 远程解密服务（「全能接口解密」的后端；仅作最后兜底） */
 export const REMOTE_DECRYPT_ENDPOINT = 'https://www.xn--sss604efuw.cc/jm/jiemi.php';
 
 /** 去掉 `//` 注释行（该服务的返回会在正文前加几行 `//` 横幅；粘贴内容里也常有） */

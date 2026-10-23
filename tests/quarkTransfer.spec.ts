@@ -71,7 +71,7 @@ describe('网盘所选文件描述兼容', () => {
   });
 });
 
-// ★ 会话子目录（tr_xxx）：每次播放落盘唯一目录，规避"上次文件未删完 → 第二次转存同名冲突"
+// 会话子目录（tr_xxx）：每次播放落盘唯一目录，规避"上次文件未删完 → 第二次转存同名冲突"
 describe('sessionDirName（唯一会话子目录）', () => {
   it('格式为 tr_<时间戳>_<随机> 且带前缀', () => {
     const n = sessionDirName(1720000000000, 'ab12cd');
@@ -87,7 +87,7 @@ describe('sessionDirName（唯一会话子目录）', () => {
   });
 });
 
-// ★ 2026-09-19 安全边界回归：转存 fid 不再靠「目录差集 + updated_at 猜测」，
+// 安全边界回归：转存 fid 不再靠「目录差集 + updated_at 猜测」，
 //   主路径用服务器返回 save_as_top_fids；回退护栏 = 差集 + 文件名匹配（see quarkTransfer.ts）。
 describe('matchTransferredFile (回退护栏：文件名精确匹配，杜绝误删)', () => {
   it('空/非数组/空期望名 → 空 fid', () => {
@@ -156,13 +156,13 @@ describe('isQuarkSharePlay', () => {
   });
 });
 
-describe('extractQuarkShare（★ 2026-10-09：do=pan 的夸克通道解析）', () => {
+describe('extractQuarkShare（do=pan 的夸克通道解析）', () => {
   it('从 do=pan 地址取 sId（含 percent-encoded 形态）', () => {
     const enc = 'http://127.0.0.1:-1/proxy?do=pan&site=quark&shareId=&fileId=https%3A%2F%2Fpan.quark.cn%2Fs%2Fa1b2c3d4&fileToken=';
     expect(extractQuarkShare(enc)).toEqual({ sId: 'a1b2c3d4', passcode: '' });
     expect(extractQuarkShare('https://pan.quark.cn/s/104863e84ddd?fid=x')).toEqual({ sId: '104863e84ddd', passcode: '' });
   });
-  it('★ 提取码：?pwd=/passcode= 参数与「提取码：xxxx」文本两种形态（第三方文档参考 + 实证点）', () => {
+  it('提取码：?pwd=/passcode= 参数与「提取码：xxxx」文本两种形态（第三方文档参考 + 实证点）', () => {
     expect(extractQuarkShare('https://pan.quark.cn/s/abc12345?pwd=q1w2')?.passcode).toBe('q1w2');
     const enc = 'http://127.0.0.1:-1/proxy?do=pan&site=quark&fileId=' + encodeURIComponent('https://pan.quark.cn/s/abc12345?pwd=Zz09');
     expect(extractQuarkShare(enc)?.passcode).toBe('Zz09');
@@ -221,7 +221,7 @@ describe('quarkPlayUrl (夸克转码播放接口)', () => {
   });
 });
 
-// ★ 修复「点第6集落第29集」：resolveShareFile 分页/递归下钻/未命中不瞎猜回退
+// 修复「点第6集落第29集」：resolveShareFile 分页/递归下钻/未命中不瞎猜回退
 describe('resolveShareFile（分享内选文件）', () => {
   const quiet = { i: () => {}, w: () => {}, e: () => {} } as never;
 
@@ -239,7 +239,7 @@ describe('resolveShareFile（分享内选文件）', () => {
     expect(r?.token).toBe('tk-f6');
   });
 
-  it('★ 分页：目标 fid 在第 50 条之后仍能命中（旧实现只取第一页 → 匹配失败 → 错取首文件）', async () => {
+  it('分页：目标 fid 在第 50 条之后仍能命中（旧实现只取第一页 → 匹配失败 → 错取首文件）', async () => {
     const many = Array.from({ length: 120 }, (_, i) => fileNode(`f${String(i + 1).padStart(3, '0')}`, `第${i + 1}集.mp4`));
     const tree = { '0': many };
     const r = await resolveShareFile('f106', quiet, memFetcher(tree));
@@ -247,7 +247,7 @@ describe('resolveShareFile（分享内选文件）', () => {
     expect(r?.name).toBe('第106集.mp4');
   });
 
-  it('★ 递归下钻：整季目录嵌套多层（根→季目录→集目录→文件）仍能精确命中', async () => {
+  it('递归下钻：整季目录嵌套多层（根→季目录→集目录→文件）仍能精确命中', async () => {
     const tree = {
       '0': [{ fid: 'season', dir: true, file_name: '第一季' }],
       season: [{ fid: 'vol', dir: true, file_name: '第一卷' }],
@@ -258,7 +258,7 @@ describe('resolveShareFile（分享内选文件）', () => {
     expect(r?.name).toBe('第06集.mp4');
   });
 
-  it('★ 安全边界：preferFid 全树找不到 → 返回 null（绝不回退首文件，杜绝播错集）', async () => {
+  it('安全边界：preferFid 全树找不到 → 返回 null（绝不回退首文件，杜绝播错集）', async () => {
     const tree = { '0': [fileNode('f1', '第29集.mp4'), fileNode('f2', '第30集.mp4')] };
     const r = await resolveShareFile('f999', quiet, memFetcher(tree));
     expect(r).toBeNull();
@@ -270,31 +270,31 @@ describe('resolveShareFile（分享内选文件）', () => {
     expect(r?.fid).toBe('f29');
   });
 
-  it('★ 无 preferFid 且根是整季目录、其中只有一个文件 → 自动取该文件', async () => {
+  it('无 preferFid 且根是整季目录、其中只有一个文件 → 自动取该文件', async () => {
     const tree = { '0': [{ fid: 'season', dir: true, file_name: '整季' }], season: [fileNode('ep6', '第06集.mp4')] };
     const r = await resolveShareFile(undefined, quiet, memFetcher(tree));
     expect(r?.fid).toBe('ep6');
   });
 
-  it('★ 无 preferFid 且分享含多个文件 → 返回 null（拒绝盲选首文件，杜绝共享链接错集）', async () => {
+  it('无 preferFid 且分享含多个文件 → 返回 null（拒绝盲选首文件，杜绝共享链接错集）', async () => {
     const tree = { '0': [fileNode('f29', '第29集.mp4'), fileNode('f6', '第06集.mp4')] };
     const r = await resolveShareFile('', quiet, memFetcher(tree));
     expect(r).toBeNull();
   });
 
-  it('★ 无 preferFid 且整季目录含多集 → 返回 null（不再默认取第一集）', async () => {
+  it('无 preferFid 且整季目录含多集 → 返回 null（不再默认取第一集）', async () => {
     const tree = { '0': [{ fid: 'season', dir: true, file_name: '整季' }], season: [fileNode('ep29', '第29集.mp4'), fileNode('ep6', '第06集.mp4')] };
     const r = await resolveShareFile(undefined, quiet, memFetcher(tree));
     expect(r).toBeNull();
   });
 });
 
-// ★ 修复「点第6集落第29集」：episode JSON 里 fid 字段名不统一，只认 "fid" 会取不到
+// 修复「点第6集落第29集」：episode JSON 里 fid 字段名不统一，只认 "fid" 会取不到
 describe('extractEpisodeFid（episode id 提取内层 fid）', () => {
   it('字段名 fid（旧兼容）', () => {
     expect(extractEpisodeFid('{"sId":"abc","fid":"123"}')).toBe('123');
   });
-  it('字段名 vfid / file_id（玩偶类源常见）', () => {
+  it('字段名 vfid / file_id（某壳源常见）', () => {
     expect(extractEpisodeFid('{"sId":"abc","vfid":"v1"}')).toBe('v1');
     expect(extractEpisodeFid('{"sId":"abc","file_id":"fi1"}')).toBe('fi1');
   });
@@ -312,7 +312,7 @@ describe('extractEpisodeFid（episode id 提取内层 fid）', () => {
   });
 });
 
-// ★ 2026-09-29（用户报「部分资源夸克播放失败」）：fid 未命中时按集名唯一匹配兜底
+// fid 未命中时按集名唯一匹配兜底
 describe('extractEpisodeName / episodeKeyOf（集名兜底）', () => {
   it.each([
     ['03~4K.mp4', 'ep3'], ['05~4K(1).mp4', 'ep5'],
@@ -323,7 +323,7 @@ describe('extractEpisodeName / episodeKeyOf（集名兜底）', () => {
     expect(episodeKeyOf(name)).toBe(key);
   });
 
-  it('解析潇洒玩偶复合选集，提供商必须明确', () => {
+  it('解析某壳源复合选集，提供商必须明确', () => {
     const id = '03~4K.mp4[1.01GB]__' + 'a'.repeat(32) + '+11adf8105c314+' + 'b'.repeat(32);
     expect(extractEpisodeFid(id)).toBe('a'.repeat(32));
     expect(extractEpisodeName(id)).toBe('03~4K.mp4[1.01GB]');
@@ -350,7 +350,7 @@ describe('extractEpisodeName / episodeKeyOf（集名兜底）', () => {
   });
 });
 
-describe('resolveShareFile — fid 未命中 → 按集名唯一匹配（★ 2026-09-29）', () => {
+describe('resolveShareFile — fid 未命中 → 按集名唯一匹配', () => {
   const quiet = { i: () => {}, w: () => {}, e: () => {} };
   const file = (fid: string, name: string, token = `tk-${fid}`) => ({ fid, dir: false, file_name: name, size: 100, share_fid_token: token });
   const tree: Record<string, any[]> = {

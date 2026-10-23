@@ -18,6 +18,7 @@ import { PERMISSION_LABELS } from '../../shared/plugin';
 import { commandsFor, runPluginCommand } from '../lib/pluginCommands';
 import type { DavServer } from '../../shared/webdav';
 import { isMacRenderer } from '../lib/platform';
+import DriveBindPanel from '../components/DriveBindPanel';
 
 type TabId = 'sources' | 'health' | 'profiles' | 'account' | 'storage' | 'appearance' | 'play' | 'plugins' | 'shortcut' | 'network' | 'backup';
 
@@ -72,7 +73,7 @@ function FlagSelect({ label, hint, value, onChange }: { label: string; hint: str
 export default function ConfigPage() {
   const mac = isMacRenderer();
   const [url, setUrl] = useState('');
-  /** ★ 2026-09-27（用户要求）：导入时可自填订阅名；留空 → 主进程按「新订阅 xx」/ 本地文件名自动命名 */
+  /** 导入时可自填订阅名；留空 → 主进程按「新订阅 xx」/ 本地文件名自动命名 */
   const [subName, setSubName] = useState('');
   /** 纯 Python 本地包的生成订阅需要单独确认文件名；不能使用浏览器 prompt（Electron 页面不保证提供它）。 */
   const [packageNamePrompt, setPackageNamePrompt] = useState<{ root: string; name: string } | null>(null);
@@ -89,7 +90,7 @@ export default function ConfigPage() {
   const [lastOk, setLastOk] = useState('');
   // 外观主题
   const [theme, setTheme] = useState<Theme>(() => currentTheme());
-  /** ★ 2026-10-18（用户要求「统一皮肤标准」）：可切换的皮肤 = 注册表里的**全部皮肤**（内置 + 已装插件），
+  /** 可切换的皮肤 = 注册表里的**全部皮肤**（内置 + 已装插件），
    *   展示名来自插件 manifest；注册表在启动时异步载入（THEMES_EVENT 到达即刷新）。 */
   const [skins, setSkins] = useState(() => allSkins());
   useEffect(() => {
@@ -97,16 +98,16 @@ export default function ConfigPage() {
     window.addEventListener(THEMES_EVENT, sync);
     return () => window.removeEventListener(THEMES_EVENT, sync);
   }, []);
-  /** ★ 2026-09-30（用户要求）：是否展示「发现」页（默认展示；关掉后导航与默认落地页相应变化） */
+  /** 是否展示「发现」页（默认展示；关掉后导航与默认落地页相应变化） */
   const [showDiscover, setShowDiscoverState] = useState<boolean>(() => getShowDiscover());
-  /** ★ 2026-10-08（用户要求）：详情页是否单独窗口展示（默认关；切换即时生效，见 lib/detailWin.ts） */
-  /** ★ 2026-10-08：界面动效三态（跟随系统 / 始终开启 / 关闭）—— 本机系统「动画效果」为关时也能强制开启动效 */
+  /** 详情页是否单独窗口展示（默认关；切换即时生效，见 lib/detailWin.ts） */
+  /** 界面动效三态（跟随系统 / 始终开启 / 关闭）—— 本机系统「动画效果」为关时也能强制开启动效 */
   const [motion, setMotionState] = useState<MotionPref>(() => getMotionPref());
-  /** ★ 2026-10-15（用户要求）：详情/搜索的打开方式 ——「本页内」（伪墓碑，默认）或「独立窗口」 */
+  /** 详情/搜索的打开方式 ——「本页内」（伪墓碑，默认）或「独立窗口」 */
   const [navMode, setNavModeState] = useState<NavMode>(() => getNavMode());
-  /** ★ 2026-10-16（用户要求「瀑布/翻页的切换挪到配置里」）：点播页浏览方式 —— 逐页翻页（默认）/ 瀑布模式 */
+  /** 点播页浏览方式 —— 逐页翻页（默认）/ 瀑布模式 */
   const [waterfall, setWaterfallState] = useState<boolean>(() => getWaterfall());
-  /** ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：界面缩放（跟随屏幕 / 指定档位） */
+  /** 界面缩放（跟随屏幕 / 指定档位） */
   const [uiScale, setUiScaleState] = useState<UiScaleState>({ pref: 'auto', scale: 1, work: { width: 0, height: 0 } });
   useEffect(() => {
     client.uiGetScale().then(setUiScaleState).catch(() => undefined);
@@ -114,7 +115,7 @@ export default function ConfigPage() {
   // 外挂字幕（多源：SubtitleCat 免 token / assrt 需 token）
   const [subToken, setSubToken] = useState('');
   const [subTokenSaved, setSubTokenSaved] = useState(false);
-  /** ★ 2026-09-28：各字幕源的开关与可用状态（点击标签开关） */
+  /** 各字幕源的开关与可用状态（点击标签开关） */
   const [subProviders, setSubProviders] = useState<SubtitleProviderView[]>([]);
   const refreshSubProviders = useCallback(() => {
     client.subtitleProviders().then(setSubProviders).catch(() => undefined);
@@ -122,14 +123,14 @@ export default function ConfigPage() {
   // 清理缓存
   const [cacheMsg, setCacheMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
   const [cacheBusy, setCacheBusy] = useState(false);
-  // ★ 2026-09-30（用户要求）：数据目录（安装目录/data；老用户迁移结果 / 回退原因）——排障展示
+  // 数据目录（安装目录/data；老用户迁移结果 / 回退原因）——排障展示
   const [dataDir, setDataDir] = useState<DataDirInfo | null>(null);
   useEffect(() => {
     client.subtitleGet().then((s) => { setSubToken(s.assrtToken || ''); setSubTokenSaved(!!s.assrtToken); }).catch(() => undefined);
     refreshSubProviders();
   }, [refreshSubProviders]);
 
-  // 元数据来源（★ 2026-09-24）：TMDB 自填 Key / API 代理地址 / 图片镜像地址 + 封面与简介策略
+  // 元数据来源：TMDB 自填 Key / API 代理地址 / 图片镜像地址 + 封面与简介策略
   const [metaDraft, setMetaDraft] = useState<MetaSettings>({ ...DEFAULT_META_SETTINGS });
   const [metaDirty, setMetaDirty] = useState(false);
   const [metaMsg, setMetaMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -154,43 +155,43 @@ export default function ConfigPage() {
     }
   };
 
-  // ---- ★ 播放偏好（m3u8 去广告；改后本地中继 /play 即时生效，无需重启）----
+  // ---- 播放偏好（m3u8 去广告；改后本地中继 /play 即时生效，无需重启）----
   const [playPrefs, setPlayPrefs] = useState<PlayerSettings>({ ...DEFAULT_PLAYER_SETTINGS });
   const [playMsg, setPlayMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
   useEffect(() => {
     client.playerPrefsGet().then((s) => setPlayPrefs(s)).catch(() => undefined);
   }, []);
-  // ---- ★ 2026-10-16 插件/组件（M1）：列表 / 安装 / 卸载 / 启停（超分插件也在这里管）----
+  // ---- 插件/组件（M1）：列表 / 安装 / 卸载 / 启停（超分插件也在这里管）----
   const [pluginItems, setPluginItems] = useState<PluginView[]>([]);
   const [pluginMsg, setPluginMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
   const [pluginBusy, setPluginBusy] = useState(false);
-  /** ★ 2026-10-18（R10）L4 安装**权限确认**弹层（干跑结果；`kind:"code"` 才弹） */
+  /** （R10）L4 安装**权限确认**弹层（干跑结果；`kind:"code"` 才弹） */
   const [pluginConfirm, setPluginConfirm] = useState<PluginInspectResult | null>(null);
-  /** ★ 2026-10-18 插件受限动作按钮（`contributes.ui.command`，placement=config） */
+  /** 插件受限动作按钮（`contributes.ui.command`，placement=config） */
   const [pluginCmds, setPluginCmds] = useState<UiCommandView[]>([]);
-  /** ★ 2026-10-18 插件快捷键只读一览（`contributes.keymap`；不分作用域，全部列出） */
+  /** 插件快捷键只读一览（`contributes.keymap`；不分作用域，全部列出） */
   const [pluginKeys, setPluginKeys] = useState<KeymapView[]>([]);
-  /** ★ 2026-10-18 插件设置面板（`contributes.settings.panel`；配置页每插件卡片内渲染表单） */
+  /** 插件设置面板（`contributes.settings.panel`；配置页每插件卡片内渲染表单） */
   const [pluginPanels, setPluginPanels] = useState<SettingsPanelView[]>([]);
-  /** ★ text / number 字段的**草稿值**（按 `pluginId|panelId|fieldKey` 存；失焦才提交，避免每次按键都写盘） */
+  /** text / number 字段的**草稿值**（按 `pluginId|panelId|fieldKey` 存；失焦才提交，避免每次按键都写盘） */
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const loadPlugins = async () => {
     try {
       setPluginItems(await client.pluginList());
-      // ★ 2026-10-18：插件增删改后刷新皮肤注册表（插件皮肤 = `contributes.theme`，见 docs/design/皮肤与主题规范.md）
+      // 插件增删改后刷新皮肤注册表（插件皮肤 = `contributes.theme`，见 docs/design/皮肤与主题规范.md）
       void loadSkinRegistry();
-      // ★ 2026-10-18：同一次刷新里把「插件命令」也拉回来（停用 / 卸载后按钮应随之消失）
+      // 同一次刷新里把「插件命令」也拉回来（停用 / 卸载后按钮应随之消失）
       setPluginCmds(commandsFor(await client.pluginCommands().catch(() => []), 'config'));
-      // ★ 2026-10-18：插件快捷键同样随插件增删改刷新（只读一览，作用于主窗口 / 播放器）
+      // 插件快捷键同样随插件增删改刷新（只读一览，作用于主窗口 / 播放器）
       setPluginKeys(await client.pluginKeymaps().catch(() => []));
-      // ★ 2026-10-18：插件设置面板（含各字段**有效值** = 存值合法则用存值、否则回落 default）
+      // 插件设置面板（含各字段**有效值** = 存值合法则用存值、否则回落 default）
       setPluginPanels(await client.pluginSettings().catch(() => []));
     } catch (e) {
       setPluginMsg({ text: `读取插件列表失败：${(e as Error).message}`, kind: 'err' });
     }
   };
   /**
-   * ★ 2026-10-18：执行一条插件命令。★ 插件**不跑代码** —— 动作由宿主受控词表执行
+   * 执行一条插件命令。插件**不跑代码** —— 动作由宿主受控词表执行
    * （见 `lib/pluginCommands.ts`），这里只负责把结果落到页面提示。
    */
   const runCmd = async (c: UiCommandView) => {
@@ -204,7 +205,7 @@ export default function ConfigPage() {
     setPluginMsg(r.reason ? { text: r.reason, kind: 'err' } : { text: okText, kind: 'ok' });
   };
   /**
-   * ★ 2026-10-18：写一个插件设置字段值。★ 插件**不跑代码** —— 值由**宿主代持久化**并按该字段的
+   * 写一个插件设置字段值。插件**不跑代码** —— 值由**宿主代持久化**并按该字段的
    * 类型 / 约束校验（不合法 → 明确失败）；成功时用回带的最新面板列表收敛显示。
    */
   const saveSetting = async (id: string, panelId: string, key: string, value: unknown): Promise<void> => {
@@ -217,7 +218,7 @@ export default function ConfigPage() {
     }
   };
   /**
-   * ★ 2026-10-18 插件设置字段控件（**受限词汇表**的 4 类；不注入任何插件自带 UI）：
+   * 插件设置字段控件（**受限词汇表**的 4 类；不注入任何插件自带 UI）：
    *   toggle / select 立即提交；text / number 用草稿值 + 失焦（或回车）提交，避免逐键写盘。
    */
   const renderSettingField = (pluginId: string, panel: SettingsPanelView, f: SettingsFieldView) => {
@@ -258,7 +259,7 @@ export default function ConfigPage() {
         style={{ width: f.type === 'number' ? 140 : 240 }}
         onChange={(e) => setSettingDrafts((d) => ({ ...d, [dk]: e.target.value }))}
         onBlur={(e) => {
-          // ★ 直接读 **DOM 当前值**（不依赖「草稿 state 是否已重渲染」——同步派发 input+blur 时闭包里的草稿会是旧值）
+          // 直接读 **DOM 当前值**（不依赖「草稿 state 是否已重渲染」——同步派发 input+blur 时闭包里的草稿会是旧值）
           const v = e.target.value;
           if (v === String(f.value)) { clearDraft(); return; } // 没改就不重复写盘
           commit(f.type === 'number' ? Number(v) : v);
@@ -270,7 +271,7 @@ export default function ConfigPage() {
     );
   };
   /**
-   * ★ 2026-10-18（R10）安装**两段式**：
+   * （R10）安装**两段式**：
    *   ① `pluginInspect()` 干跑（弹文件框 + 解包校验，**不落盘**）→ 取权限清单；
    *   ② `kind:"code"` → 弹**权限确认**（列出 `permissions` + `permissionNotes`，确认才装）；
    *      `kind:"asset"` → 无权限，直接装。
@@ -335,7 +336,7 @@ export default function ConfigPage() {
       setPlayMsg({ text: `保存失败：${(e as Error).message}`, kind: 'err' });
     }
   };
-  // ★ 2026-09-29 磁力（BT）：MKV/HEVC 交给外部播放器边下边播（留空 = 自动探测常见安装位置）
+  // 磁力（BT）：MKV/HEVC 交给外部播放器边下边播（留空 = 自动探测常见安装位置）
   const [btPlayerDraft, setBtPlayerDraft] = useState<string | null>(null);
   const [btPlayers, setBtPlayers] = useState<Array<{ id: string; name: string; path: string }>>([]);
   const [btMsg, setBtMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -375,9 +376,9 @@ export default function ConfigPage() {
       setBtMsg({ text: `保存失败：${(e as Error).message}`, kind: 'err' });
     }
   };
-  // ★ 2026-09-30（用户要求「点播也应该支持绑定外部播放器，和磁力区分开」+「选定后直接由它播放」）：
+  // 点播支持绑定外部播放器（与磁力分开），选定后直接由它播放：
   //   点播外部播放器 —— 与磁力分开绑定。
-  // ★ 2026-10-08（用户要求）：改为**勾选项**总开关 —— 勾选且填了路径才由它播；不勾选一律内置播放器（即使有路径）。
+  // 改为**勾选项**总开关 —— 勾选且填了路径才由它播；不勾选一律内置播放器（即使有路径）。
   const [vodPlayerDraft, setVodPlayerDraft] = useState<string | null>(null);
   const [vodPlayers, setVodPlayers] = useState<Array<{ id: string; name: string; path: string }>>([]);
   const [vodMsg, setVodMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -439,7 +440,7 @@ export default function ConfigPage() {
       setVodMsg({ text: `保存失败：${(e as Error).message}`, kind: 'err' });
     }
   };
-  // ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 播放内核 —— 路径覆盖（留空 = 用随包内置构建）+ 可用性状态
+  // MPV 播放内核 —— 路径覆盖（留空 = 用随包内置构建）+ 可用性状态
   const [mpvDraft, setMpvDraft] = useState<string | null>(null);
   const [mpvStatus, setMpvStatus] = useState<MpvStatus | null>(null);
   const [mpvMsg, setMpvMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -462,9 +463,9 @@ export default function ConfigPage() {
     }
   };
   /**
-   * ★ 2026-10-18（R11）**插件播放内核**（`contributes.player.engine`）：
+   * （R11）**插件播放内核**（`contributes.player.engine`）：
    *   插件只给「引擎描述符」，**由宿主托管进程**（启动 / 通信 / 退出都在主进程）；渲染层只管
-   *   「列出来 + 开关 + 本机路径」。★ 默认关；**首次开启二次确认**（D4 口径：开启 = 将执行插件提供的本机程序）。
+   *   「列出来 + 开关 + 本机路径」。默认关；**首次开启二次确认**（D4 口径：开启 = 将执行插件提供的本机程序）。
    */
   const [pluginEngines, setPluginEngines] = useState<PlayerEngineView[]>([]);
   const [enginePathDraft, setEnginePathDraft] = useState<Record<string, string>>({});
@@ -482,7 +483,7 @@ export default function ConfigPage() {
   }, []);
   const toggleEngine = async (e: PlayerEngineView, on: boolean) => {
     if (on && !playPrefs.engineEnabled[e.id]) {
-      // ★ 首次开启 = 明确告知「将执行插件提供的本机程序」并二次确认
+      // 首次开启 = 明确告知「将执行插件提供的本机程序」并二次确认
       const where = e.path ? `（${e.path}）` : '';
       const ok = window.confirm(
         `该内核为插件提供的本机程序${where}，将由宿主代为启动并与它通信（宿主托管，退出时一并结束）。\n确定启用？`,
@@ -556,7 +557,7 @@ export default function ConfigPage() {
     }
   }
 
-  // ---- ★ 网络代理（DNS 污染 / TLS SNI 阻断站点用）----
+  // ---- 网络代理（DNS 污染 / TLS SNI 阻断站点用）----
   const [proxy, setProxy] = useState<{ enabled: boolean; url: string } | null>(null);
   const [proxyUrlDraft, setProxyUrlDraft] = useState('');
   const [proxyMsg, setProxyMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -591,7 +592,7 @@ export default function ConfigPage() {
   const [sourcePick, setSourcePick] = useState<Set<string>>(new Set());
   const [sourceDeleteBusy, setSourceDeleteBusy] = useState(false);
   /**
-   * ★ 2026-10-14（用户要求）：导入 TXT / M3U 直播源需要**单独弹框命名**（对齐本地包命名流程），
+   * 导入 TXT / M3U 直播源需要**单独弹框命名**（对齐本地包命名流程），
    * 并允许对已导入的直播线路**改名 / 删除**。
    */
   const [liveNamePrompt, setLiveNamePrompt] = useState<{ path: string; name: string } | null>(null);
@@ -602,10 +603,10 @@ export default function ConfigPage() {
   }, [liveNamePrompt]);
   const [liveEditIdx, setLiveEditIdx] = useState<number | null>(null);
   const [liveEditName, setLiveEditName] = useState('');
-  /** ★ 2026-10-16（用户要求）：直播线路多选删除（对齐「我的源列表」的多选范式） */
+  /** 直播线路多选删除（对齐「我的源列表」的多选范式） */
   const [livePick, setLivePick] = useState<Set<number>>(new Set());
   const [liveDeleteBusy, setLiveDeleteBusy] = useState(false);
-  /** ★ 2026-10-18 导出直播线路（拉分组 → 按模板渲染 → 保存）进行中 */
+  /** 导出直播线路（拉分组 → 按模板渲染 → 保存）进行中 */
   const [liveExportBusy, setLiveExportBusy] = useState(false);
   const sourceProfileRef = useRef<string | null>(null);
   const selectAllSourcesRef = useRef<HTMLInputElement>(null);
@@ -629,7 +630,7 @@ export default function ConfigPage() {
 
   /**
    * 源列表变更后广播 —— 顶栏/侧栏的 SourcePicker 与点播页据此**立即重取**源列表。
-   * ★ 2026-09-26（用户反馈「刚导入 JSON 右上角还是显示没有源，得重启才能选」）：
+   * 
    *   SourcePicker 常驻在 App 里、只在挂载/focus/换源时取列表，导入后不会自己刷新。
    * 事件名沿用本仓库既有约定（裸字符串，同 winbox:source-changed）。
    */
@@ -716,7 +717,7 @@ export default function ConfigPage() {
   }
 
   /**
-   * ★ 2026-09-29（用户要求）：从本地选择**包目录**导入（影视壳/影视仓 目录包：
+   * 从本地选择**包目录**导入（影视目录包：
    * 影视.json + py/js/jar/html/xbpq 等）——包内相对引用由主进程展开（/pkg 路由 + py 就地 file://）。
    */
   async function doImportPackage() {
@@ -775,8 +776,8 @@ export default function ConfigPage() {
   }
 
   /**
-   * ★ 2026-09-30（用户要求）：导入本地 TXT / M3U 直播源（文件选择器）。
-   * ★ 2026-10-14（用户要求）：改为**两步导入**（对齐本地包命名流程）——
+   * 导入本地 TXT / M3U 直播源（文件选择器）。
+   * 改为**两步导入**（对齐本地包命名流程）——
    * 第一次选文件 → 主进程校验并归一化落盘 → 返回 `needsName` 由本页弹框命名；第二次带 `{ path, name }` 登记。
    */
   async function doImportLiveLocal() {
@@ -803,7 +804,7 @@ export default function ConfigPage() {
     }
   }
 
-  /** ★ 2026-10-14：命名弹框第二步 —— 用输入的名称登记/更新直播线路。 */
+  /** 命名弹框第二步 —— 用输入的名称登记/更新直播线路。 */
   async function confirmLiveName() {
     const prompt = liveNamePrompt;
     const name = prompt?.name.trim();
@@ -828,7 +829,7 @@ export default function ConfigPage() {
     }
   }
 
-  /** ★ 2026-10-14（用户要求）：删除某条直播线路（导入的 TXT/M3U 直播源从此可删）。 */
+  /** 删除某条直播线路（导入的 TXT/M3U 直播源从此可删）。 */
   async function delLive(index: number, name: string) {
     if (!window.confirm(`确定删除直播线路「${name || `线路${index + 1}`}」吗？\n删除后直播页顶部线路下拉将不再出现它（原始文件不会被改动）。`)) return;
     setErr('');
@@ -850,8 +851,8 @@ export default function ConfigPage() {
   }
 
   /**
-   * ★ 2026-10-18：导出某条直播线路（宿主取该线路分组 → 按模板渲染 → 保存对话框写文件）。
-   * ★ 只做**输出侧格式化**（不解析、不发请求）；模板 = 内置 2 个 + 插件 `contributes.live.template`。
+   * 导出某条直播线路（宿主取该线路分组 → 按模板渲染 → 保存对话框写文件）。
+   * 只做**输出侧格式化**（不解析、不发请求）；模板 = 内置 2 个 + 插件 `contributes.live.template`。
    */
   async function exportLiveLine(index: number) {
     if (liveExportBusy) return;
@@ -871,7 +872,7 @@ export default function ConfigPage() {
     }
   }
 
-  /** ★ 2026-10-16（用户要求）：多选删除直播线路（对齐「我的源列表」的批量删除）。 */
+  /** 多选删除直播线路（对齐「我的源列表」的批量删除）。 */
   async function deleteSelectedLives() {
     const lives = cfg?.lives ?? [];
     const picked = lives.map((_, i) => i).filter((i) => livePick.has(i));
@@ -893,7 +894,7 @@ export default function ConfigPage() {
     }
   }
 
-  /** ★ 2026-10-14（用户要求）：直播线路改名（内联编辑）。 */
+  /** 直播线路改名（内联编辑）。 */
   async function saveLiveName(index: number) {
     const name = liveEditName.trim();
     setLiveEditIdx(null);
@@ -1028,7 +1029,7 @@ export default function ConfigPage() {
     try { await client.cfgActivateProfile(id); await refresh(); }
     catch (e) { setErr((e as Error).message); }
   }
-  /** ★ 2026-09-26：档案改名（当前生效档案也可改；不影响其内容） */
+  /** 档案改名（当前生效档案也可改；不影响其内容） */
   async function saveRename(id: string) {
     const name = renameDraft.trim();
     setRenameId(null);
@@ -1039,7 +1040,7 @@ export default function ConfigPage() {
     catch (e) { setErr((e as Error).message); }
   }
   /**
-   * ★ 2026-10-16（用户要求）：**当前生效的配置也可删，唯一一份也可删**。
+   * **当前生效的配置也可删，唯一一份也可删**。
    * 主进程侧规则：删生效档案 → 自动切到剩下的第一份（没有其它档案则清空订阅内容、保留本机直播线路）。
    * 这里给删除加确认（生效/唯一一份的后果说清楚），避免误点。
    */
@@ -1071,7 +1072,7 @@ export default function ConfigPage() {
     if (left === 0) {
       setMergeMsg({ text: `已删除全部 ${failed.length} 个失败源（没有剩余源，未生成新配置）`, kind: 'ok' });
     } else {
-      // ★ 2026-10-14（用户要求）：不再生成超长的「清理后(N源) MM-DD HH:MM」——
+      // 不再生成超长的「清理后(N源) MM-DD HH:MM」——
       //   改用**当前档案名**，只把括号里的源数更新为新值（反复清理时只有那个数字变化）。
       //   当前档案的存档 json 已随删除自动同步（见 UserConfigManager.withActiveProfileSynced），
       //   因此直接改名即可，无需再新建一份重复档案。
@@ -1151,7 +1152,7 @@ export default function ConfigPage() {
     finally { setDiagBusy(false); }
   }
 
-  // ---- ★ 2026-09-29 设置备份（导出/导入；含渲染层 localStorage，观看历史在 tvboxUiMemory 里）----
+  // ---- 设置备份（导出/导入；含渲染层 localStorage，观看历史在 tvboxUiMemory 里）----
   const [bkMsg, setBkMsg] = useState<{ text: string; kind: 'ok' | 'err'; restart?: boolean } | null>(null);
   const [bkBusy, setBkBusy] = useState(false);
   /**
@@ -1217,7 +1218,7 @@ export default function ConfigPage() {
     }
   }
 
-  // ---- ★ 2026-09-29 WebDAV 存储（服务器管理；浏览/播放在「存储」页）----
+  // ---- WebDAV 存储（服务器管理；浏览/播放在「存储」页）----
   const [davServers, setDavServers] = useState<DavServer[]>([]);
   const [davDraft, setDavDraft] = useState<DavServer>({ id: '', name: '', url: '', username: '', password: '' });
   const [davMsg, setDavMsg] = useState<{ text: string; kind: 'ok' | 'err' } | null>(null);
@@ -1313,14 +1314,14 @@ export default function ConfigPage() {
     }
   }, [tab, selectedSourceCount, allSourcesSelected, selectedLiveCount, allLivesSelected]);
 
-  // ★ 2026-09-29：切到「存储」tab 时拉取 WebDAV 服务器列表（放在 tab 声明之后，避免 TDZ）
+  // 切到「存储」tab 时拉取 WebDAV 服务器列表（放在 tab 声明之后，避免 TDZ）
   useEffect(() => {
     if (tab === 'storage') void loadDav();
-    // ★ 2026-09-30：切到「源健康与维护」时拉数据目录信息（展示 + 排障）
+    // 切到「源健康与维护」时拉数据目录信息（展示 + 排障）
     if (tab === 'health') client.dataDir().then(setDataDir).catch(() => undefined);
-    // ★ 2026-10-16：切到「插件/组件」时刷新插件列表
+    // 切到「插件/组件」时刷新插件列表
     if (tab === 'plugins') void loadPlugins();
-    // ★ 2026-10-18：切到「快捷键」时拉插件快捷键一览（`contributes.keymap`；只读、不跑插件代码）
+    // 切到「快捷键」时拉插件快捷键一览（`contributes.keymap`；只读、不跑插件代码）
     if (tab === 'shortcut') client.pluginKeymaps().then((l) => setPluginKeys(l)).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
@@ -1379,7 +1380,7 @@ export default function ConfigPage() {
             从地址导入
           </button>
         </div>
-        {/* ★ 2026-09-27（用户要求）：本地 .json 订阅文件导入（原「粘贴 JSON 文本」入口已删除）；
+        {/* 本地 .json 订阅文件导入（原「粘贴 JSON 文本」入口已删除）；
             档案名默认取原始文件名，自填「订阅名称」优先 */}
         <div className="row" style={{ marginTop: 4 }}>
           <button disabled={busy} onClick={doImportJsonLocal}>
@@ -1388,11 +1389,11 @@ export default function ConfigPage() {
           <button disabled={busy} onClick={doImportPyLocal}>
             导入本地 .py 文件
           </button>
-          {/* ★ 2026-09-29（用户要求）：本地包（影视.json + py/js/jar/html/xbpq 目录） */}
+          {/* 本地包（影视.json + py/js/jar/html/xbpq 目录） */}
           <button disabled={busy} onClick={doImportPackage} title="可选择仅含 .py 文件的文件夹，自动在应用副本中生成订阅 JSON">
             导入本地包
           </button>
-          {/* ★ 2026-09-30（用户要求）：本地 TXT / M3U 直播源（导入后直播页线路下拉可见） */}
+          {/* 本地 TXT / M3U 直播源（导入后直播页线路下拉可见） */}
           <button disabled={busy} onClick={doImportLiveLocal} title="选择本地 .txt / .m3u / .m3u8 直播源文件；导入后到「直播」页顶部线路下拉切换">
             导入直播源（TXT / M3U）
           </button>
@@ -1616,7 +1617,7 @@ export default function ConfigPage() {
         </div>
       </details>
 
-      {/* 2b) 直播线路（★ 2026-10-14 用户要求）：导入的 TXT / M3U 直播源在此可改名 / 删除 */}
+      {/* 2b) 直播线路：导入的 TXT / M3U 直播源在此可改名 / 删除 */}
       <details className="card" id="cfg-lives" open style={{ padding: 12, marginBottom: 16 }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
           直播线路（{(cfg?.lives ?? []).length}）
@@ -1626,7 +1627,7 @@ export default function ConfigPage() {
             <div className="empty" style={{ padding: 12 }}>尚无直播线路，可点上方「导入直播源（TXT / M3U）」添加</div>
           ) : (
             <>
-            {/* ★ 2026-10-16（用户要求）：直播线路也要能多选删除（对齐「我的源列表」） */}
+            {/* 直播线路也要能多选删除（对齐「我的源列表」） */}
             <div className="row" style={{ marginBottom: 10 }}>
               <span className="muted">已选 {selectedLiveCount} / {lives.length} 条线路</span>
               <button disabled={liveDeleteBusy || !selectedLiveCount} onClick={() => setLivePick(new Set())}>清空选择</button>
@@ -1686,7 +1687,7 @@ export default function ConfigPage() {
                         ) : (
                           <>
                             <button className="linkbtn" title="重命名该直播线路" onClick={() => { setLiveEditIdx(i); setLiveEditName(l.name || `线路${i + 1}`); }}>改名</button>
-                            {/* ★ 2026-10-18：把该线路的频道导出为 TXT / M3U（模板 = 内置 + 插件） */}
+                            {/* 把该线路的频道导出为 TXT / M3U（模板 = 内置 + 插件） */}
                             <button className="linkbtn" disabled={liveExportBusy} title="把该线路的频道导出为文件" onClick={() => void exportLiveLine(i)}>导出</button>
                             <button className="linkbtn danger" disabled={liveDeleteBusy} title="删除该直播线路" onClick={() => void delLive(i, l.name)}>删除</button>
                           </>
@@ -1883,7 +1884,7 @@ export default function ConfigPage() {
           </button>
         </div>
         {cacheMsg && <div className="muted" style={{ fontSize: 11, marginTop: 4, color: cacheMsg.kind === 'ok' ? 'var(--accent-2)' : 'var(--warn)' }}>{cacheMsg.text}</div>}
-        {/* ★ 2026-09-30（用户要求）：数据目录 = 安装目录/data（老用户首次启动自动迁移并清理旧目录） */}
+        {/* 数据目录 = 安装目录/data（老用户首次启动自动迁移并清理旧目录） */}
         {dataDir && (
           <div className="muted" style={{ fontSize: 11, marginTop: 6 }} title={`计划目录：${dataDir.planned}`}>
             数据目录：{dataDir.path}
@@ -1906,7 +1907,7 @@ export default function ConfigPage() {
       
 {/* 0) 多配置档案（多 JSON 源切换） */}
       <div className="card" id="cfg-profiles" style={{ padding: 12, marginBottom: 16 }}>
-        {/* ★ 2026-10-16（用户要求）：该列表默认展开 */}
+        {/* 该列表默认展开 */}
         <details open>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
             已保存配置（多份订阅离线切换）
@@ -1946,7 +1947,7 @@ export default function ConfigPage() {
                       {p.name}{active ? ' ✓' : ''} <span className="muted">({p.sourceCount})</span>
                       <button className="linkbtn" title="重命名该配置" onClick={() => { setRenameId(p.id); setRenameDraft(p.name); }}>改名</button>
                       {!active && <button className="linkbtn" onClick={() => activateProfile(p.id)}>切换</button>}
-                      {/* ★ 2026-10-16（用户要求）：生效档案 / 唯一一份也允许删除（主进程侧会自动切档或清空） */}
+                      {/* 生效档案 / 唯一一份也允许删除（主进程侧会自动切档或清空） */}
                       <button className="linkbtn danger" title="删除该配置" onClick={() => void delProfile(p.id, p.name)}>删</button>
                     </>
                   )}
@@ -2010,14 +2011,24 @@ export default function ConfigPage() {
       {tab === 'account' && (
       <>
       
-      {/* 网盘 Cookie 统一在「源内绑定」（点播页 → 网盘类源 → 源主页「网盘绑定」按钮） */}
+      {/* 网盘绑定 —— 从「源内小横条」收回软件配置内（唯一常驻入口）。
+          播放时若解析到未绑定的网盘链接，仍会自动弹出同一个绑定面板（DriveBindModal）。 */}
+      <div className="card" id="cfg-drive" style={{ padding: 12, marginBottom: 16 }}>
+        <div className="row" style={{ marginBottom: 8 }}>
+          <span className="muted" style={{ fontWeight: 600 }}>网盘绑定（Cookie）</span>
+        </div>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.7 }}>
+          网盘类源（夸克 / UC / 百度 / 阿里 / 115 / 哔哩）需要 Cookie 才能列取与播放。可手动粘贴，或点下方「网页扫码登录」自动抓取。
+        </div>
+        <DriveBindPanel />
+      </div>
 
       {/* 外挂字幕：多字幕源（SubtitleCat 免 token / assrt 需 token） */}
       <div className="card" id="cfg-subtitle" style={{ padding: 12, marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 8 }}>
           <span className="muted" style={{ fontWeight: 600 }}>外挂字幕（多源在线检索）</span>
         </div>
-        {/* ★ 2026-09-28：逐源开关（点标签切换）+ 可用状态；关掉的源不参与检索 */}
+        {/* 逐源开关（点标签切换）+ 可用状态；关掉的源不参与检索 */}
         {subProviders.length > 0 && (
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {subProviders.map((p) => (
@@ -2057,7 +2068,7 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* 元数据（TMDB / 豆瓣）：★ 2026-09-24 —— 用户可自填 Key / 代理地址 / 镜像地址，并选择封面与简介的来源策略 */}
+      {/* 元数据（TMDB / 豆瓣）：—— 用户可自填 Key / 代理地址 / 镜像地址，并选择封面与简介的来源策略 */}
       <div className="card" id="cfg-meta" style={{ padding: 12, marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 8 }}>
           <span className="muted" style={{ fontWeight: 600 }}>元数据（TMDB / 豆瓣）</span>
@@ -2127,7 +2138,7 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小与字体大小」）：界面缩放。
+      {/* 界面缩放。
           默认「跟随屏幕」= 按显示器工作区（DIP）自动推倍率（1K → 100%、2K → 125%、4K → 175%…），
           主进程据此**等比放大窗口与整套 UI（含字号）**；也可在此固定某个档位。
           「跟随屏幕」标签上直接显示当前推导出来的百分比，省去猜。 */}
@@ -2151,7 +2162,7 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* ★ 2026-10-08（用户要求「整体重做界面视觉与动效交互」）：界面动效三态。
+      {/* 界面动效三态。
           默认跟随系统；系统关闭动画效果时，系统偏好会让浏览器折叠一切动画 —— 这里可强制开启。
           设置入口因平台而异：macOS「系统设置 → 辅助功能 → 显示」；Windows「设置 → 辅助功能 → 视觉效果」。 */}
       <div className="card" id="cfg-motion" style={{ padding: 12, marginBottom: 16 }}>
@@ -2174,13 +2185,13 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* ★ 2026-10-15（用户要求「详情/搜索改回单页内，并做成可切换」）：页面打开方式。
+      {/* 页面打开方式。
           「本页内」= 伪墓碑：切页保持挂载、仅隐藏 → 返回零重载；「独立窗口」= 弹成单独窗口。 */}
       <div className="card" id="cfg-nav-mode" style={{ padding: 12, marginBottom: 16 }}>
         <div className="row" style={{ marginBottom: 8 }}>
           <span className="muted" style={{ fontWeight: 600 }}>详情与搜索的打开方式</span>
         </div>
-        {/* ★ 2026-10-15（用户报「按上去外观无变化、按钮不变色、netflix 下外框很小」）：
+        {/* 
             改用与上方「外观主题 / 界面动效」**完全同一套**胶囊标签（`.tag` + 选中打 ✓）——
             那两个开关在各皮肤下都正常，统一口径后选中态必然可见，也不再有一层单独的外框。 */}
         <div className="row" style={{ gap: 6 }} role="radiogroup" aria-label="页面打开方式">
@@ -2202,7 +2213,7 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* ★ 2026-10-16（用户要求「瀑布/翻页的切换不做在点播页下方，做成在配置中切换」）：
+      {/* 
           点播页浏览方式 —— 逐页翻页（默认）/ 瀑布模式（一直下滑自动加载下一页）。
           写同一个 `winbox-waterfall` 偏好 ⇒ 与点播页既有行为一致，换源 / 重启后都保持。 */}
       <div className="card" id="cfg-home-browse" style={{ padding: 12, marginBottom: 16 }}>
@@ -2225,7 +2236,7 @@ export default function ConfigPage() {
         </div>
       </div>
 
-      {/* ★ 2026-09-30（用户要求）：发现页展示开关（默认展示；关掉后侧边栏/顶栏不再出现「发现」，落地页改「点播」） */}
+      {/* 发现页展示开关（默认展示；关掉后侧边栏/顶栏不再出现「发现」，落地页改「点播」） */}
       <div className="card" id="cfg-show-discover" style={{ padding: 12, marginBottom: 16 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input
@@ -2272,7 +2283,7 @@ export default function ConfigPage() {
           )}
         </div>
       </div>
-      {/* ★ 2026-09-29 磁力（BT）外部播放器：MKV / HEVC 浏览器播不了 → 交给它边下边播 */}
+      {/* 磁力（BT）外部播放器：MKV / HEVC 浏览器播不了 → 交给它边下边播 */}
       <div className="card" id="cfg-bt-player" style={{ padding: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ fontWeight: 600 }}>磁力外部播放器（MKV / HEVC）</span>
@@ -2307,8 +2318,8 @@ export default function ConfigPage() {
           )}
         </div>
       </div>
-      {/* ★ 2026-09-30（用户要求）：点播外部播放器 —— 与磁力分开绑定 */}
-      {/* ★ 2026-10-08（用户要求）：改为**勾选项**总开关 —— 不勾选时即使填了路径也用内置播放器 */}
+      {/* 点播外部播放器 —— 与磁力分开绑定 */}
+      {/* 改为**勾选项**总开关 —— 不勾选时即使填了路径也用内置播放器 */}
       <div className="card" id="cfg-vod-player" style={{ padding: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ fontWeight: 600 }}>{mac ? '点播外部播放器（VLC / IINA 等）' : '点播外部播放器（PotPlayer 等）'}</span>
@@ -2353,7 +2364,7 @@ export default function ConfigPage() {
           )}
         </div>
       </div>
-      {/* ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容播放内核 —— 随包内置（安装目录内），4K/HEVC/MKV 兼容更好 */}
+      {/* MPV 高兼容播放内核 —— 随包内置（安装目录内），4K/HEVC/MKV 兼容更好 */}
       <div className="card" id="cfg-mpv-kernel" style={{ padding: 12, marginBottom: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ fontWeight: 600 }}>MPV 播放内核（4K / HEVC / MKV）</span>
@@ -2385,9 +2396,9 @@ export default function ConfigPage() {
               {mpvMsg.text}
             </span>
           )}
-          {/* ★ 2026-10-18（R11）**插件播放内核**（`contributes.player.engine`）：插件只给「引擎描述符」，
+          {/* （R11）**插件播放内核**（`contributes.player.engine`）：插件只给「引擎描述符」，
               **由宿主托管进程**（插件永不拉进程 —— `spawn` 是规范 §6.2 永久禁止项）。
-              ★ 默认关；开启 = 「将执行插件提供的本机程序」→ **首次开启二次确认**。 */}
+              默认关；开启 = 「将执行插件提供的本机程序」→ **首次开启二次确认**。 */}
           {pluginEngines.length > 0 && (
             <div style={{ borderTop: '1px solid var(--hairline)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <span style={{ fontWeight: 600 }}>插件播放内核</span>
@@ -2436,7 +2447,7 @@ export default function ConfigPage() {
       </>
       )}
 
-      {/* ===== 七、插件/组件（★ 2026-10-16 M1：列表 / 安装 / 卸载 / 启停；超分插件也在这里管理） ===== */}
+      {/* ===== 七、插件/组件（M1：列表 / 安装 / 卸载 / 启停；超分插件也在这里管理） ===== */}
       {tab === 'plugins' && (
       <>
       <div className="card" id="cfg-plugins" style={{ padding: 12, marginBottom: 16 }}>
@@ -2459,7 +2470,7 @@ export default function ConfigPage() {
               {pluginMsg.text}
             </span>
           )}
-          {/* ★ 2026-10-18 插件受限动作按钮（`contributes.ui.command`）：插件只声明「按钮 + 动作词表」，
+          {/* 插件受限动作按钮（`contributes.ui.command`）：插件只声明「按钮 + 动作词表」，
               由宿主渲染层执行（不注入任何插件自带 UI；无命令时不显示）。 */}
           {pluginCmds.length > 0 && (
             <div style={{ marginTop: 4 }}>
@@ -2502,7 +2513,7 @@ export default function ConfigPage() {
                   {p.ready ? (p.enabled ? '已启用' : '已停用') : '未就位（载荷缺失）'}
                 </span>
               </div>
-              {/* ★ 2026-10-18（R10）L4 沙箱（`kind:"code"`）：权限徽标 + 运行态 */}
+              {/* （R10）L4 沙箱（`kind:"code"`）：权限徽标 + 运行态 */}
               {p.kind === 'code' && (
                 <div className="row" style={{ gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className="muted" style={{ fontSize: 11 }}>权限：</span>
@@ -2548,7 +2559,7 @@ export default function ConfigPage() {
                   卸载
                 </button>
               </div>
-              {/* ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）：宿主按**受限词汇表**渲染表单，
+              {/* 插件设置面板（`contributes.settings.panel`）：宿主按**受限词汇表**渲染表单，
                   值由宿主**代持久化**（插件不跑代码、不注入任何 UI；未声明面板的插件不显示）。 */}
               {pluginPanels.filter((x) => x.pluginId === p.id).map((panel) => (
                 <div
@@ -2571,7 +2582,7 @@ export default function ConfigPage() {
           </div>
         ))
       )}
-      {/* ★ 2026-10-18（R10）L4 安装权限确认弹层（仅 `kind:"code"`；确认后才落盘） */}
+      {/* （R10）L4 安装权限确认弹层（仅 `kind:"code"`；确认后才落盘） */}
       {pluginConfirm && (
         <div
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
@@ -2670,7 +2681,7 @@ export default function ConfigPage() {
         )}
       </div>
 
-      {/* ★ 2026-10-18 插件快捷键（`contributes.keymap`）：**只读一览**（插件不跑代码；动作由宿主词表执行）
+      {/* 插件快捷键（`contributes.keymap`）：**只读一览**（插件不跑代码；动作由宿主词表执行）
           —— 与「宿主键位」同一处（配置页快捷键 tab）；无插件快捷键时不显示。 */}
       {pluginKeys.length > 0 && (
         <div className="card" id="cfg-plugin-keymap" style={{ padding: 12, marginBottom: 16 }}>
@@ -2875,7 +2886,7 @@ export default function ConfigPage() {
         </dialog>
       )}
 
-      {/* ★ 2026-10-14（用户要求）：导入 TXT / M3U 直播源时的**单独命名弹框**（对齐本地包命名） */}
+      {/* 导入 TXT / M3U 直播源时的**单独命名弹框**（对齐本地包命名） */}
       {liveNamePrompt && (
         <dialog
           ref={liveNameDialogRef}

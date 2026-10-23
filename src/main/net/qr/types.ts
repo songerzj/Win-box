@@ -12,7 +12,7 @@ export interface QrSession {
   /** 二维码文本内容（渲染层用 qrcode 库渲染） */
   content: string;
   /**
-   * ★ 2026-09-30：**图片型二维码**（data:image/png;base64,…）。
+   * **图片型二维码**（data:image/png;base64,…）。
    *   百度 passport 的二维码是**服务端直接出的 PNG**（`imgurl`），其载荷不是可重绘成文字的 URL ——
    *   只能原样展示图片，不能用 `qrcode` 库按 `content` 重绘（会画成一张「指向图片地址」的码，扫不开）。
    *   有值 ⇒ 渲染层显示图片；无值 ⇒ 走既有 QRCode(content) 文字渲染。

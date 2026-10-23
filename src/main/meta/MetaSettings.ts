@@ -1,6 +1,6 @@
 // src/main/meta/MetaSettings.ts
 // 元数据来源配置持久化：<userData>/meta-settings.json。
-// ★ 用户自填的 TMDB Key 与 assrt token 同机制 —— 落盘前 DPAPI 加密（宿主注入 DriveCodec），
+// 用户自填的 TMDB Key 与 assrt token 同机制 —— 落盘前 DPAPI 加密（宿主注入 DriveCodec），
 //   读取仅回显用户自己的值；留空时禁用 TMDB。
 import { JsonStore } from '../store/JsonStore';
 import type { Logger } from '../../shared/types';

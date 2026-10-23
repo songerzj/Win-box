@@ -1,7 +1,7 @@
 // src/main/plugin/sandbox/PluginSandbox.ts
 // L4 沙箱的**父进程侧单实例**：spawn worker + 等 ready/failed + 把 worker 的能力调用派发给宿主 API。
 //
-// ★ 每插件**一个独立 worker**（R10 拍板）：插件的代码/状态彼此隔离；崩溃只影响自己。
+// 每插件**一个独立 worker**（R10 拍板）：插件的代码/状态彼此隔离；崩溃只影响自己。
 //   （引擎侧 `JsWorkerPool` 是「3 台共享 + 源粘性」的蜘蛛池，语义与本层不同 → 不复用其实例。）
 //
 // 事实源：docs/spec/R10-l4-sandbox-api/spec.md §6.2。

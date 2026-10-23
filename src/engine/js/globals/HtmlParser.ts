@@ -1,5 +1,5 @@
 // src/engine/js/globals/HtmlParser.ts
-// ★ 海阔规则 DSL 的 cheerio 实现 —— 1:1 对齐
+// 海阔规则 DSL 的 cheerio 实现 —— 1:1 对齐
 //   ref/app__src__main__java__com__github__catvod__crawler__js__HtmlParser.java
 // 对外入口（与 Global.java 绑定一致）：
 //   pdfh(html, rule)                 = parseDomForUrl(html, rule, '')
@@ -8,7 +8,7 @@
 //   pdfla(html, p1, text, url, add)  = parseDomForList(...)          → string[]（每项 text$url）
 //   joinUrl(parent, child)
 //
-// ★ cheerio 与 Jsoup 的关键差异（都已手动弥合）：
+// cheerio 与 Jsoup 的关键差异（都已手动弥合）：
 //   1) cheerio/css-select 不支持 :eq/:lt/:gt/:first/:last 伪类 —— 选择器里先剥掉，
 //      索引效果用 .eq()/.slice() 手动应用（Java 对 :eq 也是手动处理，思路一致；
 //      :lt/:gt/:first/:last 在 Java 是 Jsoup 原生支持，这里补齐语义）。

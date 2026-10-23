@@ -6,7 +6,7 @@ import { getNavMode } from './uiPrefs';
 const searchWindow = isSearchWinHash(window.location.hash);
 export function isSearchWindow(): boolean { return searchWindow; }
 
-/** ★ 2026-10-15：本窗口的导航函数（App 注入）—— 「单页内」模式下搜索在**本窗口内**跳转。 */
+/** 本窗口的导航函数（App 注入）—— 「单页内」模式下搜索在**本窗口内**跳转。 */
 let navFn: ((to: string) => void) | null = null;
 export function bindSearchNav(fn: (to: string) => void): void { navFn = fn; }
 

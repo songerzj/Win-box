@@ -1,8 +1,8 @@
 // src/main/player/mpvCore.ts
-// ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 高兼容播放内核的**纯逻辑**（不 import electron，可单测）。
+// MPV 高兼容播放内核的**纯逻辑**（不 import electron，可单测）。
 //   负责：启动参数 / JSON IPC 行协议 / 内核状态归一 / mpv 路径解析 / 画面比例与字幕参数换算。
 //
-// PoC 实测口径（见 .workbuddy/memory/2026-10-08.md §二）：
+// 实测口径：
 //   · `--wid=<HWND>` 把 mpv 画面嵌进 Electron 播放器窗口（子窗口在 Chromium 渲染面之下 →
 //     窗口必须 transparent + 播放区页面透明；HTML 覆盖层仍绘制在 mpv 画面之上，点击归 HTML）；
 //   · `--input-ipc-server=\\.\pipe\<name>` + Node `net.connect` 可用（loadfile / set_property /
@@ -39,7 +39,7 @@ export function initialKernelState(live = false): MpvKernelState {
     exited: false,
     audioTracks: [],
     aid: null,
-    // ★ 2026-10-17（阶段2）：能力面
+    // （阶段2）：能力面
     subtitles: [],
     sid: null,
     video: null,
@@ -67,12 +67,12 @@ export const MPV_OBSERVED: ReadonlyArray<{ id: number; name: string }> = [
   { id: 7, name: 'height' },
   { id: 8, name: 'cache-speed' },
   { id: 9, name: 'demuxer-cache-time' },
-  // ★ 2026-10-17（用户要求「音轨设置」）：观察音轨表与当前音轨，渲染层据此列出/高亮（无需新 IPC）
+  // 观察音轨表与当前音轨，渲染层据此列出/高亮（无需新 IPC）
   { id: 10, name: 'track-list' },
   { id: 11, name: 'aid' },
-  // ---------- ★ 2026-10-17（阶段2）：MPV 内核「能力面」（只重做 MPV 内核下界面所需） ----------
-  // 键名与单位均按该内核**实测**输出（见 .tmp/yaozhi-poc/mpv-props.cjs 的 dump）：
-  //   · `video-params` 里 `hdr-vivid` 是 Yaozhi 自编译核心的自定义键；
+  // ---------- （阶段2）：MPV 内核「能力面」（只重做 MPV 内核下界面所需） ----------
+  // 键名与单位均按该内核**实测**输出：
+  //   · `video-params` 里 `hdr-vivid` 是自编译核心的自定义键；
   //   · `audio-bitrate` / `video-bitrate` 单位是 **bps**（不是 kbps）；
   //   · `track-list` 的 `language`/`title` 在 **`metadata`** 里（顶层没有）。
   { id: 12, name: 'video-params' },
@@ -100,15 +100,15 @@ function mpvNum(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined;
 }
 
-/** 轨道 `metadata`（★实测：本内核的 `language`/`title` 在这里，顶层没有） */
+/** 轨道 `metadata`（实测：本内核的 `language`/`title` 在这里，顶层没有） */
 function mpvTrackMeta(t: Record<string, unknown>): Record<string, unknown> {
   const m = t.metadata;
   return m && typeof m === 'object' ? (m as Record<string, unknown>) : {};
 }
 
 /**
- * ★ 2026-10-17：mpv `track-list` → 只要 audio 轨道（紧凑结构；缺字段就不写）。
- * ★ 2026-10-17（阶段2）修正：`lang`/`title` 在本内核里位于 **`metadata`**（顶层没有），
+ * mpv `track-list` → 只要 audio 轨道（紧凑结构；缺字段就不写）。
+ * （阶段2）修正：`lang`/`title` 在本内核里位于 **`metadata`**（顶层没有），
  *   此前只读顶层 ⇒ 音轨标签恒为空。现两处都读（兼容其它 mpv 版本）。
  * 声道兼容两种历史键名（`demux-channel-count` / `demux-channels`）。
  */
@@ -134,7 +134,7 @@ export function mpvAudioTracks(data: unknown): MpvAudioTrack[] {
   return out;
 }
 
-/** ★ 2026-10-17（阶段2）：mpv `track-list` → 字幕轨（type=sub） */
+/** （阶段2）：mpv `track-list` → 字幕轨（type=sub） */
 export function mpvSubtitleTracks(data: unknown): MpvSubtitleTrack[] {
   if (!Array.isArray(data)) return [];
   const out: MpvSubtitleTrack[] = [];
@@ -157,7 +157,7 @@ export function mpvSubtitleTracks(data: unknown): MpvSubtitleTrack[] {
   return out;
 }
 
-/** ★ 2026-10-17（阶段2）：mpv `video-params` → 归一视频参数（w/h 缺失 = 无视频 → null） */
+/** （阶段2）：mpv `video-params` → 归一视频参数（w/h 缺失 = 无视频 → null） */
 export function mpvVideoParams(data: unknown): MpvVideoParams | null {
   const v = data as Record<string, unknown> | null;
   if (!v || typeof v !== 'object') return null;
@@ -172,12 +172,12 @@ export function mpvVideoParams(data: unknown): MpvVideoParams | null {
     gamma: mpvStr(v.gamma),
     light: mpvStr(v.light),
     sigPeak: mpvNum(v['sig-peak']),
-    // ★ 本内核自定义键（其余构建不提供 → undefined）
+    // 本内核自定义键（其余构建不提供 → undefined）
     hdrVivid: v['hdr-vivid'] === true ? true : undefined,
   };
 }
 
-/** ★ 2026-10-17（阶段2）：mpv `audio-params` → 归一音频参数（无有效字段 → null） */
+/** （阶段2）：mpv `audio-params` → 归一音频参数（无有效字段 → null） */
 export function mpvAudioParams(data: unknown): MpvAudioParams | null {
   const a = data as Record<string, unknown> | null;
   if (!a || typeof a !== 'object') return null;
@@ -201,7 +201,7 @@ export function sameAudioTracks(a: readonly MpvAudioTrack[], b: readonly MpvAudi
   });
 }
 
-/** ★ 阶段2：字幕轨列表判等 */
+/** 阶段2：字幕轨列表判等 */
 export function sameSubtitleTracks(a: readonly MpvSubtitleTrack[], b: readonly MpvSubtitleTrack[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((x, i) => {
@@ -211,14 +211,14 @@ export function sameSubtitleTracks(a: readonly MpvSubtitleTrack[], b: readonly M
   });
 }
 
-/** ★ 阶段2：键序稳定的浅比较（这两个对象都是我们按固定键序构造的） */
+/** 阶段2：键序稳定的浅比较（这两个对象都是我们按固定键序构造的） */
 function sameFlat(a: object | null, b: object | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-/** ★ 阶段2：视频/音频参数判等（避免无谓推送） */
+/** 阶段2：视频/音频参数判等（避免无谓推送） */
 export function sameVideoParams(a: MpvVideoParams | null, b: MpvVideoParams | null): boolean {
   return sameFlat(a, b);
 }
@@ -237,7 +237,7 @@ export function mpvObserveLines(): string[] {
 }
 
 /**
- * ★ 超分插件（M1）：整链替换 mpv 着色器（`glsl-shaders`）。
+ * 超分插件（M1）：整链替换 mpv 着色器（`glsl-shaders`）。
  *
  * 口径（设计文档 §10）：**不用**拼接串（`set glsl-shaders "a:b:c"` —— 路径含分隔符/转义易出错），
  * 改为**逐条** `change-list`：先 `clr ""` 清空，再对每个绝对路径 `append`。
@@ -344,8 +344,8 @@ export function reduceMpvMessage(state: MpvKernelState, msg: unknown): boolean {
         state.cacheTime = v;
         return true;
       }
-      // ★ 2026-10-17（用户要求「音轨设置」）：音轨表 / 当前音轨
-      // ★ 2026-10-17（阶段2）：同一次 track-list 事件里**顺便**归一出字幕轨（不新增观察项）
+      // 音轨表 / 当前音轨
+      // （阶段2）：同一次 track-list 事件里**顺便**归一出字幕轨（不新增观察项）
       case 'track-list': {
         const audio = mpvAudioTracks(m.data);
         const subs = mpvSubtitleTracks(m.data);
@@ -360,7 +360,7 @@ export function reduceMpvMessage(state: MpvKernelState, msg: unknown): boolean {
         state.aid = v;
         return true;
       }
-      // ---------- ★ 2026-10-17（阶段2）：MPV 内核能力面 ----------
+      // ---------- （阶段2）：MPV 内核能力面 ----------
       case 'video-params': {
         const v = mpvVideoParams(m.data);
         if (sameVideoParams(state.video, v)) return false;
@@ -391,7 +391,7 @@ export function reduceMpvMessage(state: MpvKernelState, msg: unknown): boolean {
         state.hwdec = s;
         return true;
       }
-      // ★ 实测：这两个属性的单位是 **bps**（不是 kbps）→ 统一存 kbps（÷1000 四舍五入）
+      // 实测：这两个属性的单位是 **bps**（不是 kbps）→ 统一存 kbps（÷1000 四舍五入）
       case 'video-bitrate':
       case 'audio-bitrate': {
         const bps = mpvNum(m.data) ?? 0;
@@ -548,7 +548,7 @@ export function mpvIpcArgs(ipc: string, _p?: PlatformName): string[] {
 
 /**
  * mpv 启动参数。
- * ★ 关键项：--wid 嵌入 / --input-ipc-server JSON IPC / --idle 先空转（连接后再 loadfile）/
+ * 关键项：--wid 嵌入 / --input-ipc-server JSON IPC / --idle 先空转（连接后再 loadfile）/
  *   --keep-open=yes 播完保留末帧（等我们切下一集）/ --hwdec=auto-safe 4K 硬解（失败自动回软解）/
  *   --input-default-bindings=no（键盘鼠标不抢，全由 HTML 层接管）。
  */
@@ -565,10 +565,10 @@ export function buildMpvArgs(o: BuildMpvArgsOptions): string[] {
     '--input-vo-keyboard=no',
     '--msg-level=all=error',
     /**
-     * ★ 2026-10-17（内存优化专项 A3，用户拍板「可接受」）：**给 mpv 的 demuxer 缓存封顶**。
+     * （内存优化专项 A3）：**给 mpv 的 demuxer 缓存封顶**。
      *   此前带 `--no-config` 且未覆盖缓存 → 取 mpv 默认（前向 `demuxer-max-bytes` ≈150MB +
      *   回看 `demuxer-max-back-bytes` ≈50MB）。封顶到 64/16 MiB 后单进程可省 ~120MB；
-     *   代价 = **大范围拖拽 seek 的回填变慢**（用户已确认接受）。
+     *   代价 = **大范围拖拽 seek 的回填变慢**（代价已确认可接受）。
      */
     '--demuxer-max-bytes=64MiB',
     '--demuxer-max-back-bytes=16MiB',
@@ -612,14 +612,14 @@ export function mpvCommandLines(cmd: MpvCommand): string[] {
       return [mpvCmdLine(['set_property', 'sub-font-size', mpvFontSize(cmd.value)])];
     case 'sub-pos':
       return [mpvCmdLine(['set_property', 'sub-pos', Math.max(0, Math.min(100, Math.round(Number(cmd.value) || 90)))])];
-    // ★ 2026-10-17（用户要求「音轨设置」）：切音轨（mpv 的 aid = 音轨 id）
+    // 切音轨（mpv 的 aid = 音轨 id）
     case 'aid': {
       const id = Number(cmd.value);
       if (!Number.isFinite(id) || id <= 0) return [];
       return [mpvCmdLine(['set_property', 'aid', Math.round(id)])];
     }
-    // ★ 2026-10-17（阶段2）：切字幕轨（mpv 的 sid）。
-    // ★★ 实测坑（勿改回数字）：`sid` 在本内核是**字符串型**属性 —— `set_property sid -1`（数字）会回
+    // （阶段2）：切字幕轨（mpv 的 sid）。
+    // 实测坑（勿改回数字）：`sid` 在本内核是**字符串型**属性 —— `set_property sid -1`（数字）会回
     //   `unsupported format for accessing property`，**命令静默失败**（IPC 层只知写管道成功）。
     //   必须传字符串：`"no"`（关闭字幕，实测回 `sid=false` → 我们归一成 null）或 id 的十进制字符串。
     case 'sid': {
@@ -627,10 +627,10 @@ export function mpvCommandLines(cmd: MpvCommand): string[] {
       if (!Number.isFinite(id) || id === 0 || id < -1) return [];
       return [mpvCmdLine(['set_property', 'sid', id < 0 ? 'no' : String(id)])];
     }
-    // ★ 2026-10-17（阶段2）：音频源码直通（'' 合法 = 关闭直通；只接受 mpv 认的编解码名列表串）
+    // （阶段2）：音频源码直通（'' 合法 = 关闭直通；只接受 mpv 认的编解码名列表串）
     case 'audio-spdif':
       return [mpvCmdLine(['set_property', 'audio-spdif', String(cmd.value ?? '')])];
-    // ★ 超分插件（M1）：整链替换着色器（空数组 = 清空 = 关闭超分）
+    // 超分插件（M1）：整链替换着色器（空数组 = 清空 = 关闭超分）
     case 'glsl-shaders':
       return mpvShadersCmd(cmd.value ?? []);
     default:
@@ -654,7 +654,7 @@ export interface MpvResolveResult {
 }
 
 /**
- * mpv.exe 解析链（★ 顺序即优先级）：
+ * mpv.exe 解析链（顺序即优先级）：
  *   ① 用户覆盖路径（非空且存在）→ ② 随包内置 resources/mpv/mpv.exe（安装目录内）→ ③ 本机常见安装位置。
  * 全部落空 → { path:'', source:'none' }（播放器里不显示 MPV 入口，错误上屏）。
  */

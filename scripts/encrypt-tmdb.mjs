@@ -1,5 +1,5 @@
 // scripts/encrypt-tmdb.mjs
-// ★ 生成 THEMOVIEDB 内置凭据密文（供 src/main/meta/credentials.ts 的 BUILTIN 填入）。
+// 生成 THEMOVIEDB 内置凭据密文（供 src/main/meta/credentials.ts 的 BUILTIN 填入）。
 // 用法（项目根 tvbox-win 下）：
 //   node scripts/encrypt-tmdb.mjs <v4读访问令牌> <v3 API密钥>
 // 输出两行 hex（accessToken / apiKey），复制到 credentials.ts 的 BUILTIN 即可。

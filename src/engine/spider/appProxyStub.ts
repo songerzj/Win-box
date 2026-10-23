@@ -1,10 +1,9 @@
 // src/engine/spider/appProxyStub.ts
-// ★★ 2026-10-14（用户日志实测，第十/十一轮）★★
-//   现象：某源（NewGrV2 系，`csp_NewGrV2Amns`）播放必失败：
+//   现象：某第三方源播放必失败：
 //     java.lang.NoSuchMethodError:
 //       'java.lang.String com.github.catvod.spider.Proxy.getProxyUrlDo(java.lang.String)'
 //
-//   根因（实证，非推测）：
+//   根因（经调用链分析确认）：
 //     · 蜘蛛 jar 里**自带**一个极简的 `com/github/catvod/spider/Proxy`（292B，只有
 //       `public static Object[] proxy(Map) → Init.proxyInvoke(params)` + `<init>`）；
 //     · 安卓端 App dex 里另有一个**同名 FQN 的完整版本**（含 `getProxyUrlDo` 等），
@@ -12,11 +11,11 @@
 //     · 桌面端我们的 stubs.jar 没有这个类 ⇒ 解析落到 jar 里那个极简版 ⇒ 缺方法 ⇒ NoSuchMethodError。
 //
 //   为什么**不**把类加进 stubs.jar：stubs.jar 是**全局父类加载器**，会一并盖掉我们的
-//   `shell-shim/real/foni-spider.jar`（它的 Proxy 有 `decode_S` / `drivePort` 等**别的方法**）
+//   `shell-shim/real/` 下的完整构建 jar（它的 Proxy 有 `decode_S` / `drivePort` 等**别的方法**）
 //   —— 那是「修一个源、废一片源」。故本模块只做**就地产物修补**（与 classFix 同路线）：
 //   仅当某个转换产物里的 `spider/Proxy.class` 是**极简形态**（只有 `proxy(Map)` + `<init>`，
 //   且**缺** `getProxyUrlDo`）时，才把它替换成「等价 `proxy(Map)` 委托 + 补 `getProxyUrlDo`」的类。
-//   凡是形态不符（foni 那种多方法变体）一律**不动**。
+//   凡是形态不符（多方法变体）一律**不动**。
 //
 //   类文件由本模块**确定性生成**（Node 端，无需 javac/JDK；运行环境无 JDK 也能修）：
 //   目标 JVM 版本 49（Java 5）⇒ **不需要 StackMapTable**，方法体为直线代码。

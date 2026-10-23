@@ -1,5 +1,5 @@
 // src/main/update/UpdateService.ts
-// ★ 2026-09-29：启动更新检查（主进程侧）—— 查 GitHub 最新 Release → 版本比对 → 代理加速下载
+// 启动更新检查（主进程侧）—— 查 GitHub 最新 Release → 版本比对 → 代理加速下载
 //   Setup 安装包（带进度）→ 拉起安装程序。
 //
 // 依赖：undici（与全项目出站口径一致，走 `dispatchChain` 复用用户的网络代理设置）。
@@ -44,7 +44,6 @@ const agent = new Agent({ connect: { timeout: 20000 } });
 const UA = 'Win-Box-Updater';
 
 /**
- * ★ 2026-09-30（用户要求「优先走代理链路，别连上 GitHub 就走直连」）：
  *   检查接口候选 = **代理加速前 ACCEL_CHECK_LIMIT 条（池内已按实测速率排序）+ 直连垫底**，
  *   且**全部并发抢首响**。池子有 80 条 —— 全放出去等于 80 个并发请求，必须限量。
  */
@@ -78,7 +77,7 @@ export class UpdateService {
   /**
    * 检查更新。**任何失败都返回 updateAvailable=false**（不锁死软件），并带上 error 说明。
    * updateAvailable=true 的条件：远端版本更高 **且** 找到 Setup 安装包。
-   * ★ 2026-09-30：候选地址（代理优先 + 直连）**并发抢首响**，第一个 200 即用，其余立即放弃。
+   * 候选地址（代理优先 + 直连）**并发抢首响**，第一个 200 即用，其余立即放弃。
    * ★ 2026-10-12：开发模式（`app.isPackaged === false`）默认**跳过**（直接返回 updateAvailable=false），
    *   逃生舱 `WINBOX_FORCE_UPDATE_CHECK=1` 可放行；正式安装包行为不变（判定见 `shouldSkipUpdateCheck`）。
    */
@@ -145,7 +144,7 @@ export class UpdateService {
   }
 
   /**
-   * ★ 2026-09-30：并发抢首响拉最新 Release（代理链路优先 + 直连垫底）。
+   * 并发抢首响拉最新 Release（代理链路优先 + 直连垫底）。
    * 全部候选同时发起，谁先回 200 就用谁，其余立刻放弃 —— 既满足「优先走代理」，
    * 又不会因为某条线路不可达白等（串行时每条 8s，最坏 40s+）。
    */
@@ -193,7 +192,7 @@ export class UpdateService {
   }
 
   /**
-   * ★ 2026-09-30（用户要求「池子多一些、挑下载速度最快的下载」）：**两段测速**。
+   * **两段测速**。
    *   池子有 80 条候选，直接对每条跑大样本测速 = 每条 1.5MB 起（合计上百 MB），不可接受。
    *   ① 小样本筛选：对前 `ACCEL_PROBE_LIMIT` 条并发（`ACCEL_PROBE_CONCURRENCY`）各拉 ≤96KB/2.2s，
    *      速率按**去掉首字节**的段算（小窗口下 TTFB 会带偏排名，实测同一节点 64KB 与 2MB 样本差 20 倍）；
@@ -339,7 +338,7 @@ export class UpdateService {
 
     const part = dest + '.part';
     let lastErr = '下载失败';
-    // ★ 2026-09-30：先并发测速，按实测速率排序后再下载（最快的那条打头，其余仍作回退）
+    // 先并发测速，按实测速率排序后再下载（最快的那条打头，其余仍作回退）
     let urls = asset.accelUrls;
     try {
       urls = await this.speedTest(asset.accelUrls, onProgress);

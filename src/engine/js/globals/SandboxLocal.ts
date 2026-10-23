@@ -2,7 +2,7 @@
 // 沙箱 local 全局 —— 1:1 对齐 ref/app__src__main__java__com__github__catvod__crawler__js__local.java
 // 键名：jsRuntime_{a}_{b}（Hawk 键等价，KVStore 由宿主注入，Windows 落 JsonStore 持久化）。
 //
-// ★ 上游 bug 修复（2026-09-20 用户授权，影响正常使用）：
+// 上游 bug 修复（影响正常使用）：
 //   - 上游 local.java:15-21 的 get(a, b) 正常路径是 Hawk.get("jsRuntime_a_b", "") ——
 //     键缺失时返回 ""，**第二参数 b 不作默认值**，仅读取抛异常才返回 b。JS 蜘蛛常用
 //     local.get(k, 默认值) 做配置/缓存回退，缺失时拿不到默认值 → 影响正常使用。
@@ -43,7 +43,7 @@ export function createLocal(host: EngineHost): Record<string, unknown> {
 /**
  * drpy 口径的 local（**get 缺失时返回 ''**，即上游 `local.java` 的原始行为）。
  *
- * ★ 2026-09-29 为什么必须分两套：上面那套是**用户授权的 hiker 修复** —— 把第二参数当默认值
+ * 为什么必须分两套：上面那套是 **hiker 修复** —— 把第二参数当默认值
  * （`local.get(k, 默认值)` 拿回退值）。而 drpy2 引擎的写法是 `local.get(RKEY, k) || 默认值`
  * （drpy2.min.js 的 `getItem`），缺失时期望拿到**假值**；沿用上面的修复会返回 **k 本身**
  * （真值）→ drpy 误判"有缓存"→ 返回错误数据。故识别出 drpy 风格后换成这套上游语义。

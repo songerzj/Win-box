@@ -19,7 +19,7 @@ public class PackageInfo {
     public int sharedUserLabel;
     public String[] requestedPermissions;
     public int[] requestedPermissionsFlags;
-    // ★ 必须非空：蜘蛛会取 signatures[0].toByteArray() 当解密密钥用
+    // 必须非空：蜘蛛会取 signatures[0].toByteArray() 当解密密钥用
     public Signature[] signatures = new Signature[]{new Signature(null)};
     public android.content.pm.ActivityInfo[] activities;
     public android.content.pm.ServiceInfo[] services;

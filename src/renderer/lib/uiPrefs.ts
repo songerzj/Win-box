@@ -1,5 +1,4 @@
 // src/renderer/lib/uiPrefs.ts
-// ★ 2026-09-30（用户要求「给发现页在配置中加一个开关，可以让用户手动选择是否展示发现页，默认展示」）：
 //   界面级偏好（localStorage 持久化 + 广播事件），与主题（lib/theme.ts）同一套做法 ——
 //   纯渲染层偏好，不必进主进程、不进备份（重装/换机后回到默认：展示）。
 import { useEffect, useState } from 'react';
@@ -43,7 +42,7 @@ export function useShowDiscover(): boolean {
 }
 
 /**
- * ★ 2026-09-30（用户要求「为现在点播分类要翻页的增加一个可以一直下拉的瀑布模式」）：
+ * 
  *   点播分类浏览的「瀑布模式」（一直下滑自动加载下一页）——默认**关**（保持原来的翻页）。
  *   持久化在 localStorage（同 uiPrefs 惯例）：用户点开详情再返回时模式不丢。
  */
@@ -82,7 +81,7 @@ export function useWaterfall(): boolean {
 }
 
 /**
- * ★ 2026-10-16（用户要求）：点播页「筛选」开关 —— 默认**关**（点播页不显示源分类与筛选条；
+ * 点播页「筛选」开关 —— 默认**关**（点播页不显示源分类与筛选条；
  *   只有打开才出现），打开后**一次性展开全部**（点播页不再逐级展开，逐级展开只留给发现页）。
  *   持久化在 localStorage（同 uiPrefs 惯例）⇒ **换源 / 重启后都保持**。
  */
@@ -122,8 +121,8 @@ export function useHomeFilters(): boolean {
 }
 
 /**
- * ★ 2026-10-08（用户要求「整体重做界面视觉与动效交互」）：**界面动效偏好**。
- *   Windows 的「动画效果」是系统级开关（`prefers-reduced-motion`）——本机实测该开关为关时，
+ * **界面动效偏好**。
+ *   Windows 的「动画效果」是系统级开关（`prefers-reduced-motion`）——实测确认该开关为关时，
  *   浏览器会把一切动画/过渡折叠掉，用户看不到任何动效。所以给一个应用内三态：
  *     `auto`（默认，跟随系统）/ `on`（始终开启，无视系统）/ `off`（关闭动效）。
  *   落地方式：`<html data-motion="on|off">`（auto 时不写属性）——CSS 里据此决定是否折叠动画。
@@ -182,12 +181,12 @@ export function initMotionPref(): void {
 }
 
 /**
- * ★ 2026-10-15（用户要求「详情/搜索的打开方式改回单页内，并做成可切换」）：
+ * 
  *   页面打开方式 —— `inline`（本页内跳转，主界面内替换可见内容）/ `window`（独立弹出窗口）。
  *
  *   `inline` 走「伪墓碑」：上一个页面**保持挂载、仅隐藏**（见 components 里的 KeepAliveRoutes），
  *   返回时零重载、状态原样保留 —— 刻意不做「真墓碑」（页面卸载后序列化/恢复状态，多窗口下易错）。
- *   默认 `inline`（用户反馈希望回到单页状态）。
+ * 默认 `inline`（希望回到单页状态）。
  */
 export type NavMode = 'inline' | 'window';
 

@@ -232,7 +232,7 @@ describe('端到端：JsSpider 的 ext 注入（沙箱 setExt / forwardInit 收�
   });
 });
 
-describe('normalizeCloudDrive — fty Cloud-drive 归一为 /file 完整 URL', () => {
+describe('normalizeCloudDrive — 某壳源 Cloud-drive 归一为 /file 完整 URL', () => {
   it('相对路径 tvfan/Cloud-drive.txt → http://127.0.0.1:9978/file/tvfan/Cloud-drive.txt', () => {
     const out = JSON.parse(normalizeCloudDrive('{"Cloud-drive":"tvfan/Cloud-drive.txt"}')) as Record<string, string>;
     expect(out['Cloud-drive']).toBe('http://127.0.0.1:9978/file/tvfan/Cloud-drive.txt');

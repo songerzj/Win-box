@@ -1,4 +1,4 @@
-// tests/playerPrefs.spec.ts — 播放器设置记忆（★ 2026-09-26 新增「画面比例」）
+// tests/playerPrefs.spec.ts — 播放器设置记忆（新增「画面比例」）
 import { describe, it, expect } from 'vitest';
 import { normalizeFit, PLAYER_FITS, DEFAULT_PLAYER_PREFS, type PlayerFit } from '../src/renderer/lib/playerPrefs';
 import { normalizeSpdif, SPDIF_OPTIONS } from '../src/shared/player';
@@ -32,7 +32,7 @@ describe('normalizeFit — 画面比例兜底（记忆损坏不得把画面记�
   });
 });
 
-describe('播放器偏好 · 音频直通（★ 2026-10-17 阶段3b）', () => {
+describe('播放器偏好 · 音频直通（阶段3b）', () => {
   it('默认关闭，且默认值必须是面板里可选的一档（否则新装用户回不到默认）', () => {
     expect(DEFAULT_PLAYER_PREFS.spdif).toBe('');
     const values: string[] = SPDIF_OPTIONS.map((o) => o.value);

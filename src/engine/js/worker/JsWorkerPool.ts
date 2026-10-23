@@ -1,5 +1,5 @@
 // src/engine/js/worker/JsWorkerPool.ts
-// ★★ 2026-09-30：JS 蜘蛛的执行侧（父进程视角）。
+// JS 蜘蛛的执行侧（父进程视角）。
 //   池内每个 worker 跑一个 node:vm 沙箱；宿主能力由父进程代劳：
 //     · http      —— 消息往返（父进程的 HttpClient）
 //     · httpSync  —— 父进程异步取数 → 写 SharedArrayBuffer → Atomics.notify（worker 侧阻塞等待）
@@ -15,13 +15,13 @@ import type { JsSandboxLike, SpiderStyle } from '../JsSandbox';
 import { SAB_HEADER, type HostCall, type WorkerReply, type WorkerTask } from './protocol';
 
 /**
- * 池容量：★ 2026-10-17（B2）由 4 下调到 3（用户报「后台跑着五六个子进程、太臃肿」）。
+ * 池容量：（B2）由 4 下调到 3。
  * 每个 worker 一份独立 V8 堆（带 js-lib 时更贵）；3 台已够常见并发，第 4 源起改为排队而非再开一台。
  */
 const POOL_SIZE = 3;
 /** 打开/切换类任务超时 */
 const OPEN_TIMEOUT = 25_000;
-/** ★ 2026-10-17（B2）：空闲回收 —— 某 worker 无任务超过这么久就 terminate（下次 pick 自动重建） */
+/** （B2）：空闲回收 —— 某 worker 无任务超过这么久就 terminate（下次 pick 自动重建） */
 const IDLE_RECLAIM_MS = 5 * 60_000;
 const RECLAIM_INTERVAL_MS = 60_000;
 
@@ -31,7 +31,7 @@ interface PoolWorker {
   keys: Set<string>;
   queue: Array<() => void>;
   running: boolean;
-  /** ★ 2026-10-17（B2）：最近一次承接任务的时刻（空闲回收据此判断，见 reclaimIdle） */
+  /** （B2）：最近一次承接任务的时刻（空闲回收据此判断，见 reclaimIdle） */
   lastUsed: number;
   /** 在途任务（open/call；超时/崩溃清账用）—— id → 回执 */
   pending: Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>;
@@ -59,7 +59,7 @@ class PooledSandbox implements JsSandboxLike {
   }
 
   async ensureLoaded(): Promise<void> {
-    // ★ worker 被终止（打开/调用超时、崩溃）会连同其上的沙箱一起消失 —— 此时必须**重开**，
+    // worker 被终止（打开/调用超时、崩溃）会连同其上的沙箱一起消失 —— 此时必须**重开**，
     //   否则后续调用永远报「沙箱未打开（key）」（实测：单源搜索 Cat_97 直接失败）。
     if (this.opened && this.pool.isOpen(this.siteKey)) return;
     this.spiderStyle = (await this.pool.open(this.siteKey, this.api, this.ext)) as SpiderStyle;
@@ -89,12 +89,12 @@ export class JsWorkerPool {
   private workers: PoolWorker[] = [];
   private code = '';
   private disposed = false;
-  /** key → worker（粘性路由；★ 存**引用**而不是数组下标 —— 摘除 worker 会让下标错位，把源路由到别的 worker） */
+  /** key → worker（粘性路由；存**引用**而不是数组下标 —— 摘除 worker 会让下标错位，把源路由到别的 worker） */
   private route = new Map<string, PoolWorker>();
   /** key → 已成功 open 的 worker（沙箱生命周期与 worker 绑定；worker 摘除时同步失效） */
   private openedOn = new Map<string, PoolWorker>();
 
-  /** ★ 2026-10-17（B2）：空闲回收定时器（`unref`，不阻进程退出） */
+  /** （B2）：空闲回收定时器（`unref`，不阻进程退出） */
   private reclaimTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
@@ -141,7 +141,7 @@ export class JsWorkerPool {
           .catch((e: Error) => pw.w.postMessage({ t: 'httpErr', id: msg.id, message: e.message }));
         return;
       case 'httpSync': {
-        // ★ 同步通道：worker 侧已 Atomics.wait —— 父进程**异步**取数（不阻塞主进程）后写回唤醒。
+        // 同步通道：worker 侧已 Atomics.wait —— 父进程**异步**取数（不阻塞主进程）后写回唤醒。
         //   超时兜底必须**先到先写**（写回即唤醒 worker；后到的结果只丢进已消费的 SAB，无害）。
         const budget = Math.min((msg.req.timeoutMs ?? 10000) + 1000, 60_000);
         const timer = setTimeout(() => this.writeSab(msg.sab, { ok: false, error: `上游超时（>${budget}ms）` }), budget);
@@ -232,7 +232,7 @@ export class JsWorkerPool {
     return new Promise<T>((resolve, reject) => {
       const go = (): void => {
         pw.running = true;
-        pw.lastUsed = Date.now(); // ★ 2026-10-17（B2）：刷新活跃时刻（空闲回收据此判断）
+        pw.lastUsed = Date.now(); // （B2）：刷新活跃时刻（空闲回收据此判断）
         fn()
           .then(resolve, reject)
           .finally(() => {
@@ -295,7 +295,7 @@ export class JsWorkerPool {
 
   /**
    * 打开沙箱（加载脚本 + init 转发）→ 返回方法名风格。
-   * ★ 失败**必须 reject**（脚本 404/语法错/字节码…）：调用方（JsSpider.getSandbox）据此给该源
+   * 失败**必须 reject**（脚本 404/语法错/字节码…）：调用方（JsSpider.getSandbox）据此给该源
    *   一次性降级；此前失败回执落空 → 只能等 OPEN_TIMEOUT 杀 worker，表现为「JS 源连环打开超时」。
    */
   open(key: string, api: string, ext: string): Promise<string> {
@@ -330,7 +330,7 @@ export class JsWorkerPool {
   }
 
   /**
-   * ★ 2026-10-17（B2）：空闲回收 —— 无 pending / 无排队且闲置超过 IDLE_RECLAIM_MS 的 worker 直接 terminate
+   * （B2）：空闲回收 —— 无 pending / 无排队且闲置超过 IDLE_RECLAIM_MS 的 worker 直接 terminate
    *   （走 onDown 摘除：路由与沙箱标记同步失效，下次 `pick` 自动重建，语义与「超时被杀」完全一致）。
    *   至少保留 1 台，避免下次调用还要付「起 worker + 加载脚本」。
    */

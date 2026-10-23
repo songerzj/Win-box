@@ -4,13 +4,13 @@
 // 例：node scripts/make-incremental.mjs \
 //       --old release80/win-unpacked --new release81/win-unpacked --out "Win-Box Setup 0.80.0 增量更新"
 // 产物（release/）：
-//   <out名>.exe       ★ NSIS 增量安装器（向导式）：定位已安装目录 → 结束运行中的 Win-Box →
+//   <out名>.exe       NSIS 增量安装器（向导式）：定位已安装目录 → 结束运行中的 Win-Box →
 //                     覆盖差异文件 → 用内置 rcedit 更新 Win-Box.exe 的版本资源 → 写注册表
 //                     DisplayVersion。内置图标 build/icon.ico。支持 /S 静默 + /D=<目录>。
 //   <out名>.zip       备选手动模式（diff/ 按相对路径存放，直接解压覆盖即可；含说明.txt）
 // 原理：对比 old/new 两棵解包目录，取「新增/变更」文件（长度或 SHA256 不同），
 //       打包进安装器；升级时仅覆盖这些文件 —— 已安装目录里未变的部分完全不动。
-// ★ 2026-09-20 改动：
+// 改动：
 //   · 主程序 Win-Box.exe **不放进 diff** —— 由安装器内 rcedit 直接改写已安装 exe 的版本资源
 //     （FileVersion/ProductVersion → 新版本），增量包保持小体积；
 //   · 修复「>4MB 文件跳过 hash」漏检：.exe/.dll 等长文件强制 hash（版本资源变化时字节等长）；
@@ -57,7 +57,7 @@ function walk(dir, base) {
       if (e.isDirectory()) rec(abs);
       else if (e.isFile()) {
         const size = statSync(abs).size;
-        // ★ 大文件：长度不同必然差异；长度相同则 .exe/.dll/.asar 强制 hash 兜底
+        // 大文件：长度不同必然差异；长度相同则 .exe/.dll/.asar 强制 hash 兜底
         //   —— 它们的内容变化常常「字节等长」：exe/dll 的版本资源、asar 里的 package.json
         //   version（`1.0.0`→`1.1.0` 同长度）都会让长度对比漏判（实测 1.0.0→1.1.0 曾出现
         //   「差异文件 0 个」的假增量包）。其余 >4MB 文件仍按长度判（避免对大资源做重复 IO）。
@@ -80,7 +80,7 @@ function sha1(p) {
 }
 
 const version = await readNewVersion(newDir);
-// ★ win7 等带后缀版本（0.81.2-win7）：NSIS VIProductVersion 只认纯 x.y.z.w，剥掉 -后缀
+// win7 等带后缀版本（0.81.2-win7）：NSIS VIProductVersion 只认纯 x.y.z.w，剥掉 -后缀
 const baseVer = version.split('-')[0];
 const vParts = baseVer.split('.').map((s) => /^\d+$/.test(s) ? s : '0'); // 非数字段兜底 0
 while (vParts.length < 4) vParts.push('0');
@@ -90,7 +90,7 @@ const oldMap = walk(oldDir, oldDir);
 const newMap = walk(newDir, newDir);
 const diff = [];
 for (const [rel, f] of newMap) {
-  // ★ 主程序 exe 不进 diff：由安装器 rcedit 改写版本资源（避免 189MB 进包）
+  // 主程序 exe 不进 diff：由安装器 rcedit 改写版本资源（避免 189MB 进包）
   if (rel === 'Win-Box.exe') continue;
   const o = oldMap.get(rel);
   const changed = !o || o.size !== f.size || (f.hash && o.hash !== f.hash);
@@ -268,7 +268,7 @@ ${fileCmds}  ; rcedit 更新已安装 exe 的版本资源（固定临时目录�
 SectionEnd
 `;
 const nsiPath = join(staging, 'update.nsi');
-// ★ NSIS 3 Unicode 模式要求脚本 UTF-8 **带 BOM**，否则中文（安装器名/说明）报 Bad text encoding
+// NSIS 3 Unicode 模式要求脚本 UTF-8 **带 BOM**，否则中文（安装器名/说明）报 Bad text encoding
 writeFileSync(nsiPath, '\uFEFF' + nsi, 'utf8');
 
 // ── makensis 编译安装器 ──

@@ -1,6 +1,6 @@
 // tests/imageStego.spec.ts — 订阅「图片尾部隐写」提取的纯函数回归。
 //
-// ★ 参照实现：kankejiang/CatClawVideo `TvBoxSubscriptionManager.cs:548-617`（饭太硬防直连：
+// 参照实现：kankejiang/CatClawVideo `TvBoxSubscriptionManager.cs:548-617`（某第三方源防直连：
 //   真实 base64 配置附在图片结束标记之后；另有「盐前缀 + base64」形态，盐长 10 → 4 字节对齐扫不到，
 //   必须靠 base64(JSON 开头) 的 `eyJ` / `W1si` / `W3si` 标志定位）。
 import { describe, it, expect } from 'vitest';

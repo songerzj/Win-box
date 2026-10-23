@@ -1,5 +1,5 @@
 // tests/danmakuEndpoints.spec.ts
-// ★ 2026-09-26：外部弹幕接口（LogVar / 御坂 / 炊烟袅袅 等自建服务）的单测：
+// 外部弹幕接口（LogVar / 御坂 / 炊烟袅袅 等自建服务）的单测：
 //   地址归一 / 自定义接口解析 / 候选排序与挑选（纯函数）+ 主进程宽松解析 / 会话冷却 / 限并发 / 清单默认开关迁移。
 import { describe, expect, it, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -107,7 +107,7 @@ describe('mergeEndpoints / customEndpointsText', () => {
   });
 });
 
-describe('DanmakuStore — 清单默认开关迁移（★ rev2 默认只开炊烟袅袅）', () => {
+describe('DanmakuStore — 清单默认开关迁移（rev2 默认只开炊烟袅袅）', () => {
   const dirs: string[] = [];
   afterEach(() => {
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
@@ -181,7 +181,7 @@ describe('rankDanmakuAnimes / pickAnimesForExpand', () => {
   });
 });
 
-describe('seasonOf / seasonRankOf / 季号感知排序（★ 2026-09-26）', () => {
+describe('seasonOf / seasonRankOf / 季号感知排序', () => {
   it('季号提取：中文季 / S01E01 / Season N / 汉字数字；无季信息 → undefined', () => {
     expect(seasonOf('绝命毒师 第一季 第01集')).toBe(1);
     expect(seasonOf('绝命毒师第二季(2009)【电视剧】from tencent')).toBe(2);
@@ -251,7 +251,7 @@ describe('parseEndpointAnimeList / parseEndpointEpisodes（宽松解析）', () 
     ]);
   });
 
-  it('★ 2026-09-29：集号字段 episodeNumber（数字/数字串）解析为 episodeNumber；非数字忽略', () => {
+  it('集号字段 episodeNumber（数字/数字串）解析为 episodeNumber；非数字忽略', () => {
     const r = parseEndpointEpisodes(
       {
         bangumi: {
@@ -303,7 +303,7 @@ describe('mapLimit（限并发且保序）', () => {
   });
 });
 
-// ★ 2026-09-28（用户要求）：候选列表显示排序 —— 有集数的按集号升序在前，没集数的沉底
+// 候选列表显示排序 —— 有集数的按集号升序在前，没集数的沉底
 describe('sortCandidatesByEp（候选列表按集号排序）', () => {
   const c = (episodeTitle?: string, tag = '') => ({ episodeTitle, source: tag, sourceName: tag, episodeId: 0 });
 
@@ -324,7 +324,7 @@ describe('sortCandidatesByEp（候选列表按集号排序）', () => {
     expect(sortCandidatesByEp([])).toEqual([]);
   });
 
-  it('★ 2026-09-29：只有 episodeNumber（标题提不出集号）也能排序 —— 修 tencent 条目看不到集号', () => {
+  it('只有 episodeNumber（标题提不出集号）也能排序 —— 修 tencent 条目看不到集号', () => {
     const list = [
       { episodeId: 1, episodeTitle: '【qq】 正片', episodeNumber: '3', source: 'a', sourceName: 'a' },
       { episodeId: 2, episodeTitle: undefined, episodeNumber: '1', source: 'b', sourceName: 'b' },
@@ -334,13 +334,13 @@ describe('sortCandidatesByEp（候选列表按集号排序）', () => {
     expect(sortCandidatesByEp(list).map((x) => x.source)).toEqual(['b', 'd', 'a', 'c']);
   });
 
-  it('★ 2026-10-18：分辨率/年份不当集号（4K / 2024 沉底，不再排到前面）', () => {
+  it('分辨率/年份不当集号（4K / 2024 沉底，不再排到前面）', () => {
     const out = sortCandidatesByEp([c('4K修复版', 'a'), c('第2集', 'b'), c('2024', 'c')]);
     expect(out.map((x) => x.episodeTitle)).toEqual(['第2集', '4K修复版', '2024']);
   });
 });
 
-// ★ 2026-10-18（用户报「集号 4 却自动匹配到错误的剧集」）：同集判定 —— 接口字段优先 + 标题显式集号，
+// 同集判定 —— 接口字段优先 + 标题显式集号，
 //   并排除 `4K`/年份等噪声。自动匹配据此只用同集候选，避免正确集慢/无弹幕时被别集顶替。
 describe('candidateMatchesEp（同集判定）', () => {
   const c = (episodeTitle?: string, episodeNumber?: string) => ({
@@ -365,7 +365,7 @@ describe('candidateMatchesEp（同集判定）', () => {
     expect(candidateMatchesEp(c('第4K修复版'), '4')).toBe(false);
   });
 
-  it('★ 分辨率标记/年份不作集号（修 4K→4、2024→4 的误判）', () => {
+  it('分辨率标记/年份不作集号（修 4K→4、2024→4 的误判）', () => {
     expect(candidateMatchesEp(c('4K修复版'), '4')).toBe(false);
     expect(candidateMatchesEp(c('1080P'), '4')).toBe(false);
     expect(candidateMatchesEp(c('2024'), '4')).toBe(false);

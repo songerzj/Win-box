@@ -108,7 +108,7 @@ describe('ParseService — 解析接口链', () => {
     expect(r?.headers.referer).toBe('https://jx.example/');
   });
 
-  it('★ 跳过非 http 接口（Parallel/Sequence）与超级解析（type=4）', async () => {
+  it('跳过非 http 接口（Parallel/Sequence）与超级解析（type=4）', async () => {
     const calls: string[] = [];
     const svc = new ParseService(fakeHttp({}), logger, fakeSniff({ url: 'https://cdn.com/d.m3u8', headers: {} }, calls));
     const parses: ParseBean[] = [

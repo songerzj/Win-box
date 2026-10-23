@@ -9,10 +9,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recentWatch, clearUiMemory, deleteWatch, restoreWatch, loadUiMemory, loadLatestWatch, watchedEpisodeOf, latestEpisodeOf, type WatchHistory } from '../lib/uiMemory';
 import { client } from '../api/client';
-// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+// 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
 import PluginSlot from '../components/PluginSlot';
 import { useCovers } from '../lib/useCovers';
-// ★ 2026-09-30（用户要求）：显式绑定第三方播放器时，从历史直接由它续播（起播位置作为启动参数）
+// 显式绑定第三方播放器时，从历史直接由它续播（起播位置作为启动参数）
 import { playVodExternal } from '../lib/externalPlay';
 // 所有详情统一由独立窗口展示。
 import { openDetailRoute } from '../lib/detailWin';
@@ -20,7 +20,7 @@ import { restoreHistorySource } from '../lib/historySource';
 import { historyCategories } from '../lib/historyCategories';
 import type { ProfileSitesView } from '../../shared/types';
 
-/** ★ 2026-09-26：单次「更新检测」最多查多少条（每条要打一次源的详情接口，必须限流） */
+/** 单次「更新检测」最多查多少条（每条要打一次源的详情接口，必须限流） */
 const MAX_UPDATE_CHECK = 12;
 /** 更新检测并发（jar 源详情较慢，压低并发避免打爆主进程/源站） */
 const UPDATE_CONCURRENCY = 3;
@@ -60,11 +60,11 @@ export default function HistoryPage() {
     covers.onError(coverItem(it), e.currentTarget.getAttribute('src') || '');
   /** 最近一条被移除的记录：非空时显示"撤销"条。整条快照，撤销即无损还原。 */
   const [lastDeleted, setLastDeleted] = useState<WatchHistory | null>(null);
-  /** ★ 2026-09-29：历史来源已不在当前订阅等提示（播放前切换来源失败时上屏） */
+  /** 历史来源已不在当前订阅等提示（播放前切换来源失败时上屏） */
   const [notice, setNotice] = useState('');
-  /** ★ 2026-09-26：源 key → 源名（左上角标「来自哪个源」，不再重复显示片名） */
+  /** 源 key → 源名（左上角标「来自哪个源」，不再重复显示片名） */
   const [srcNames, setSrcNames] = useState<Record<string, string>>({});
-  /** ★ 2026-09-26：检测到「有更新」的历史（键 = url） */
+  /** 检测到「有更新」的历史（键 = url） */
   const [upd, setUpd] = useState<Record<string, boolean>>({});
   const updQueriedRef = useRef<Set<string>>(new Set());
   const updBusyRef = useRef(false);
@@ -92,7 +92,7 @@ export default function HistoryPage() {
   }, []);
 
   /**
-   * ★ 2026-09-26：**更新检测** —— 历史里看过的资源若源内已更新（现在集数 > 已看到的那一集）→ 标「有更新」。
+   * **更新检测** —— 历史里看过的资源若源内已更新（现在集数 > 已看到的那一集）→ 标「有更新」。
    *   数据来源：按 sourceKey + vodId 重新拉一次源详情（限流：单波最多 12 条 / 并发 3 / 每条只查一次）。
    */
   useEffect(() => {
@@ -130,11 +130,11 @@ export default function HistoryPage() {
   }, [items, updWave]);
 
   useEffect(() => {
-    // ★ 历史由独立播放器窗口写入共享 localStorage，主窗口内存不自动同步；
+    // 历史由独立播放器窗口写入共享 localStorage，主窗口内存不自动同步；
     //   挂载历史页时强制重载一次，确保播放器窗口刚记的历史能显示出来。
     loadUiMemory();
     refresh();
-    // ★ 2026-09-20 修复：播放器窗口关闭 → 主窗口 focus → App 广播刷新事件，
+    // 修复：播放器窗口关闭 → 主窗口 focus → App 广播刷新事件，
     //   历史页进度/列表即时同步（此前须切走再切回历史页才刷新）。
     const onRefresh = () => refresh();
     window.addEventListener('winbox:history-refresh', onRefresh);
@@ -143,11 +143,11 @@ export default function HistoryPage() {
   }, []);
 
   const play = (it: WatchHistory) => {
-    // ★★ 历史续播 = 复用「详情页 → 独立播放器窗口」链路（该路径已验证可用）：
+    // 历史续播 = 复用「详情页 → 独立播放器窗口」链路（该路径已验证可用）：
     //   构造单集 PlayerInit（原始 episode url + flag），播放器窗口内重新 client.play
     //   → 夸克源会**重新转存拿新直链** → startTime 自动 seek 到上次进度。
     //   不再走主窗口内嵌 PlayPage（依赖 nav state/直链，release78 实测不稳）。
-    // ★ 2026-09-20 修复：本页 items 是挂载时的内存快照 —— 播放器窗口关闭时刚把最新进度
+    // 修复：本页 items 是挂载时的内存快照 —— 播放器窗口关闭时刚把最新进度
     //   写入 localStorage，若直接用 it 续播会回到**上次打开位置**而非快进后的位置。
     //   故点开前重读该 url 的最新记录（updatedAt 最新），拿不到才回退快照。
     const latest = loadLatestWatch(it.url) || it;
@@ -158,8 +158,8 @@ export default function HistoryPage() {
       const source = await restoreHistorySource(client, latest);
       window.dispatchEvent(new CustomEvent('winbox:sources-changed'));
       /**
-       * ★ 2026-09-30（用户要求）：显式绑定了第三方播放器 → 直接由它续播（不再开内置播放器窗口）。
-       *   ★ 2026-10-08：改为**勾选项**总开关 —— 未勾选「启用点播外部播放器」时一律走内置播放器（即使填了路径）。
+       * 显式绑定了第三方播放器 → 直接由它续播（不再开内置播放器窗口）。
+       * 改为**勾选项**总开关 —— 未勾选「启用点播外部播放器」时一律走内置播放器（即使填了路径）。
        *   `seek` = 本条记录的最新进度 → 按播放器类型拼成起播参数（PotPlayer /seek=… 等，见 seekArgs）。
        *   未勾选启用 / 未填路径 / 解析不出直连地址 → 回退内置播放器窗口（startTime 续播，旧链路不变）。
        */
@@ -252,7 +252,7 @@ export default function HistoryPage() {
           </button>
         )}
       </div>
-      {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+      {/* 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
       <PluginSlot slot="history" />
       {/* 撤销条：单条移除后出现，可无损还原（含原进度与时间） */}
       {lastDeleted && (
@@ -264,7 +264,7 @@ export default function HistoryPage() {
           <button className="linkbtn muted-btn" onClick={() => setLastDeleted(null)}>关闭</button>
         </div>
       )}
-      {/* ★ 2026-09-29：来源已不在当前订阅等提示 */}
+      {/* 来源已不在当前订阅等提示 */}
       {notice && (
         <div className="hist-undo" role="status">
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{notice}</span>
@@ -300,7 +300,7 @@ export default function HistoryPage() {
                       {cover ? (
                         <img
                           src={cover}
-                          // ★ 2026-09-24：坏图改用状态驱动占位（此前写 el.style.opacity 会残留成灰蒙层）；
+                          // 坏图改用状态驱动占位（此前写 el.style.opacity 会残留成灰蒙层）；
                           //   同时按「中继/补图/源图」三档回退（见 picErr）
                           onError={picErr(it)}
                           loading="lazy"
@@ -344,7 +344,7 @@ export default function HistoryPage() {
                           {it.sourceName || srcNames[it.sourceKey || '']}
                         </span>
                       )}
-                      {/* ★ 2026-09-26：源内已更新（现在集数 > 已看到的那一集） */}
+                      {/* 源内已更新（现在集数 > 已看到的那一集） */}
                       {upd[it.url] && (
                         <span
                           style={{

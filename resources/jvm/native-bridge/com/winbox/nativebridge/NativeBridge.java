@@ -37,7 +37,7 @@ import java.util.jar.JarFile;
  * 并把 jar 里「声明为 native 的方法」改写成转发调用（见 NativePatcher）。
  *
  * 关键链路（Spike 实测，勿改口径）：
- *  ① `.so` 在 `assets/` 下（如 FishGuard-v8.so / -v7.so），DT_NEEDED 只需 libc/libm/liblog/libdl
+ *  ① `.so` 在 `assets/` 下（如 某加固壳-v8.so / -v7.so），DT_NEEDED 只需 libc/libm/liblog/libdl
  *     （unidbg-android jar 内置 sdk23 系统库，无需另找）；
  *  ② `JNI_OnLoad` 通常**什么都不注册**；真正的 RegisterNatives 在 Java 侧调用的
  *     `register()`（导出符号 `Java_<类>_register`）里 —— 桥必须主动触发它；
@@ -68,9 +68,9 @@ public final class NativeBridge {
     private static volatile boolean payloadInShell;
     private static final Map<String, String> PAYLOAD_LIBS = new LinkedHashMap<>();
 
-    // ---------------- 惰性初始化（★ 2026-09-26：按需付费） ----------------
+    // ---------------- 惰性初始化（按需付费） ----------------
     //
-    // 背景（真机实测）：模拟器启动 + 11MB jar 扫描 + 注册 = **约 10 秒**；而多数源整条请求
+    // 背景（实测）：模拟器启动 + 11MB jar 扫描 + 注册 = **约 10 秒**；而多数源整条请求
     // 根本不调用 native（桥开/桥关结果逐项一致）。每次 JVM 冷启都付 10s 就是「进源慢」的根因。
     // 因此：改写产物在本进程里**直接复用**（不启模拟器），只登记「首次调用原生时再初始化」。
     private static volatile boolean inited;
@@ -131,10 +131,10 @@ public final class NativeBridge {
     private static final Map<String, DvmClass> CLASSES = new LinkedHashMap<>();
 
     /**
-     * ★ 2026-09-27（壳通解）：真 Java 对象 → DvmObject 包装缓存。
+     * （壳通解）：真 Java 对象 → DvmObject 包装缓存。
      *   同一真对象跨多次调用必须拿到同一个 DvmObject（哈希一致），否则原生侧对
      *   「同一个 loader / context」的判等会失真；Weak 防长跑进程里堆住蜘蛛对象。
-     *   ★ 按 VM 分桶：DvmObject 属于某一只 VM，壳（64 位）与载荷（32 位）各有自己的表，
+     *   按 VM 分桶：DvmObject 属于某一只 VM，壳（64 位）与载荷（32 位）各有自己的表，
      *     混用会把另一只 VM 的对象塞进调用参数（unidbg 侧直接类型错乱）。
      */
     private static final Map<VM, Map<Object, DvmObject<?>>> WRAPPED = new WeakHashMap<VM, Map<Object, DvmObject<?>>>();
@@ -143,9 +143,9 @@ public final class NativeBridge {
     private static final Map<String, Map<String, Boolean>> PLAN = new LinkedHashMap<>();
 
     /**
-     * ★★ 模拟器锁：**每只模拟器一把**（unidbg 非线程安全，但两只模拟器互不相干）。
+     * 模拟器锁：**每只模拟器一把**（unidbg 非线程安全，但两只模拟器互不相干）。
      *
-     * <p>为什么不能只用一把全局锁（2026-09-27 真机死锁取证，勿回退）：
+     * <p>为什么不能只用一把全局锁（实测，勿回退）
      * 壳的 native 会**回调 Java**（如 `DexNative.getLoader` → `InitOrigin.init(ctx)`），
      * 而 `InitOrigin.init` 会等一个 CountDownLatch —— 计数由蜘蛛自己的线程在
      * `LoadNiMa.init(...)`（载荷 native）之后减一。若两处共用一把锁：
@@ -232,7 +232,7 @@ public final class NativeBridge {
 
         vm = emulator.createDalvikVM();
         EnvJni shim = new EnvJni(null);
-        // ★ 2026-09-27（壳通解）：把「壳类加载器」交给 EnvJni —— Context.getClassLoader() 必须返回它，
+        // （壳通解）：把「壳类加载器」交给 EnvJni —— Context.getClassLoader() 必须返回它，
         //   否则原生在 context.getClassLoader() 上取 jmethodID、再到 Init.classLoader() 上调用时
         //   会因两个加载器的类不同而查不到方法（BackendException），且 getResourceAsStream 也读不到
         //   壳 jar 的 assets/**。详见 EnvJni.setHostLoader 注释。
@@ -256,9 +256,9 @@ public final class NativeBridge {
             System.err.println("[native-bridge] 调试模式：JNI verbose 已开启");
         }
 
-        // ★ 2026-09-27 壳通解：注册 unidbg 的 **libandroid 虚拟模块**（AAssetManager_fromJava/open、
+        // 壳通解：注册 unidbg 的 **libandroid 虚拟模块**（AAssetManager_fromJava/open、
         //   AAsset_getBuffer/getLength/read/close），并把 jar 内 assets/** 喂进去。
-        //   加固壳的 native 普遍用 AAssetManager 读自己的加密数据（实测 wex：`assets/wexshinidie.guard`）；
+        //   加固壳的 native 普遍用 AAssetManager 读自己的加密数据（实测 某第三方源：`assets/wexshinidie.guard`）；
         //   缺这个模块时 .so 的 DT_NEEDED libandroid.so 解析不了 → 那几个导入符号为 0 →
         //   native 一调用就 BackendException（现象：getLoader 崩、后续 BaseSpiderGuard NPE）。
         //   必须在 loadLibrary **之前**注册，否则导入符号已经绑定成 0。
@@ -313,7 +313,7 @@ public final class NativeBridge {
             for (String key : natives.keySet()) plan.put(key, false);
             // Some spiders declare a second group of native methods on the same
             // Java class for a library downloaded later (FishNative is the
-            // current example: FishGuard registers the guard methods, while the
+            // current example: 某加固壳 registers the guard methods, while the
             // downloaded Go library registers fishGoAbiVersion/startV2/stop).
             // Those declarations must not remain native on the host JVM.  Mark
             // declarations absent from the outer library for the payload VM;
@@ -342,8 +342,8 @@ public final class NativeBridge {
     }
 
     /**
-     * 模拟后端工厂。★ 2026-09-28（FishGuard 壳性能专项）定为 **Dynarmic 默认**：
-     *   FishGuard 壳的 AES 走控制流平坦化 VM，总指令量巨大 —— Unicorn2 后端单次 Dec 12~30s
+     * 模拟后端工厂。（某加固壳性能专项）定为 **Dynarmic 默认**
+     *   某加固壳的 AES 走控制流平坦化 VM，总指令量巨大 —— Unicorn2 后端单次 Dec 12~30s
      *   （NiuLai home 200s+ 打满 300s 预算），Dynarmic（JIT）单次 0.7~1.7s、home 20~30s，实测快 15~20 倍。
      *   逃生开关：`-Dtvbox.native.backend=unicorn2` 强制旧后端；dynarmic 类不在 classpath（老安装未下
      *   载 unidbg-dynarmic.jar）时自动回退 Unicorn2。布尔参数 true = 创建失败回退 Unicorn，不炸整条桥。
@@ -364,12 +364,12 @@ public final class NativeBridge {
     }
 
     /**
-     * ★ 2026-09-27（壳通解）：**解密 dex 的加载器登记表**。
+     * （壳通解）：**解密 dex 的加载器登记表**。
      *
      * <p>壳的 native 会把「真实蜘蛛类」交给它自己 new 出来的 {@code DexClassLoader}
      * （= 本桥的 stub，见 stubs-src/dalvik/system/BaseDexClassLoader.java，运行时把解密产物
      * dex2jar 后挂 URLClassLoader）。随后 native 又会用 JNI 去**调用那些类的静态方法**
-     * （实测 wex：`InitOrigin.init(Context)`）——而 unidbg 的反射代理按**类名**找一个 JVM 类，
+     * （实测 某第三方源：`InitOrigin.init(Context)`）——而 unidbg 的反射代理按**类名**找一个 JVM 类，
      * 只会在「壳加载器」里找 → ClassNotFoundException → 整条守卫链降级。
      *
      * <p>因此：stub 建好 delegate 后把自己登记到这里，类工厂/映射器解析不到时再来这里找。
@@ -393,7 +393,7 @@ public final class NativeBridge {
     }
 
     /**
-     * ★ 2026-09-27（壳通解）：把 jar 的 `assets/**` 装进 unidbg 的 libandroid 虚拟模块，
+     * （壳通解）：把 jar 的 `assets/**` 装进 unidbg 的 libandroid 虚拟模块，
      * 让原生代码用 `AAssetManager_open("assets/xxx.guard")` 之类的调用能真的读到数据。
      * 名字同时按「完整条目名」和「去掉 assets/ 前缀」两种键登记（壳的写法两种都见过）。
      * 失败只降级（打日志），不影响无资产需求的壳。
@@ -428,7 +428,7 @@ public final class NativeBridge {
     public static Object invoke(String className, String method, String desc, Object[] args) {
         synchronized (LOCK) {
             try {
-                ensureInit(); // ★ 惰性：改写产物复用时，模拟器在「第一次真的调原生」时才启动
+                ensureInit(); // 惰性：改写产物复用时，模拟器在「第一次真的调原生」时才启动
             } catch (Exception e) {
                 throw new IllegalStateException("原生桥按需初始化失败: " + e, e);
             }
@@ -441,7 +441,7 @@ public final class NativeBridge {
     }
 
     /**
-     * ★★ 2026-09-29（设备实证「切换部分源 NPE」）：壳的守卫链只有两步 ——
+     * （实测「切换部分源 NPE」）：壳的守卫链只有两步 ——
      * `DexNative.getLoader` → DexClassLoader、`DexNative.getSpider` → 真实蜘蛛实例。
      * 任一**静默返回 null**，`BaseSpiderGuard` 的字段就留空，随后第一个 `init()` 必抛
      * `NullPointerException: Cannot invoke "…Spider.init(android.content.Context, String)"`。
@@ -457,7 +457,7 @@ public final class NativeBridge {
     }
 
     /**
-     * ★ 2026-09-27（壳通解·载荷层）：**运行时 dex 里的 native** 的唯一入口（由 NativePatcher 载荷模式生成）。
+     * （壳通解·载荷层）：**运行时 dex 里的 native** 的唯一入口（由 NativePatcher 载荷模式生成）。
      *
      * <p>与 {@link #invoke} 的差别只有一个：类不在「壳注册表」里，而是解密 dex 的真实类 ——
      * 它的 native 由载荷 .so 提供（可能注册在 32 位模拟器，也可能是壳自己那只 64 位）。
@@ -465,8 +465,8 @@ public final class NativeBridge {
      * 而不是按预设计划。
      */
     public static Object invokePayload(String className, String method, String desc, Object[] args) {
-        // ★ 锁纪律：**一次只持有一把**（先 32 位载荷锁、释放后再考虑壳锁），绝不同时持有两把 ——
-        //   否则两线程可能以相反顺序取锁 → 锁顺序死锁。见 LOCK 注释（真机死锁取证）。
+        // 锁纪律：**一次只持有一把**（先 32 位载荷锁、释放后再考虑壳锁），绝不同时持有两把 ——
+        //   否则两线程可能以相反顺序取锁 → 锁顺序死锁。见 LOCK 注释（实测）。
         if (payloadVm != null) {
             synchronized (PAYLOAD_LOCK) {
                 if (hasNative(payloadVm, payloadEmulator, className, method, desc)) {
@@ -577,7 +577,7 @@ public final class NativeBridge {
 
     // ---------------- 评测仪表（-Dtvbox.native.profile=1） ----------------
     //
-    // 目的（2026-09-28 FishGuard 壳性能专项，假设 H2/H4）：把「每次 native 调用的耗时 + 入参摘要 + 返回摘要」
+    // 目的（某加固壳性能专项，假设 H2/H4）：把「每次 native 调用的耗时 + 入参摘要 + 返回摘要」
     // 落成一行 stderr —— 离线即可统计「JNI/编组开销 vs 模拟执行开销」「入参重复率（是否值得做结果缓存）」。
     // 默认关闭（只多一行判断）；开销 = 入参 SHA-1 前 4 字节（20KB 数组约 50µs，相对单次 12~30s 可忽略）。
 
@@ -618,7 +618,7 @@ public final class NativeBridge {
 
     // ---------------- 载荷库装载（System.load 的桥接版） ----------------
     //
-    // 真机取证（wex 玩偶）：解密出的明文 dex 自带 ARM32 native —— `LoadNiMa`（libLoadNiMa.so）、
+    // 实测（某第三方源）：解密出的明文 dex 自带 ARM32 native —— `LoadNiMa`（libLoadNiMa.so）、
     // `MyCrypto`（libdecjni.so）、`GoProxy`（libwexproxy.so）。它们的 `<clinit>` 自己把 .so 拷出来
     // 再 `System.load(绝对路径)`；宿主 x64 装不了 ARM32 → UnsatisfiedLinkError → 只捕获
     // FileNotFoundException 的 `<clinit>` 直接抛 ExceptionInInitializerError → 主页全空。
@@ -723,18 +723,18 @@ public final class NativeBridge {
      * 按 ELF 位宽把载荷 .so 装进对应模拟器：ARM32 → **专用 32 位模拟器**（壳那只可能是 64 位），
      * AArch64 → 与壳共用（unidbg 的 `findNativeFunction` 会扫描该模拟器里**全部**已加载模块，
      * 所以多只 .so 共用一只模拟器是设计内的用法）。
-     * ★ 方法级同步：多只载荷类可能在不同线程同时 `<clinit>`（wex：LoadNiMa 与 MyCrypto 各一个线程），
+     * 方法级同步：多只载荷类可能在不同线程同时 `<clinit>`（某第三方源：LoadNiMa 与 MyCrypto 各一个线程），
      *   而 unidbg 的模拟器/VM **不是线程安全的** —— 装载必须串行（与 LOCK 无关，不会形成锁顺序问题）。
      */
     private static synchronized void payloadLoad(String path) throws Exception {
         String key = path == null ? "" : path.trim();
         if (key.isEmpty() || PAYLOAD_LIBS.containsKey(key)) return;
-        // ★★ 2026-09-28（实测「订阅里两个源走满 300s 超时」根因）：**桌面必须跳过 wex 的 Go 代理库**
+        // （实测「订阅里两个源走满 300s 超时」根因）：**桌面必须跳过 某第三方源的 Go 代理库**
         //   载荷会下载并把 `libwexproxy*.so`（10MB，Android root/Go DNS 代理：`su -c chmod … -port 8096
         //   -dns :53 -sign …`）装进 32 位模拟器；它的 native 启动（`GoProxyManager.startSo native start`）
         //   在 unidbg 里**挂死**（`Invalid memory read (UC_ERR_READ_UNMAPPED)` 后不再前进），而模拟器
         //   **全局串行** ⇒ 该源后续的加解密 native 调用全部排队 ⇒ 单次调用 300s
-        //   （`NATIVE_CALL_MIN_TIMEOUT_MS`）判死，用户侧就是「这个源卡 5 分钟然后空结果」。
+        // （`NATIVE_CALL_MIN_TIMEOUT_MS`）判死，就是「这个源卡 5 分钟然后空结果」。
         //   桌面既无 root 也没有 8096/53 的用途 ⇒ 直接按「不装载」跳过，让调用点快速失败并走
         //   GoProxy 自己的降级路径（与「文件不存在」时的历史行为一致 —— 那条路径实测不卡、源正常）。
         String baseName = new File(key).getName().toLowerCase();
@@ -829,7 +829,7 @@ public final class NativeBridge {
         payloadReport = "载荷桥（32 位）就绪，耗时 " + (System.currentTimeMillis() - t0) + "ms";
     }
 
-    // ---------------- 参数编组：真 Java 对象送进原生（★ 2026-09-27 壳通解，勿删） ----------------
+    // ---------------- 参数编组：真 Java 对象送进原生（壳通解，勿删） ----------------
     //
     // unidbg 的 DvmObject.callJniMethod 只认 Boolean / Hashable（DvmObject、String 等）/ 数组 / 枚举 /
     // Number，其余对象会原样丢给 Module.emulateFunction → IllegalStateException("Unsupported arg: …")。
@@ -956,7 +956,7 @@ public final class NativeBridge {
   }
 
   /**
-     * 落地 .so —— ★ 多进程并发铁律（真机实测踩过，勿退回「无条件覆盖写」）：
+     * 落地 .so —— 多进程并发铁律（实测踩过，勿退回「无条件覆盖写」）：
      *   蜘蛛池会为**同一只 jar** 并行拉起多个常驻 JVM，它们共用同一个 workDir；而 unidbg 会把 .so
      *   **mmap 进宿主进程**，只要还有一个进程映射着它，其它进程覆盖写就会失败
      *   （Windows: `The requested operation cannot be performed on a file with a user-mapped section open`

@@ -1,12 +1,12 @@
 // src/main/net/baiduTransfer.ts — 百度网盘分享取流（原生复刻，用于百度网盘源播放）。
 //
-// ★★ 2026-09-30 真机实测（探针 .tmp/r20-baidu-*.cjs，样本取自「百酷」源的 4 条活分享）：
+// 实测（样本取自「百酷」源的活分享）
 //   · 这些样本未取得免转存直链：`share/list` 的子目录列举接口失败
 //     （`uk/shareid/dir` 与 `shorturl/dir` 两种形式 × sekey 三种编码，一律 errno 140 / 2），
 //     而分享页 HTML 只渲染根层 → 按根条目「转存 → 取链」（与夸克同构）。
-//   · 2026-10-09：jar 详情已给出内层 fs_id / shareid / uk / sekey 时，精确定位所选文件，
+// · jar 详情已给出内层 fs_id / shareid / uk / sekey 时，精确定位所选文件，
 //     不再依赖根目录列举；web share/list?fid 能返回元数据，但不代表能取得 dlink。
-//   · 2026-10-10：fty 签名分支为 SHA-1(SHA-1(BDUSS)+uid+常量+毫秒时间+设备+版本)，
+// · 某影视壳类源的签名分支为 SHA-1(SHA-1(BDUSS)+uid+常量+毫秒时间+设备+版本)，
 //     两份真实样本只读 share/list 返回对应 dlink、媒体 206；优先免转存，失败保留转存兜底。
 //   · 两个协议坑（都踩过，勿回退）：
 //     ① `share/verify` 的 `surl` 必须**去掉首位那个 `1`**（百度分享 id 固定以 1 开头）；
@@ -14,7 +14,7 @@
 //        （这不是「提取码错误」，别被它误导）。
 //   · `shorturlinfo` 是**过时接口**：验证后它对活分享也回 `errno -3「文件已经被删除」`（假警报），
 //     权威来源是**分享页 HTML（yunData）**里的 `shareid / share_uk / fs_id`。
-//   · ★★ dlink 的防盗链**按 UA 判定**：浏览器 UA 拉流恒定 `403 31326 user is not authorized,
+//   · dlink 的防盗链**按 UA 判定**：浏览器 UA 拉流恒定 `403 31326 user is not authorized,
 //     hitcode:119`；必须用网盘客户端 UA（`netdisk;P2SP;3.0.0;windows;;;`）→ 302 → CDN → 206。
 //     （无 Cookie 时是 `31045 user not exists`，说明 Cookie 已被识别，不是缺 Cookie。）
 //
@@ -44,7 +44,7 @@ const REF_DISK = 'https://pan.baidu.com/disk/main';
 /** 调 API 用浏览器 UA（与网页会话一致；网页登录抓到的就是这套会话） */
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.61 Safari/537.36';
-/** ★★ 拉 dlink 只能用**网盘客户端 UA**：浏览器 UA 恒定 403 31326（真机实测，勿改） */
+/** 拉 dlink 只能用**网盘客户端 UA**：浏览器 UA 恒定 403 31326（实测确认，勿改） */
 export const BAIDU_DL_UA = 'netdisk;P2SP;3.0.0;windows;;;';
 const Q = 'channel=chunlei&web=1&app_id=250528&clienttype=0';
 const SHARE_UA = 'netdisk;12.24.6;WinBox;android-android;12;JSbridge4.4.0;jointBridge;1.1.0';
@@ -82,7 +82,7 @@ export interface BaiduSharedFile {
 }
 
 export function extractBaiduSharedFile(text: string): BaiduSharedFile | null {
-  // ★ 2026-10-14：`baidu@<base64(JSON)>` 描述符（盘搜/免转存家族）——
+  // `baidu@<base64(JSON)>` 描述符（盘搜/免转存家族）——
   //   `{shareId, fileId(=fs_id), uk, randsk(=BDCLND/seKey)}` 已含免转存全部凭据，直接映射。
   {
     const desc = parseDriveDescriptor(text);
@@ -117,11 +117,11 @@ function encodedSekey(sekey: string): string {
 }
 
 /**
- * ★ 2026-10-08：文本的「匹配候选」= 原文 + 逐层 percent-decode（≤2 轮）。
+ * 文本的「匹配候选」= 原文 + 逐层 percent-decode（≤2 轮）。
  *
- * 根因（用户日志实证）：jar 把分享链接塞进 `do=pan` 代理地址的 **query 参数值**时会
+ * 根因：jar 把分享链接塞进 `do=pan` 代理地址的 **query 参数值**时会
  * percent-encode（`fileId=https%3A%2F%2Fpan.baidu.com%2Fs%2F…`，部分 jar 还会二次编码），
- * 裸正则匹配不到 → 解链**静默**失败 → 用户侧「百度网盘线路黑屏」且日志无任何线索。
+ * 裸正则匹配不到 → 解链**静默**失败 → 「百度网盘线路黑屏」且日志无任何线索。
  * 解码失败（非法百分号序列）不抛：原文即全部候选。
  */
 function shareTextCandidates(text: string): string[] {
@@ -142,7 +142,7 @@ function shareTextCandidates(text: string): string[] {
 }
 
 /**
- * 百度分享标识（★ 2026-10-09 扩形态，用户报「未识别分享链接」后的加固）：
+ * 百度分享标识（扩形态，「未识别分享链接」问题后的加固）
  *  · `pan.baidu.com/s/<id>` —— 常规分享页（短 id，固定含首位 1）；
  *  · `yun.baidu.com/s/<id>` —— **旧域名**（老源/书签仍在用）；
  *  · `/share/init?surl=<id>` —— 分享「初始化页」形态；`surl` 的定义 = 短 id **去掉首位 1**
@@ -151,9 +151,9 @@ function shareTextCandidates(text: string): string[] {
 const BAIDU_SHARE_ID_RE = /(?:pan|yun)\.baidu\.com\/s\/([0-9a-zA-Z_-]+)/i;
 const BAIDU_SURL_RE = /\/share\/init\?[^"'\s]*?surl=([0-9a-zA-Z_-]+)/i;
 /**
- * ★ 2026-10-09：jar 的**百度网盘播放描述 JSON** ——
+ * jar 的**百度网盘播放描述 JSON** ——
  * `{"pg":…,"parent":…,"share_id":"…","uk":"…","surl":"1Dss…","fs_id":"…","shareUser":…,"path":"…"}`
- * （饭太硬系「嘟嘟无限」等 `playerContent` 直接把这段 JSON 当播放地址返回；安卓由 App 的网盘模块消费）。
+ * （某影视壳类源的部分网盘源 `playerContent` 直接把这段 JSON 当播放地址返回；安卓由 App 的网盘模块消费）。
  * `surl` 字段即分享短链 id（本仓实测**带首位 `1`**；`verifySurl` 会按既有规则剥掉它）。
  */
 const BAIDU_JSON_SURL_RE = /"surl"\s*:\s*"([0-9a-zA-Z_-]{8,})"/;
@@ -174,7 +174,7 @@ export function isBaiduSharePlay(text: string): boolean {
 
 /**
  * 从文本（分享链接 / jar 的 `do=pan` 代理地址 / episode id）里解析分享 id 与提取码。
- * ★ 兼容 query 值里的 percent-encoded 分享链接（见 shareTextCandidates）。
+ * 兼容 query 值里的 percent-encoded 分享链接（见 shareTextCandidates）。
  * 提取码可选：`?pwd=abcd`（百度为 4 位，大小写敏感）。
  */
 export function extractBaiduShare(text: string): { short: string; pwd: string } | null {
@@ -188,7 +188,7 @@ export function extractBaiduShare(text: string): { short: string; pwd: string } 
 }
 
 /**
- * ★ 2026-10-09：从百度网盘**播放描述 JSON** 里取内层文件线索（用于「整季文件夹 / 多文件」时选对那一集）。
+ * 从百度网盘**播放描述 JSON** 里取内层文件线索（用于「整季文件夹 / 多文件」时选对那一集）。
  *   优先 `path` 末段（percent-decode 后的文件名），其次 `name` / `server_filename`。
  *   取不到返回 `''`；多文件缺少标识时拒绝盲选首集。
  */
@@ -210,7 +210,7 @@ export function extractBaiduInnerName(text: string): string {
 }
 
 /**
- * ★ 2026-10-09：百度接口 errno → 人话（联网查证开源口径 + 真机实证）。
+ * 百度接口 errno → 人话（联网查证开源口径 + 实测确认）。
  *   关键：**-6 = 登录态失效**（Cookie 过期/未登录）——此前 verify 失败一律提示「需要提取码」，
  *   若真实 errno 是 -6 会把用户引向完全错误的排查方向（应去「配置→网盘绑定」重新扫码）。
  */
@@ -230,7 +230,7 @@ export function baiduErrnoText(errno: number): string {
 
 /**
  * 分享短链 id → `share/verify` 接口要用的 `surl`。
- * ★ 百度分享 id 固定以 `1` 开头，而 verify 接口的 `surl` 是**去掉首位 `1`** 的串（真机实测：
+ * 百度分享 id 固定以 `1` 开头，而 verify 接口的 `surl` 是**去掉首位 `1`** 的串（实测确认：
  *   带首位 1 → 恒定 `errno 105`；去掉后 → `errno 0`）。
  */
 export function verifySurl(short: string): string {
@@ -390,7 +390,7 @@ function isCacheItemPath(path: string): boolean {
     path.split('/').slice(2).every((part) => part !== '' && part !== '.' && part !== '..');
 }
 
-/** fty 的只读分享签名；设备/版本常量必须与请求参数一致，不是 MD5。 */
+/** 某影视壳类源的只读分享签名；设备/版本常量必须与请求参数一致，不是 MD5。 */
 export function baiduShareRand(bduss: string, uid: string, time: string): string {
   const sha1 = (s: string) => createHash('sha1').update(s).digest('hex');
   return sha1(sha1(bduss) + uid + 'ebrcUYiuxaZv2XGu7KIYKxUrqfnOfpDF' + time + SHARE_DEVICE + '11.30.2ae5821440fab5e1a61a025f014bd8972');
@@ -452,7 +452,7 @@ async function trySharedDirectLink(file: BaiduSharedFile, cookie: string, logger
   }
 }
 
-/** ★ 全局串行锁：转存是「服务端共享目录 + 落盘路径」状态机，并发会互相污染（与夸克/UC 同理） */
+/** 全局串行锁：转存是「服务端共享目录 + 落盘路径」状态机，并发会互相污染（与夸克/UC 同理） */
 let transferChain: Promise<unknown> = Promise.resolve();
 
 /**
@@ -527,7 +527,7 @@ async function baiduResolveInner(
   );
   const vErrno = Number(vf.json?.errno);
   if (vErrno !== 0) {
-    // ★ 2026-10-09：带真实 errno 的可执行提示（-6=登录失效 → 引导重新扫码；-9=缺提取码…）
+    // 带真实 errno 的可执行提示（-6=登录失效 → 引导重新扫码；-9=缺提取码…）
     return fail(`${baiduErrnoText(vErrno)}（errno=${vErrno}）`);
   }
   const sekey = encodedSekey(cookieValueOf(s.cookie, 'BDCLND'));
@@ -665,7 +665,7 @@ async function transferSelectedFile(
   return {
     ok: true,
     url,
-    // ★ 必须带网盘 UA：浏览器 UA 拉这个 dlink 恒定 403 31326
+    // 必须带网盘 UA：浏览器 UA 拉这个 dlink 恒定 403 31326
     header: { 'User-Agent': BAIDU_DL_UA, Referer: REF, Cookie: s.cookie },
     path: cleanupPath,
   };
@@ -675,9 +675,9 @@ async function transferSelectedFile(
 }
 
 /**
- * ★ 2026-10-09：**按 fs_id 直取 dlink**（jar 的 `do=pan&site=baidu` 只给纯数字 fileId 时的桌面等价路径）。
+ * **按 fs_id 直取 dlink**（jar 的 `do=pan&site=baidu` 只给纯数字 fileId 时的桌面等价路径）。
  *
- * 背景（jar 反编译实证）：`merge.b.j`（百度盘）把播放 id 传成**纯数字**（= 百度 `fs_id`），
+ * 背景：`merge.b.j`（百度盘）把播放 id 传成**纯数字**（= 百度 `fs_id`），
  * `merge.F.a` 拼成 `?do=pan&site=baidu&shareId=&fileId=<fs_id>&fileToken=`，由安卓 App 的
  * 「网盘模块」消费 —— 桌面端此前无此路由 ⇒ 「未识别分享链接（site=baidu）」。
  * 仅用于本人盘文件：数字 fs_id 也可能属于分享者；调用方先尝试恢复 jar 分享会话，

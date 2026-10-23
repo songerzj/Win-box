@@ -1,4 +1,4 @@
-// tests/driveCookieFiles.spec.ts — 网盘凭据 → Pizazz 系 cookie 文件（2026-09-29 通解）
+// tests/driveCookieFiles.spec.ts — 网盘凭据 → 某壳类源系 cookie 文件（通解）
 // 关键契约：落点 <tmp>/tvbox-ext/TVBox/<盘>.txt（= 外部存储桩/TVBox），内容 {"cookie":"..."}；
 // 缺失/为空时 jar 的 filterCloudDiskLinks 会把对应网盘链接降级丢弃 → 详情播放列表为空。
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -39,7 +39,7 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('driveCookieFiles — Pizazz 系 cookie 文件同步', () => {
+describe('driveCookieFiles — 某壳类源系 cookie 文件同步', () => {
   it('目录与路径：<tmp>/tvbox-ext/TVBox/<file>（与 jar 外部存储桩拼接一致）', () => {
     expect(pizazzCookieDir(root)).toBe(join(root, 'tvbox-ext', 'TVBox'));
     expect(pizazzCookiePath('quark', root)).toBe(join(root, 'tvbox-ext', 'TVBox', 'quark_cookie.txt'));
@@ -55,7 +55,7 @@ describe('driveCookieFiles — Pizazz 系 cookie 文件同步', () => {
     expect(existsSync(path)).toBe(true);
     const obj = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, string>;
     expect(obj.cookie).toBe(ck);
-    // ★ 2026-10-09：xiaosa 族（玩偶）登录判定 = merge.i.d 三字段均非空（Gson: cookie/member_type/nickname）
+    // xiaosa 族（某第三方源）登录判定 = merge.i.d 三字段均非空（Gson: cookie/member_type/nickname）
     expect(obj.nickname).toBeTruthy();
     expect(obj.member_type).toBeTruthy();
     expect(readPizazzCookie('quark', root)).toBe(ck);
@@ -64,7 +64,7 @@ describe('driveCookieFiles — Pizazz 系 cookie 文件同步', () => {
     expect(JSON.parse(readFileSync(bp, 'utf-8'))).toEqual({ cookie: 'BDUS=1' });
   });
 
-  it('★ 2026-10-09：quark 重写保留旧文件里的真实 nickname/member_type（jar 回写过的真值不覆盖）', () => {
+  it('quark 重写保留旧文件里的真实 nickname/member_type（jar 回写过的真值不覆盖）', () => {
     writePizazzCookieFile('quark', 'old', root); // 先落目录
     writeFileSync(
       pizazzCookiePath('quark', root),
@@ -110,7 +110,7 @@ describe('driveCookieFiles — Pizazz 系 cookie 文件同步', () => {
   });
 });
 
-describe('driveCookieFiles — wex 系（玩偶/花卷/木偶）cookie 文件同步（2026-10-09）', () => {
+describe('driveCookieFiles — 某壳源系（壳族变体）cookie 文件同步', () => {
   it('目录与路径：<沙箱>/files/TV/.quarkcookie（反编译 Quark.checkquarkcookie 实证）', () => {
     const sandbox = spiderSandboxDir(root);
     expect(sandbox).toBe(join(root, 'sandbox'));
@@ -251,7 +251,7 @@ describe('driveCookieFiles — AiWex 系 SharedPreferences 默认值同步（202
   //   seed.txt 仍照写、以备将来切换到上游的 prefs 影子 jar。
 });
 
-describe('driveCookieFiles — wex SharedPreferences 种子（第四通道 + UC TV Token，2026-10-14）', () => {
+describe('driveCookieFiles — 某壳源 SharedPreferences 种子（第四通道 + UC TV Token）', () => {
   const readSeed = (sandbox: string): Record<string, string> => {
     const path = wexPrefsSeedPath(sandbox);
     const kv: Record<string, string> = {};

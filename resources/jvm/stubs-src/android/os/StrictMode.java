@@ -7,7 +7,7 @@ package android.os;
  * {@code StrictMode.ThreadPolicy.Builder}、{@code .detectAll()}、{@code .penaltyLog()}、
  * {@code .build()}、{@code StrictMode.setThreadPolicy(...)}。
  *
- * <p>★ Builder 的 setter 必须**返回 this**（链式调用是固定写法），
+ * <p>Builder 的 setter 必须**返回 this**（链式调用是固定写法），
  * 返回 void 会 VerifyError。整个体系在桌面端是 no-op —— 桌面版没有
  * "主线程"概念，开启严格模式反而会误报大量 IO 异常。
  */

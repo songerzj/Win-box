@@ -3,7 +3,7 @@ package android.database.sqlite;
 /**
  * SQLiteStatement stub —— 预编译的可执行语句。
  *
- * ★ 与 SQLiteDatabase.execSQL 保持同一策略：
+ * 与 SQLiteDatabase.execSQL 保持同一策略：
  *   执行类方法（execute*）抛 SQLiteException 并带明确中文文案，
  *   避免"静默成功但没写入"导致后续读到不一致状态。
  */

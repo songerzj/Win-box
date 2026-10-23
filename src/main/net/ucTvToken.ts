@@ -1,6 +1,6 @@
 // src/main/net/ucTvToken.ts — UC TV Token（非会员 UC 原画）扫码授权协议（桌面端复刻）。
 //
-// 背景（反编译实证，见 MEMORY 一〇九）：wex 族 jar（虎斑 / 玩偶…）的 UC 取流在
+// 背景：某影视壳类源族 jar 的 UC 取流在
 //   `MyPan$UcMineProvider.player()` 里按 `member_type` 分流：
 //     · NORMAL（非高会）→ 读 SharedPreferences `NewWexFnw_preferences` 的
 //       **`Wex_ucpan_token`**（+ `Wex_ucpan_device_id`），空则抛
@@ -9,12 +9,12 @@
 //       不是 cookie 派生值（实测把 `__puus` 塞进去仍报同一条错）。
 //   桌面端 App 没有 jar 的「配置中心」扫码页，故这里**复刻 jar 的扫码流**产出该 token。
 //
-// 协议（逐字节复刻 `com.github.catvod.spider.merge.t0.h`，本机已实测前两步连通）：
+// 协议（对照 `com.github.catvod.spider.merge.t0.h` 实现）：
 //   1) 取码： GET  https://open-api-drive.uc.cn/oauth/authorize?req_id=…&…&qrcode=1&qr_width=460&qr_height=460
 //             → { status:0, req_id, query_token, qr_data(base64 PNG) }
 //      请求头必须带 jar 的「公参」签名（见 ucTvHeaders）：
 //        x-pan-tm    = 毫秒时间戳字符串
-//        x-pan-token = sha256hex(`${method}&${path}&${ts}${UCTV_SECRET}`)   ← 反编译 g() 实证
+//        x-pan-token = sha256hex(`${method}&${path}&${ts}${UCTV_SECRET}`)
 //        x-pan-client-id = 5acf882d27b74502b7040b0c65519aa7
 //      （`g()` 里还算了 md5(device_id+ts) 作为返回值第 3 项，仅用作后续 /file 请求的 `req_id` 参数）
 //   2) 轮询： GET  .../oauth/code?req_id=…&…&query_token=…
@@ -27,11 +27,11 @@
 //       再取 access_token/refresh_token；也让 jar 在 access_token 过期时用 refresh_token 自动续期）。
 import { createHash, randomUUID } from 'node:crypto';
 
-/** jar 内置的签名盐（`merge.t0.h.g` 常量池字面量） */
+/** jar 内置的签名盐（对应 `merge.t0.h.g`） */
 export const UCTV_SECRET = '&l3srvtd7p42l0d0x1u8d7yc8ye9kki4d';
-/** UC 电视端开放平台 client_id（`merge.t0.h` 常量池字面量） */
+/** UC 电视端开放平台 client_id（对应 `merge.t0.h`） */
 export const UCTV_CLIENT_ID = '5acf882d27b74502b7040b0c65519aa7';
-/** 取码/轮询请求头固定 User-Agent（jar 常量池字面量） */
+/** 取码/轮询请求头固定 User-Agent（jar 内置） */
 export const UCTV_UA =
   'Mozilla/5.0 (Linux; U; Android 12; zh-cn; V2238A Build/V417IR) AppleWebKit/533.1 (KHTML, like Gecko) Mobile Safari/533.1';
 
@@ -61,12 +61,12 @@ const DEVICE_BODY: Record<string, string> = {
 /** 可注入的 fetch（单测用；默认 globalThis.fetch，与 main/net 其它模块一致） */
 export type Fetcher = typeof globalThis.fetch;
 
-/** 设备 ID：jar 侧缺省生成 `md5(String.valueOf(currentTimeMillis()))`（`UcMineProvider.d()` 实证），此处同口径 */
+/** 设备 ID：jar 侧缺省生成 `md5(String.valueOf(currentTimeMillis()))`（`UcMineProvider.d()`），此处同口径 */
 export function ucTvDeviceId(nowMs: number = Date.now()): string {
   return createHash('md5').update(String(nowMs), 'utf8').digest('hex');
 }
 
-/** `x-pan-token`：sha256hex(`${method}&${path}&${ts}${UCTV_SECRET}`)（`merge.t0.h.g` 实证） */
+/** `x-pan-token`：sha256hex(`${method}&${path}&${ts}${UCTV_SECRET}`)（对应 `merge.t0.h.g`） */
 export function ucTvSign(method: string, path: string, tsMs: number | string): string {
   const ts = String(tsMs);
   return createHash('sha256').update(`${method}&${path}&${ts}${UCTV_SECRET}`, 'utf8').digest('hex');

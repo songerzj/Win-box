@@ -1,5 +1,5 @@
 // tests/prefsShim.spec.ts
-// wex 族 SharedPreferences 影子类（`android/content/SharedPreferences$Mem`）的回归：
+// 某第三方源族 SharedPreferences 影子类（`android/content/SharedPreferences$Mem`）的回归：
 //   ① 纯 Node 逻辑：`syncWexPrefsSeed` 写出/删除 `<沙箱>/shared_prefs/seed.txt`；
 //   ② 真 JVM（随包 JRE，**免 javac** —— 类由 Node 现场生成）：
 //      带影子 jar 时能读出种子值；不带时退回 stubs.jar 里的纯内存实现（读到默认值）。
@@ -12,7 +12,7 @@ import { buildPrefsProbeClass, buildPrefsShimJar, PREFS_PROBE_CLASS, WEX_PREFS_N
 import { buildZip } from '../src/engine/util/syncZip';
 import { syncWexPrefsSeed, wexPrefsSeedPath, WEX_PREF_ENV, WEX_PREF_KEYS } from '../src/main/spider/driveCookieFiles';
 
-describe('wex SharedPreferences 种子（Node 侧）', () => {
+describe('某壳源 SharedPreferences 种子（Node 侧）', () => {
   it('写入有凭据的键 + 桌面环境键；每行都是三段式', () => {
     const dir = mkdtempSync(join(tmpdir(), 'winbox-prefs-'));
     try {

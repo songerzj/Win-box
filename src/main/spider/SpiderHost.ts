@@ -11,12 +11,12 @@ import { parsePkgUrl } from '../../engine/config/localPkg';
 import { getAdapter } from '../net/qr';
 import { runDriveWebLogin } from '../net/webLogin';
 import { quarkTransfer, isQuarkSharePlay, quarkFileDelete, extractEpisodeFid, extractEpisodeName, extractQuarkShare, refreshQuarkCookieSession } from '../net/quarkTransfer';
-// ★ 2026-09-30：UC 分享取流（**免转存直链优先**，回退才转存；jar 侧那套 do=pan 路由桌面端没有）
+// UC 分享取流（**免转存直链优先**，回退才转存；jar 侧那套 do=pan 路由桌面端没有）
 import { ucResolveShare, ucFileDelete, isUcSharePlay, extractUcShare } from '../net/ucTransfer';
-// ★ 2026-09-30：百度分享取流（**只能转存** —— 免转存的 share/list 子目录接口已被百度关停；
+// 百度分享取流（**只能转存** —— 免转存的 share/list 子目录接口已被百度关停；
 //   dlink 必须用网盘客户端 UA 拉，浏览器 UA 恒定 403 31326）
 import { baiduResolveShare, baiduResolveSharedFile, baiduFileDelete, isBaiduSharePlay, extractBaiduShare, extractBaiduSharedFile, extractBaiduInnerName, baiduDirectLinkByFsid, type BaiduSharedFile } from '../net/baiduTransfer';
-// ★ 2026-10-14：嵌套信封（`base64(JSON{a:<商>,b:<内层>})`，实测 wex 立播）——解出暂不支持的网盘商时给出明确提示
+// 嵌套信封（`base64(JSON{a:<商>,b:<内层>})`，实测见某影视壳类源）——解出暂不支持的网盘商时给出明确提示
 import { unsupportedNestedProvider } from '../net/driveDescriptor';
 import { fileLogger } from '../util/logger';
 import { parseSiteConfig, parseSiteConfigWithBase, looksLikeSubscribeJson, type ParseResult } from '../../engine/config/ApiConfigParser';
@@ -49,7 +49,7 @@ import type {
 import type { EngineHost } from '../../engine/ports';
 import type { ExploreQuery, ExplorePage, ExploreVocabulary } from '../../shared/discover';
 import { doubanExplorePage, doubanExploreVocabulary } from '../meta/doubanExplore';
-// ★★ 2026-09-30：JS 沙箱改在 worker 线程执行（同步 req 不再冻主进程，见 engine/js/worker/protocol.ts）
+// JS 沙箱改在 worker 线程执行（同步 req 不再冻主进程，见 engine/js/worker/protocol.ts）
 import { createPooledSandboxFactory } from '../../engine/js/worker/JsWorkerPool';
 import { userDataDir, cacheDir, resourcesDir, spiderCacheDir, distDir } from '../util/paths';
 import { safeStorageDriveCodec } from '../util/driveCodec';
@@ -103,7 +103,7 @@ import {
 } from '../../engine/util/fetchWithDisguise';
 import { tryDecryptConfig } from '../net/configDecrypt';
 import { extractStegoConfig, looksLikeImage } from '../../engine/util/imageStego';
-// ★ 2026-10-15：订阅「伪装体」（十六进制 dump 外壳 + 尾部标记后 base64 载荷）提取，见模块头注释
+// 订阅「伪装体」（十六进制 dump 外壳 + 尾部标记后 base64 载荷）提取，见模块头注释
 import { extractDisguiseConfig } from '../../engine/config/disguiseConfig';
 import { classifyPlayLink } from '../../engine/vod/playLink';
 import type { TorrentPlay } from '../torrent/torrentPlay';
@@ -134,7 +134,7 @@ import {
 } from '../danmaku/logvarProvider';
 import { endpointLabel, rankDanmakuAnimes } from '../../engine/danmaku/endpoints';
 import type { DanmakuAnime, DanmakuApiEndpoint, DanmakuCandidate, DanmakuSettings } from '../../shared/danmaku';
-import type { MetaHit, MetaExtra, DiscoverSection, DiscoverGenre, DiscoverGenrePage, MetaImages } from '../../shared/types';
+import type { MetaHit, MetaExtra, DoubanDetailExtra, DoubanReviewDetail, DiscoverSection, DiscoverGenre, DiscoverGenrePage, MetaImages } from '../../shared/types';
 import type { MetaSettings, MetaSettingsView, MetaSuggestion } from '../../shared/meta';
 import { normalizeMetaSettings } from '../../shared/meta';
 import { MetaStore } from '../meta/MetaStore';
@@ -152,6 +152,8 @@ import {
   setTmdbRuntime,
   hasUserTmdbKey,
 } from '../meta/tmdbProvider';
+// 详情页「相关推荐 / 豆瓣影评」tab 区块（豆瓣口径，不依赖用户 TMDB 凭据）
+import { doubanDetailExtra, doubanReviewDetail } from '../meta/doubanExtra';
 import { doubanSearchTitle, doubanStills, doubanSuggest, DOUBAN_CACHE_PREFIX } from '../meta/doubanProvider';
 import { DomesticDiscover } from '../meta/domesticDiscover';
 import { DiscoverArtwork } from '../meta/discoverArtwork';
@@ -162,15 +164,15 @@ import { getProxySettings, jvmProxyArgs, childProxyEnv } from '../net/proxy';
 /** 豆瓣兜底最多尝试的名称变体数（原名 + 净化名；再多只会多打外部请求） */
 const DOUBAN_MAX_VARIANTS = 2;
 
-/** 聚合搜索调度并发数：★ 三轮 6 → 10（真机取证：33 个可搜索源**全是 type=3 jar/py 子进程**，
+/** 聚合搜索调度并发数：6 → 10（实测确认：33 个可搜索源**全是 type=3 jar/py 子进程**，
  *  并发受限于池的同 key 并行度；10 个调度位让快源不必等好几批才轮到，首屏更快。
  *  子进程的实际并行度由 SpiderProcPool 的 PER_KEY_CAP/全局上限把关，不会失控。） */
 const SEARCH_ALL_WORKERS = 10;
 /**
- * ★ 2026-09-25：调度并发上限（大配置适配）。
- *   10 路是 30~40 源配置的口径；100+ 源的大配置（R18 / 摸鱼 / 9918 这类）在 40s 预算内
+ * 调度并发上限（大配置适配）。
+ *   10 路是 30~40 源配置的口径；100+ 源的大配置（R18 / 某第三方源 / 9918 这类）在 40s 预算内
  *   只跑得完 ~40 个源（每源上限 10s × 10 路 × 4 轮），其余一律标「总体搜索已超时…该源未执行」
- *   —— 用户观感正是「大部分源也搜不出来」。这里按源数放大（每 5 源加 1 路），上限 24：
+ * —— 典型表现正是「大部分源也搜不出来」。这里按源数放大（每 5 源加 1 路），上限 24
  *   小配置行为不变（33 源 → 仍是 10 路），大配置一轮能覆盖到 ~95 源。
  *   子进程的实际并行度仍由 SpiderProcPool 把关（同 key 3 进程 × 进程内 24 并发）。
  */
@@ -178,27 +180,27 @@ const SEARCH_ALL_WORKERS_MAX = 24;
 /** 聚合搜索总体预算：到点先返回已拿到的结果，未完成的源标注超时（不再无限等） */
 const SEARCH_ALL_BUDGET_MS = 40_000;
 /**
- * ★ 单源搜索超时上限（10s）：源声明 timeout 多为 15s，而死源/卡住的源会**占满整个预算**。
- * 实测（本机 33 源全源搜索）：卡住的源按 15s 计，收敛这一项直接决定总时长；
+ * 单源搜索超时上限（10s）：源声明 timeout 多为 15s，而死源/卡住的源会**占满整个预算**。
+ * 实测确认（33 源全源搜索）：卡住的源按 15s 计，收敛这一项直接决定总时长；
  * 正常源热进程平均 2.6s、最慢约 6s，10s 有充足余量。
  */
 const SEARCH_ALL_SOURCE_MAX_MS = 10_000;
 /**
- * ★ JS 蜘蛛（drpy 等）在当前沙箱里只实现了 hiker 方法集 —— 不支持的脚本会**卡到预算用尽才报错**。
+ * JS 蜘蛛（drpy 等）在当前沙箱里只实现了 hiker 方法集 —— 不支持的脚本会**卡到预算用尽才报错**。
  * 全源搜索里给它们一个更短的预算，避免 2 个永远不可能出结果的源把尾巴拖满 10s。
  */
 const SEARCH_ALL_JS_MAX_MS = 5_000;
 /**
- * ★ 快速窗口（2026-09-23 三轮续）：所有源先跑 3s —— 到这个点推一条「还在搜 N 个」的进度，
+ * 快速窗口：所有源先跑 3s —— 到这个点推一条「还在搜 N 个」的进度，
  * 让 UI 明确告诉用户「结果已经能看了，剩下的是补搜」，而不是让进度条一直走。
  */
 const SEARCH_ALL_QUICK_MS = 3_000;
 /** 「这个源在桌面端根本不成立」类错误（命中一次即加入会话级跳过集，后续全源搜索不再浪费时间） */
 const UNSUPPORTED_ERR = /UNSUPPORTED_|SCRIPT_ERROR|PY_UNSUPPORTED|桌面版无法|不支持|未实现/i;
 /**
- * ★ 预备等待上限（2026-09-24 二次修正）：全源搜索开始时若有源的运行时正在下载/转换，
+ * 预备等待上限（二次修正）：全源搜索开始时若有源的运行时正在下载/转换，
  * **先等这么一会儿**（用户看到进度文案「首次调用 jar 蜘蛛较慢」时本来就在等），
- * 等到了就正常参与本轮 —— 比「一上来就跳过 → 空结果」体验好得多。清缓存后一次转换约 6~10s。
+ * 等到了就正常参与本次搜索 —— 比「一上来就跳过 → 空结果」体验好得多。清缓存后一次转换约 6~10s。
  */
 const SEARCH_ALL_PREPARE_MS = 12_000;
 
@@ -214,7 +216,7 @@ function raceTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> 
 }
 
 /**
- * ★ 2026-10-09：jar 直接把「百度网盘**播放描述 JSON**」当播放地址返回（饭太硬系「嘟嘟无限」等）——
+ * jar 直接把「百度网盘**播放描述 JSON**」当播放地址返回（某影视壳类源的部分网盘源等）——
  *   形如 `{"pg":…,"share_id":"…","uk":"…","surl":"1Dss…","fs_id":"…","path":"…"}`。
  *   安卓由 App 的网盘模块消费；桌面端此前原样交给播放器 ⇒ 「播放器弹出后无法播放」。
  *   这里识别它 → 走 `baiduFromPanUrl`（extractBaiduShare 已支持 JSON 的 `surl` 形态）原生解链。
@@ -225,14 +227,14 @@ export function isBaiduPanDescriptor(url: string): boolean {
 }
 
 /**
- * ★ 2026-10-08：解析 jar 的 `do=pan` 代理地址 query（**不能用 `new URL`** —— 端口 `:-1` 非法，必抛）。
+ * 解析 jar 的 `do=pan` 代理地址 query（**不能用 `new URL`** —— 端口 `:-1` 非法，必抛）。
  * 返回「参数名 → percent-decode（≤2 轮）后的值」；仅用于诊断日志与形态判读（调用方不得据此拼请求）。
- * 「fileId 是不是分享链接 / site 是哪个网盘」是判因关键 —— 用户日志里只有参数名时完全查不出来。
+ * 「fileId 是不是分享链接 / site 是哪个网盘」是判因关键 —— 日志里只有参数名时完全查不出来。
  */
 export function parsePanProxyQuery(proxyUrl: string): Record<string, string> {
   const out: Record<string, string> = {};
   const s = String(proxyUrl || '');
-  // ★ 从**第一个** `?` 起取到末尾：裸（未编码）fileId 值里还会有自己的 `?`（`fileId=<分享URL>?pwd=`），
+  // 从**第一个** `?` 起取到末尾：裸（未编码）fileId 值里还会有自己的 `?`（`fileId=<分享URL>?pwd=`），
   //   用 `split('?')[1]` 会在那儿截断（旧实现同坑）→ 后面的 fileToken 等参数整段丢失。
   const qi = s.indexOf('?');
   const q = qi >= 0 ? s.slice(qi + 1) : '';
@@ -263,7 +265,7 @@ export interface LiveLoadResult {
 }
 
 /**
- * ★ 2026-09-29 EPG：收集本线路要用的 XMLTV 地址。
+ * EPG：收集本线路要用的 XMLTV 地址。
  * 线路级 `epg`（`,` 分隔）为主；频道级 `epg`（m3u 头部 `tvg-url` 等）作兜底补充。
  * 与上游 `Live.getEpgXml()` 同口径：含 `{` 的模板/接口型地址、以及不含 xml/gz 的条目一律跳过。
  */
@@ -290,8 +292,8 @@ export class SpiderHost {
   private manager: UserConfigManager;
   private drives: DriveStore;
   /**
-   * ★ 2026-10-14 UC TV Token（非会员 UC 原画）：独立于 DriveStore 存放 —— DriveStore 的每个键都会
-   *   被注入到**所有**蜘蛛的 ext（见 engine/spider/driveExt），而该 token 只是 wex 族
+   * UC TV Token（非会员 UC 原画）：独立于 DriveStore 存放 —— DriveStore 的每个键都会
+   *   被注入到**所有**蜘蛛的 ext（见 engine/spider/driveExt），而该 token 只是某类影视壳源
    *   SharedPreferences 的一个值，与 ext 无关。绑定时写入 `<沙箱>/shared_prefs/seed.txt`。
    */
   private ucTvStore!: UcTvStore;
@@ -299,23 +301,23 @@ export class SpiderHost {
   private ucTvBind: { reqId: string; queryToken: string; deviceId: string } | null = null;
   private subtitles: SubtitleStore;
   private danmakuStore: DanmakuStore;
-  /** ★ 弹幕内容缓存（只缓存成功非空结果；上限 200 条防无限增长，满则淘汰最旧）——修复 D4
-   *  ★ 2026-09-26：键改为 `来源|剧集id`（外部接口的 id 各自独立，不能只按 id 缓存） */
+  /** 弹幕内容缓存（只缓存成功非空结果；上限 200 条防无限增长，满则淘汰最旧）——修复 D4
+   * 键改为 `来源|剧集id`（外部接口的 id 各自独立，不能只按 id 缓存） */
   private danmakuCache = new Map<string, string>();
   private static readonly DANMAKU_CACHE_MAX = 200;
-  /** ★ 外部弹幕接口健康表（会话级）：失败源冷却跳过，避免每次搜索都白等死链超时 */
+  /** 外部弹幕接口健康表（会话级）：失败源冷却跳过，避免每次搜索都白等死链超时 */
   private danmakuHealth = new DanmakuEndpointHealth();
   /** TMDB 元数据补全（配置+缓存；缺封面/缺简介时兜底查询） */
   private metaStore: MetaStore;
-  /** ★ 元数据来源配置（TMDB 自填 Key / API 代理地址 / 图片镜像地址 / 来源策略） */
+  /** 元数据来源配置（TMDB 自填 Key / API 代理地址 / 图片镜像地址 / 来源策略） */
   private metaSettings: MetaSettingsStore;
   private domesticDiscover: DomesticDiscover;
   private discoverArtwork: DiscoverArtwork;
-  /** ★ 夸克已落盘待清理队列（关闭播放/窗口/退出时删除，进度仍保留在本地历史；持久化防重启丢失） */
+  /** 夸克已落盘待清理队列（关闭播放/窗口/退出时删除，进度仍保留在本地历史；持久化防重启丢失） */
   private pendingQuarkDeletes: Array<{ cookie: string; pdirFid: string; fid: string; dirFid?: string; path?: string; at: number; provider?: 'quark' | 'uc' | 'baidu' }> = [];
   private pendingQuarkStore: JsonStore;
   private pendingDeleteRun: Promise<void> | null = null;
-  /** ★ 2026-09-24：解析接口链（parses → 直连地址；含隐藏窗口嗅探兜底） */
+  /** 解析接口链（parses → 直连地址；含隐藏窗口嗅探兜底） */
   private parseService: ParseService;
   /** 自动订阅刷新计时（<userData>/auto-refresh.json 记录上次成功时间） */
   private autoRefreshStore: JsonStore;
@@ -323,20 +325,20 @@ export class SpiderHost {
   private report: ImportReport | null = null;
   private sourceMap = new Map<string, SourceBean>();
   private lastSpiderJar = '';
-  /** ★ 2026-09-29 EPG：XMLTV 拉取/磁盘缓存（懒创建；<userData>/winbox-cache/epg） */
+  /** EPG：XMLTV 拉取/磁盘缓存（懒创建；<userData>/winbox-cache/epg） */
   private epgStore: EpgStore | null = null;
   /**
-   * ★ 源健康表（全源搜索调度用，见 engine/vod/searchScheduler）：key → 成功/失败/平均耗时。
+   * 源健康表（全源搜索调度用，见 engine/vod/searchScheduler）：key → 成功/失败/平均耗时。
    * 本会话内存态（跨重启重置）：重启后按配置顺序从 0 开始学习，避免把「昨天的死源」永久降权。
    */
   private sourceHealth = new Map<string, SourceStat>();
   /**
-   * ★ 会话级「桌面端不支持」源集合（drpy JS 源 / 需安卓原生库的壳源…）：
+   * 会话级「桌面端不支持」源集合（drpy JS 源 / 需安卓原生库的壳源…）：
    * 这类源会卡满预算才报错且永远出不了结果 → 判定一次即从后续全源搜索里跳过（配置变更时清空）。
    */
   private unsupportedSources = new Set<string>();
   /**
-   * ★ 全源搜索「秒回」缓存（2026-09-23 三轮）：同一关键词 5 分钟内再搜 → 直接返回上次报告。
+   * 全源搜索「秒回」缓存：同一关键词 5 分钟内再搜 → 直接返回上次报告。
    * 配置变更（源列表变了）即整表作废，避免返回已不存在源的结果。
    */
   private searchCache = new SearchCache<SearchAllReport>();
@@ -346,55 +348,55 @@ export class SpiderHost {
   private prewarmEnabled = false;
   /** 配置恢复时记录的 jar；待启动会话刷新完成后再触发桥接器预热。 */
   private pendingWarmupJar = '';
-  /** ★ 2026-09-27：运行期学到的「该源需要网盘绑定」源 key 集合 + 其持久化（见 markDriveBindNeeded） */
+  /** 运行期学到的「该源需要网盘绑定」源 key 集合 + 其持久化（见 markDriveBindNeeded） */
   private driveBindKeys = new Set<string>();
   private driveBindStore!: JsonStore;
   /**
-   * ★ 2026-10-14：运行期学到的「该源用哪个网盘」provider（key → quark/uc/baidu/115/ali）。
+   * 运行期学到的「该源用哪个网盘」provider（key → quark/uc/baidu/115/ali）。
    *   用途：蜘蛛返回**不含网盘名**的泛化授权文案（实测 `请先完成网盘授权`）时补位，
    *   走既有「已绑定 → 重置蜘蛛池重试一次」自愈分支（见 driveBindProviderForGenericAuth）。
    *   来源：`detail()` 的 `driveBindHintFromPlaySources` 命中（归一）、或 `playInner` 真实产出网盘直链时。
    */
   private driveBindProviderByKey = new Map<string, string>();
   /**
-   * ★ 聚合搜索逐源进度回调（IPC 层注入）：每完成一个源推一条给渲染层 → 结果边搜边出。
+   * 聚合搜索逐源进度回调（IPC 层注入）：每完成一个源推一条给渲染层 → 结果边搜边出。
    * 无回调（单测/CLI）时退化为「只在结束时返回完整报告」。
    */
   onSearchAllProgress?: (ev: SearchAllProgressEvent) => void;
   /**
-   * ★ 2026-09-29：磁力播放引擎（main/index.ts 注入 `TorrentPlay`；未注入 = 磁力走 A 的「复制链接」兜底）。
+   * 磁力播放引擎（main/index.ts 注入 `TorrentPlay`；未注入 = 磁力走 A 的「复制链接」兜底）。
    * 类型只取 `open`：宿主只关心「给我一个能播的地址 / 已交外部播放器 / 播不了的原因」。
    */
   torrentPlay?: Pick<TorrentPlay, 'open'>;
   /**
-   * ★ 2026-09-29（用户要求）本地包：登记表访问面（main/index.ts 注入 LocalPkgStore）。
+   * 本地包：登记表访问面（main/index.ts 注入 LocalPkgStore）。
    * 用途：`pkg://<i>/<rel>` 形态的订阅地址（导入本地包时落库的 apiUrl）→ 读包内订阅文本
    * （相对路径已由 LocalPkgStore.readSubscription 展开）。未注入 = pkg:// 一律报「未登记」。
    */
   localPkgs?: LocalPkgAccess;
   /**
-   * ★ 2026-10-18 插件字幕源（`main/index.ts` 注入 `PluginHost.subtitleProviders`）。
+   * 插件字幕源（`main/index.ts` 注入 `PluginHost.subtitleProviders`）。
    * 未注入 / 抛错 → 退化为「只有内置源」，插件问题绝不拖垮字幕整条链路。
    */
   pluginSubtitleProviders?: () => Promise<SubtitleProvider[]>;
   /**
-   * ★ 2026-10-18 插件元数据源（`main/index.ts` 注入 `PluginHost.metaProviders`）。
+   * 插件元数据源（`main/index.ts` 注入 `PluginHost.metaProviders`）。
    * 定位 = **兜底**：内置 TMDB / 豆瓣都未命中时才轮到它；未注入 / 抛错 → 视作「无插件源」。
    */
   pluginMetaProviders?: () => Promise<MetaProvider[]>;
   /**
-   * ★ 2026-10-18 插件发现页数据源（`main/index.ts` 注入 `PluginHost.discoverSources`）。
+   * 插件发现页数据源（`main/index.ts` 注入 `PluginHost.discoverSources`）。
    * 定位 = **增补**：插件分区**追加**在内置榜单之后（内置分区先占 id，同 id 的插件分区被忽略）。
    */
   pluginDiscoverSources?: () => Promise<DiscoverSource[]>;
   /**
-   * ★ 2026-10-18 插件弹幕源（`main/index.ts` 注入 `PluginHost.danmakuSources`）。
+   * 插件弹幕源（`main/index.ts` 注入 `PluginHost.danmakuSources`）。
    * 与内置外部接口**并列**参与三步链路（搜索 / 剧集 / 弹幕）；其合成 source 键 = `plugin:<id>`。
    */
   pluginDanmakuSources?: () => Promise<DanmakuSource[]>;
   /**
-   * ★ 2026-10-18 插件直播输出模板（`main/index.ts` 注入 `PluginHost.liveTemplates`）。
-   * 定位 = **输出侧格式化**（★ 本类型**不发请求**）：宿主把已解析的 `LiveGroup[]` 按模板渲染成 TXT / M3U。
+   * 插件直播输出模板（`main/index.ts` 注入 `PluginHost.liveTemplates`）。
+   * 定位 = **输出侧格式化**（本类型**不发请求**）：宿主把已解析的 `LiveGroup[]` 按模板渲染成 TXT / M3U。
    */
   pluginLiveTemplates?: () => Promise<LiveTemplate[]>;
 
@@ -425,7 +427,7 @@ export class SpiderHost {
         this.onAppRestartRequest(reason);
       },
     };
-    // ★★ 2026-09-30（用户报「另一台设备用此本地包搜索时卡死」）：JS 蜘蛛改在 **worker 线程**里跑 ——
+    // JS 蜘蛛改在 **worker 线程**里跑 ——
     //   实测根因：JS 源的同步 `req()` 由 spawnSync 实现，会把主进程冻住 0.4~1.5s/次，
     //   指向本机回环（`/pkg/…` 自家本地代理）时更会与主进程互等死锁（实测 11.6s，界面假死）。
     //   搬进 worker 后：阻塞只卡该 worker，超时 `terminate()` 重建。
@@ -433,7 +435,7 @@ export class SpiderHost {
     //   打包态在 app.asar 内 —— 父进程 readFileSync 取码 + `new Worker(code, {eval:true})`，无需解包。
     //   （host 建好后再挂，避免自引用）
     host.jsSandboxFactory = createPooledSandboxFactory(host, join(distDir(), 'js-worker.cjs'));
-    // ★ 宿主单例（见 get host() 注释）：vm/桥/预备探测共用 —— 不能是「每次访问 new 一个」
+    // 宿主单例（见 get host() 注释）：vm/桥/预备探测共用 —— 不能是「每次访问 new 一个」
     this.engineHost = host;
     // JVM 桥（等效 DexClassLoader）：resources/jvm 内嵌 jre+d2j+stubs+libs
     this.bridge = new JarSpiderBridge(
@@ -441,13 +443,13 @@ export class SpiderHost {
         jvmDir: join(resourcesDir(), 'jvm'),
         cacheDir: join(spiderCacheDir(), 'converted'),
         callTimeoutMs: 20000,
-        // ★ 嵌入式 CPython 按需下载落盘（userData 可写；安装版不放 resources）
-        //   ★ 必须挂在 cacheDir() 下（而不是写死 `userData/cache`）：见 paths.APP_CACHE_DIR_NAME
+        // 嵌入式 CPython 按需下载落盘（userData 可写；安装版不放 resources）
+        //   必须挂在 cacheDir() 下（而不是写死 `userData/cache`）：见 paths.APP_CACHE_DIR_NAME
         //     —— `cache` 与 Chromium 的 `Cache` 是同一个物理目录，放那里会被 Chromium 启动时清掉。
         pyRuntimeDir: join(cacheDir(), 'python'),
-        // ★ ARM 原生桥（unidbg）按需下载落盘：含 .so 的加固壳（摸鱼/fty 等）首次调用时下载
+        // ARM 原生桥（unidbg）按需下载落盘：含 .so 的加固壳（某影视壳类源等）首次调用时下载
         nativeRuntimeDir: join(cacheDir(), 'native'),
-        // ★ 网络代理（用户设置）：JVM 参数 + Python/子进程环境变量；每次调用现取 → 改设置即时生效
+        // 网络代理（用户设置）：JVM 参数 + Python/子进程环境变量；每次调用现取 → 改设置即时生效
         proxyProvider: () => {
           const s = getProxySettings();
           return { jvmArgs: jvmProxyArgs(s), env: childProxyEnv(s) };
@@ -465,7 +467,7 @@ export class SpiderHost {
     this.metaStore = new MetaStore(new JsonStore(join(userDataDir(), 'meta.json')));
     this.domesticDiscover = new DomesticDiscover(new JsonStore(join(cacheDir(), 'discovery.json')), this.logger);
     this.discoverArtwork = new DiscoverArtwork(new JsonStore(join(cacheDir(), 'discovery-artwork.json')), cacheDir(), this.logger);
-    // ★ 2026-09-24：元数据来源配置（TMDB 自填 Key/镜像地址 + 来源策略）；装配后立即把运行期配置注入 tmdbProvider
+    // 元数据来源配置（TMDB 自填 Key/镜像地址 + 来源策略）；装配后立即把运行期配置注入 tmdbProvider
     this.metaSettings = new MetaSettingsStore(join(userDataDir(), 'meta-settings.json'), this.logger, safeStorageDriveCodec());
     this.applyMetaRuntime();
     this.autoRefreshStore = new JsonStore(join(userDataDir(), 'auto-refresh.json'));
@@ -473,7 +475,7 @@ export class SpiderHost {
     const pendingRaw = this.pendingQuarkStore.getObject<Array<{ cookie?: string; pdirFid?: string; fid?: string; dirFid?: string; path?: string; at?: number; provider?: string }> | null>('list', null);
     if (Array.isArray(pendingRaw)) {
       this.pendingQuarkDeletes = pendingRaw
-        // ★ 百度项按**路径**删（fid 为空），故判据放宽到「cookie 有 且 (fid 或 path) 有」
+        // 百度项按**路径**删（fid 为空），故判据放宽到「cookie 有 且 (fid 或 path) 有」
         .filter((x) => x && typeof x.cookie === 'string' && x.cookie && (typeof x.fid === 'string' ? x.fid : '') + (x.path || '') !== '')
         .map((x) => ({
           cookie: x.cookie as string,
@@ -489,7 +491,7 @@ export class SpiderHost {
     if (this.manager.load()) {
       this.onUserConfigChange(this.manager.snapshot());
     }
-    // ★ 2026-09-27：「该源需要网盘绑定」的运行期学习结果（见 markDriveBindNeeded）
+    // 「该源需要网盘绑定」的运行期学习结果（见 markDriveBindNeeded）
     this.driveBindStore = new JsonStore(join(userDataDir(), 'drive-bind-learned.json'));
     const learned = this.driveBindStore.getObject<unknown>('list', null);
     if (Array.isArray(learned)) {
@@ -498,7 +500,6 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-27（用户要求「确保每一个需要绑定网盘的都能有这段提示，不管换什么订阅什么源」）：
    *   记下「该源需要网盘绑定」。
    *
    *   触发点 = `play()` 里 `matchDriveCookieProvider(url)` 命中（蜘蛛真实给出的播放地址是
@@ -525,9 +526,9 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-14（用户日志 `app-2026-10-13.log`）：蜘蛛对部分网盘线路返回**不含网盘名**的泛化授权文案
+   * 蜘蛛对部分网盘线路返回**不含网盘名**的泛化授权文案
    *   （实测 `请先完成网盘授权`，`ms≈10` 瞬时失败）。`driveBindProviderFromText` 只认带具体网盘名的文案
-   *   （`夸克`/`百度`/`UC`/`115`/`阿里`）→ 返回 null；于是既不进入 §C27 的「已绑定 → 重置蜘蛛池重试一次」
+   *   （`夸克`/`百度`/`UC`/`115`/`阿里`）→ 返回 null；于是既不进入「已绑定 → 重置蜘蛛池重试一次」
    *   自愈分支，也只把裸文案原样上屏（用户不知道要绑/重登哪个网盘）。
    *   这里用 `detail()` 阶段学到的该源 provider 补位；**仅在文案确实是「授权/登录」类时才启用**
    *   （与 `driveBindProviderFromText` 同一前置门槛），避免误伤普通空结果。
@@ -538,7 +539,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-29 设置备份：导出宿主持有的设置与凭据（凭据为**明文**，口径见 shared/backup.ts）。
+   * 设置备份：导出宿主持有的设置与凭据（凭据为**明文**，口径见 shared/backup.ts）。
    * 播放偏好 / 代理 / 老板键不在宿主内，由 ipc 侧补齐后再组装成完整备份文件。
    */
   settingsSnapshot(): Pick<BackupSettingsState, 'userConfig' | 'driveTokens' | 'subtitle' | 'metaSettings' | 'danmaku'> {
@@ -552,7 +553,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-29 设置备份还原：整份覆盖（各 store 自身负责校验/归一化）。
+   * 设置备份还原：整份覆盖（各 store 自身负责校验/归一化）。
    * 网盘凭据按「备份为准」对齐（备份里没有的 provider 会被清掉）；调用方随后应提示重启应用。
    */
   restoreSettings(s: Partial<BackupSettingsState>): void {
@@ -565,7 +566,7 @@ export class SpiderHost {
       }
       this.resetSpidersAfterDriveChange();
     }
-    // ★ 2026-09-29：还原凭据后立即重写「jar 系期望的 cookie 文件」（fty Cloud-drive + Pizazz TVBox/*.txt），
+    // 还原凭据后立即重写「jar 系期望的 cookie 文件」（某影视壳类源的 Cloud-drive 配置 + 某壳类源的 TVBox/*.txt），
     //   否则「还原了备份却仍然取不到资源」——jar 读的是文件而不是 DriveStore。
     this.syncDriveFiles();
     if (s.subtitle) this.subtitles.settings = s.subtitle;
@@ -577,7 +578,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★★ 2026-09-30（用户报「另一台设备搜索时软件卡死」的**真根因**）：
+   * 另一台设备搜索时软件卡死的**真根因**
    *   此前 `get host()` 每次访问都**新建**一个只带 http/kv/logger/driveTokens 的对象 ——
    *   而 `searchAll` 的预备探测（runtimeState/warmup/prewarm）用 `this.host` 调
    *   `spiderFactory.getCSP()` **首次**构造蜘蛛，SpiderFactory 按 key+api+ext 缓存（不含 host），
@@ -656,27 +657,27 @@ export class SpiderHost {
   cfgProfiles() {
     return this.manager.profiles();
   }
-  /** ★ 2026-09-30（用户要求）：换源弹层「左订阅 / 右源」视图（每份档案的源 key/name 清单） */
+  /** 换源弹层「左订阅 / 右源」视图（每份档案的源 key/name 清单） */
   cfgProfileSites() {
     return this.manager.profileSitesView();
   }
-  /** ★ 2026-09-30（用户要求）：一步完成「切换档案 + 选中该档案下的源」（单次 apply） */
+  /** 一步完成「切换档案 + 选中该档案下的源」（单次 apply） */
   cfgSwitchProfileSource(id: string, key: string): void {
     this.manager.activateProfile(id, key);
   }
-  /** ★ 2026-09-30（用户要求）：追加/更新一条本地导入的直播源（TXT / M3U） */
+  /** 追加/更新一条本地导入的直播源（TXT / M3U） */
   cfgAddLive(bean: LiveBean) {
     return this.manager.addLive(bean);
   }
-  /** ★ 2026-10-14（用户要求）：删除某条直播线路（下标越界静默 no-op） */
+  /** 删除某条直播线路（下标越界静默 no-op） */
   cfgDeleteLive(index: number): void {
     this.manager.deleteLive(index);
   }
-  /** ★ 2026-10-16（用户要求）：批量删除直播线路（配置页多选删除；下标越界忽略） */
+  /** 批量删除直播线路（配置页多选删除；下标越界忽略） */
   cfgDeleteLives(indices: number[]): void {
     this.manager.deleteLives(indices);
   }
-  /** ★ 2026-10-14（用户要求）：重命名某条直播线路 */
+  /** 重命名某条直播线路 */
   cfgUpdateLiveName(index: number, name: string): void {
     this.manager.updateLiveName(index, name);
   }
@@ -752,8 +753,8 @@ export class SpiderHost {
 
   /**
    * 把若干配置档案的订阅合并为一（去重、保留原结构），返回可导出的订阅 JSON 文本与统计。
-   * ★ 2026-09-29：改为「自包含导出」——顶层带 spider/flags/parses；多档案 jar 不同时按源回填 site.jar。
-   *   旧实现把 `spider: ''`/`flags: []` 硬编码、`parses` 直接丢弃，合并导出再导入后所有 csp_ 源
+   * 改为「自包含导出」——顶层带 spider/flags/parses；多档案 jar 不同时按源回填 site.jar。
+   *   旧实现把 `spider: ''`/`flags: []` 硬编码、`parses` 直接丢弃，合并导出再导入后所有壳类源
    *   都拿不到 jar（「无法加载」），是用户「导出的 json 用不了」的直接原因。
    */
   mergeProfilesExport(ids: string[]): { content: string; summary: MergeInput[] } {
@@ -771,7 +772,7 @@ export class SpiderHost {
     return { content: out.content, summary: out.summary };
   }
 
-  // ---- 网盘/资源站凭据（绑定后供对应 csp_ 源调用） ----
+  // ---- 网盘/资源站凭据（绑定后供对应壳类源调用） ----
   driveList() { return this.drives.list(); }
   /** 允许启动阶段延迟的蜘蛛预热继续执行。 */
   enablePrewarm(): void {
@@ -784,7 +785,7 @@ export class SpiderHost {
    * Refresh provider sessions before the JVM pool is prewarmed.
    *
    * Quark's web session can keep `__pus` valid while omitting the newer
-   * `__puus` until the member endpoint is visited.  The Pizazz/fty spiders
+   * `__puus` until the member endpoint is visited.  The third-party shell spiders
    * read their cookie once during init, so doing this after prewarm leaves a
    * permanently stale JVM until the next reset.  Only cookie names/lengths are
    * logged; values never enter diagnostics.
@@ -809,7 +810,7 @@ export class SpiderHost {
     this.resetSpidersAfterDriveChange();
   }
   /**
-   * ★ 2026-09-26：本地代理 `/proxy/<jvmPort>` 被访问 → 把该蜘蛛 JVM 钉住（播放期间不回收）。
+   * 本地代理 `/proxy/<jvmPort>` 被访问 → 把该蜘蛛 JVM 钉住（播放期间不回收）。
    *   壳/蜘蛛的 `<entry>?do=proxy&key=…` 播放地址靠它取流，JVM 一被回收就断流。
    */
   pinSpiderProxy(port: number): void {
@@ -914,7 +915,7 @@ export class SpiderHost {
     const ctx = this.subtitleContext(resourceName);
     if (!ctx.keywords.length) throw new Error('无法从该资源名提取剧名');
     const report = await searchSubtitles(ctx, await this.allSubtitleProviders());
-    // 逐源状态落日志：用户反馈「搜不到字幕」时这是第一手证据（跳过 / 失败 / 命中数）
+    // 逐源状态落日志：排查「搜不到字幕」时这是第一手证据（跳过 / 失败 / 命中数）
     for (const p of report.providers) {
       this.logger.w(
         `字幕源 ${p.id}：${p.ok ? `命中 ${p.count}` : p.skipped ? '跳过' : '失败'}${p.reason ? ' — ' + p.reason : ''}`,
@@ -928,7 +929,7 @@ export class SpiderHost {
     return fetchSubtitle(candidate, this.subtitleContext(candidate.subname || ''), await this.allSubtitleProviders());
   }
 
-  // ---- 弹幕（★ 2026-09-26 外部接口清单；偏好见 DanmakuStore） ----
+  // ---- 弹幕（外部接口清单；偏好见 DanmakuStore） ----
   danmakuGetSettings(): DanmakuSettings {
     return this.danmakuStore.settings;
   }
@@ -945,7 +946,7 @@ export class SpiderHost {
     return (hit?.name || '').trim() || endpointLabel(url) || '外部接口';
   }
   /**
-   * ★ 2026-10-18 插件弹幕源（含失败吞掉）。
+   * 插件弹幕源（含失败吞掉）。
    * 未注入 / 抛错 → 空数组：插件问题绝不拖垮内置弹幕链路。
    */
   private async pluginDanmakuList(): Promise<DanmakuSource[]> {
@@ -974,7 +975,7 @@ export class SpiderHost {
     const all = this.danmakuEndpoints();
     const live = all.filter((e) => !this.danmakuHealth.isCooling(e.url));
     const plugins = await this.pluginDanmakuList();
-    // ★ 插件源与内置接口**并列**（同一并发闸门、同一冷却表、同一排序）
+    // 插件源与内置接口**并列**（同一并发闸门、同一冷却表、同一排序）
     const jobs: Array<() => Promise<DanmakuAnime[]>> = [
       ...live.map((e) => async (): Promise<DanmakuAnime[]> => {
         try {
@@ -1001,7 +1002,7 @@ export class SpiderHost {
     ];
     const external = await mapLimit(jobs, 10, (job) => job());
     const merged = rankDanmakuAnimes(external.flat(), kw, season);
-    // ★ 每来源上限 15：避免单来源（常一次吐几十条平台变体）刷满全局上限，
+    // 每来源上限 15：避免单来源（常一次吐几十条平台变体）刷满全局上限，
     //   把其它来源挤出去 —— 否则自动依次尝试永远轮不到别的源。
     const perSource = new Map<string, number>();
     const limited = merged.filter((a) => {
@@ -1021,7 +1022,7 @@ export class SpiderHost {
    */
   async danmakuEpisodes(bangumiId: number, animeTitle: string | undefined, source: string): Promise<DanmakuCandidate[]> {
     if (!bangumiId || !source) return [];
-    // ★ 插件弹幕源：按合成键 `plugin:<id>` 路由（与内置接口同一套冷却表）
+    // 插件弹幕源：按合成键 `plugin:<id>` 路由（与内置接口同一套冷却表）
     if (SpiderHost.isPluginDanmakuKey(source)) {
       const p = (await this.pluginDanmakuList()).find((x) => x.key === source);
       if (!p) return [];
@@ -1049,7 +1050,7 @@ export class SpiderHost {
   async danmakuFetch(episodeId: number, source: string): Promise<string> {
     if (!episodeId || !source) return '';
     const key = `${source}|${episodeId}`;
-    // ★ D4：仅缓存非空成功结果（失败/空串不缓存 → 下次自动重试，不因一次网络抖动整会话空白）
+    // D4：仅缓存非空成功结果（失败/空串不缓存 → 下次自动重试，不因一次网络抖动整会话空白）
     const hit = this.danmakuCache.get(key);
     if (hit) return hit;
     let xml = '';
@@ -1155,7 +1156,7 @@ export class SpiderHost {
       if (provider === 'tmdb') return null;
       const douban = await this.doubanLookup(n, year);
       if (douban) return douban;
-      // ★ 内置来源都未命中 → 才轮到**插件元数据源**（兜底，不抢占内置；显式指定来源时不用插件）
+      // 内置来源都未命中 → 才轮到**插件元数据源**（兜底，不抢占内置；显式指定来源时不用插件）
       if (provider) return null;
       return await this.pluginMetaLookup(n, year);
     } catch (e) {
@@ -1188,7 +1189,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-24 详情页增强：TMDB 演职员 / 类型 / 相关推荐（详情页「演员名单 + 相关推荐」区块用）。
+   * 详情页增强：TMDB 演职员 / 类型 / 相关推荐（详情页「演员名单 + 相关推荐」区块用）。
     * 无用户凭据或无命中返回 null，绝不抛错；详情页直接展示源提供的信息。
    */
   async metaExtra(name: string, year?: string): Promise<MetaExtra | null> {
@@ -1203,7 +1204,33 @@ export class SpiderHost {
     }
   }
 
-  /** 默认国内榜单；只有用户配置 TMDB 凭据后才使用 TMDB。★ 插件分区**追加**在末尾（内置先占 id）。 */
+  /**
+   * 详情页「相关推荐 / 豆瓣影评」tab 区块。
+   * 与 `metaExtra` 的区别：**豆瓣口径、无需任何凭据**（metaExtra 是 TMDB-only）。
+   * 无命中 / 风控中一律返回 null（区块整体不渲染），绝不抛错。
+   */
+  async metaDoubanExtra(name: string, year?: string): Promise<DoubanDetailExtra | null> {
+    const n = (name || '').trim();
+    if (!n) return null;
+    try {
+      return await doubanDetailExtra(this.logger, n, year || undefined);
+    } catch (e) {
+      this.logger.w(`meta:豆瓣详情增强失败: ${(e as Error).message}`);
+      return null;
+    }
+  }
+
+  /** 影评**全文**（点影评行 → 独立小窗口）。按需拉取；失败返回 null，不抛。 */
+  async metaDoubanReview(reviewId: string): Promise<DoubanReviewDetail | null> {
+    try {
+      return await doubanReviewDetail(this.logger, String(reviewId || ''));
+    } catch (e) {
+      this.logger.w(`meta:豆瓣影评全文失败: ${(e as Error).message}`);
+      return null;
+    }
+  }
+
+  /** 默认国内榜单；只有用户配置 TMDB 凭据后才使用 TMDB。插件分区**追加**在末尾（内置先占 id）。 */
   async metaDiscover(refresh = false): Promise<DiscoverSection[]> {
     let base: DiscoverSection[] = [];
     try {
@@ -1211,7 +1238,7 @@ export class SpiderHost {
     } catch (e) {
       this.logger.w(`meta:发现页查询失败: ${(e as Error).message}`);
     }
-    // ★ 内置失败也照样展示插件分区（插件是「增补」，不是「替代」）
+    // 内置失败也照样展示插件分区（插件是「增补」，不是「替代」）
     const extra = await this.pluginDiscoverSections();
     const seen = new Set(base.map((s) => s.id));
     return [...base, ...extra.filter((s) => !seen.has(s.id))];
@@ -1253,7 +1280,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-15（用户要求「级联分类」）：发现页「分类浏览」——数据层走**豆瓣**（大陆直连稳定，无需任何 Key）。
+   * 发现页「分类浏览」——数据层走**豆瓣**（大陆直连稳定，无需任何 Key）。
    *   返回空页即表示豆瓣失败/风控 → 渲染层给出可读提示并回退榜单。
    */
   async metaDiscoverQuery(q: ExploreQuery): Promise<ExplorePage> {
@@ -1266,12 +1293,12 @@ export class SpiderHost {
     }
   }
 
-  /** ★ 2026-10-15：级联词表（豆瓣自带的类型/地区 + 排序；失败回退内置快照）——两页共用同一份选项 */
+  /** 级联词表（豆瓣自带的类型/地区 + 排序；失败回退内置快照）——两页共用同一份选项 */
   metaExploreVocab(): Promise<ExploreVocabulary> {
     return doubanExploreVocabulary(this.logger);
   }
 
-  /** ★ 2026-09-24 发现页「分类」：按类型取一页（popularity 排序） */
+  /** 发现页「分类」：按类型取一页（popularity 排序） */
   async metaGenrePage(mediaType: string, genreId: number, page: number): Promise<DiscoverGenrePage> {
     const t: 'movie' | 'tv' = String(mediaType) === 'tv' ? 'tv' : 'movie';
     try {
@@ -1284,7 +1311,7 @@ export class SpiderHost {
     }
   }
 
-  /** ★ 执行待清理的夸克落盘文件删除（关闭播放/窗口/退出/启动时触发；删成功即出队，失败保留下次重试） */
+  /** 执行待清理的夸克落盘文件删除（关闭播放/窗口/退出/启动时触发；删成功即出队，失败保留下次重试） */
   quarkDeletePending(): Promise<void> {
     if (this.pendingDeleteRun) return this.pendingDeleteRun;
     const run = this.deletePendingBatch();
@@ -1300,7 +1327,7 @@ export class SpiderHost {
       return { backdrops: [], posters: hit?.poster ? [hit.poster] : [] };
     }
     /**
-     * ★★ 2026-10-16（用户口径「横图走豆瓣剧照 / TMDB」）：**横版图优先豆瓣剧照**。
+     * **横版图优先豆瓣剧照**。
      *   调用方带 `doubanId`（发现页榜单来自豆瓣，条目自带 subject id）时，直接取该条的「剧照」相册 ——
      *   图源与条目**一一对应**，且带宽高可精确筛横版，不会像 360 图搜那样错配（短名片名尤甚）。
      *   取不到再走「用户自带 TMDB 凭据」；仍无则落到既有的 360 兜底（首屏 hero 端会拒绝该来源，见 DiscoverSpotlight）。
@@ -1330,9 +1357,9 @@ export class SpiderHost {
     const remain: typeof this.pendingQuarkDeletes = [];
     for (const item of batch) {
       try {
-        // ★ 优先「整会话子目录删除」：子目录（tr_xxx）内只有本次转存文件，删目录 = 删文件 + 清目录；
+        // 优先「整会话子目录删除」：子目录（tr_xxx）内只有本次转存文件，删目录 = 删文件 + 清目录；
         //   目录删除不支持/失败时回退单文件删除（旧记录无 dirFid 也走单文件）。
-        //   ★ 2026-09-30：百度按**路径**删（/api/filemanager?opera=delete），不吃 fid/dirFid 那套。
+        // 百度按**路径**删（/api/filemanager?opera=delete），不吃 fid/dirFid 那套。
         let ok = false;
         if (item.provider === 'baidu') {
           ok = await baiduFileDelete(item.cookie, item.path || '', this.logger);
@@ -1368,8 +1395,8 @@ export class SpiderHost {
    * jar 的 `do=pan` 代理地址里带**百度分享链接** → 走原生解链（成功返回播放结果，失败返回 null）。
    * 实测 jar 形态：`http://127.0.0.1:-1/proxy?do=pan&site=baidu&shareId=&fileId=<分享URL>&fileToken=`。
    * 这条兜底覆盖「episode id 本身不是分享链接、只有 jar 才知道要播哪个分享」的源。
-   * ★ 2026-10-08：失败原因不再静默（`miss` 收集，调用处汇总落日志 + 上屏）——
-   *   此前 extract 未命中/未绑定 Cookie 都静默 return null，用户日志里完全无迹可查。
+   * 失败原因不再静默（`miss` 收集，调用处汇总落日志 + 上屏）——
+   * 此前 extract 未命中/未绑定 Cookie 都静默 return null，日志里完全无迹可查。
    */
   protected async baiduContextFromJvm(port: number, fsid: string): Promise<BaiduSharedFile | null> {
     if (!Number.isInteger(port) || port < 1024 || port > 65535 || !/^\d+$/.test(fsid)) return null;
@@ -1406,7 +1433,7 @@ export class SpiderHost {
       } catch (e) { miss?.push(`百度：异常(${(e as Error).message.slice(0, 80)})`); return null; }
     }
     if (!share) {
-      // ★ 2026-10-09：jar 反编译实证 —— `merge.b.j`（百度盘）把播放 id 传成**纯数字**（百度 `fs_id`，
+      // 经调用链分析确认：`merge.b.j`（百度盘）把播放 id 传成**纯数字**（百度 `fs_id`，
       //   即 `?do=pan&site=baidu&shareId=&fileId=<fs_id>&fileToken=`）。桌面端此前「未识别分享链接」。
       //   未找到分享映射时才尝试本人盘 filemetas（不能把纯数字等同于已转存）。
       const site = String(pan.site || '').toLowerCase();
@@ -1446,7 +1473,7 @@ export class SpiderHost {
     }
     try {
       const t = await baiduResolveShare(share.short, share.pwd, cookie, {
-        // ★ 2026-10-09：播放描述 JSON 里带 `path`（末段=文件名）→ 整季文件夹时按集名选对那一集
+        // 播放描述 JSON 里带 `path`（末段=文件名）→ 整季文件夹时按集名选对那一集
         innerFid: extractEpisodeFid(episodeId) || extractEpisodeFid(url) || (/^\d+$/.test(fid) ? fid : undefined),
         innerName: extractBaiduInnerName(episodeId) || extractEpisodeName(episodeId) || extractBaiduInnerName(url) || undefined,
         logger: fileLogger,
@@ -1480,8 +1507,8 @@ export class SpiderHost {
   /**
    * jar 的 `do=pan` 代理地址里带 **UC 分享链接** → 走原生 ucResolveShare（成功返回播放结果，失败返回 null）。
    * 形态与百度同族：`http://127.0.0.1:-1/proxy?do=pan&type=2&site=uc&shareId=&fileId=<分享URL>&fileToken=`。
-   * ★ 2026-10-08（用户报「UC 网盘资源无法播放」）：桌面端此前**只有百度**这一条兜底 ——
-   *   jar 给 UC 分享的线路一律「视为无地址」→ 用户侧黑屏且无原因。这里补齐 UC 通道（免转存优先）。
+   * 桌面端此前**只有百度**这一条兜底 ——
+   * jar 给 UC 分享的线路一律「视为无地址」→ 黑屏且无原因。这里补齐 UC 通道（免转存优先）。
    */
   private async ucFromPanUrl(url: string, flag: string, miss?: string[], episodeId = ''): Promise<PlayResult | null> {
     const pan = parsePanProxyQuery(url);
@@ -1489,7 +1516,7 @@ export class SpiderHost {
       (/^uc/i.test(pan.site || '') && /^[0-9a-z_-]+$/i.test(pan.shareId || '')
         ? { pwdId: pan.shareId, passcode: pan.passcode || pan.pwd || '' } : null);
     if (!share) {
-      // ★ 2026-10-09：「未识别」不再逐通道 push（同 baiduFromPanUrl，见其注释）。
+      // 「未识别」不再逐通道 push（同 baiduFromPanUrl，见其注释）。
       return null;
     }
     const cookie = (this.driveList() as Record<string, string>)['uc'] || '';
@@ -1532,7 +1559,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-09（用户报部分线路「该线路需要网盘解链但未成功（百度：未识别分享链接；
+   * 部分线路「该线路需要网盘解链但未成功（百度：未识别分享链接；
    * UC：未识别分享链接）」）：jar 的 `do=pan` 代理地址里带**夸克分享链接**
    * （`site=quark&fileId=<pan.quark.cn/s/…>`）→ 走原生 quarkTransfer（转存 → 直链，
    * 落盘到「来自：分享」目录，播完即删——与 vm.play 前的夸克前置钩子同链路）。
@@ -1543,9 +1570,9 @@ export class SpiderHost {
     let share = extractQuarkShare(episodeId, flag) || extractQuarkShare(url, flag);
     let innerFid = extractEpisodeFid(episodeId) || extractEpisodeFid(url);
     const innerName = extractEpisodeName(episodeId) || extractEpisodeName(url);
-    // ★ 2026-10-09：jar 的 `do=pan&site=quark` **不给分享 URL**，只给三个裸参数
+    // jar 的 `do=pan&site=quark` **不给分享 URL**，只给三个裸参数
     //   （实测：`shareId=e8ac5a87aa2e`（12 位 = pwd_id）、`fileId=2e3ad195….d30d`（32 位 = fid））。
-    //   此前只认 `pan.quark.cn/s/<id>` → **必然「未识别」**（用户报「site=quark」播不了）。
+    // 此前只认 `pan.quark.cn/s/<id>` → **必然「未识别」**（「site=quark」播不了）。
     //   这里补「裸参数」通道：shareId 形如 pwd_id 就用它当 sId，fileId 形如 fid 就当目标文件。
     if (!share) {
       const pan = parsePanProxyQuery(url);
@@ -1611,7 +1638,7 @@ export class SpiderHost {
   async driveWebLogin(provider: string): Promise<void> {
     const p = (provider || 'quark').trim().toLowerCase();
     const r = await runDriveWebLogin(p, this.logger);
-    // ★ 必须 done==true（检测到真实登录完成）才保存；否则登录页的访客 cookie 也非空，
+    // 必须 done==true（检测到真实登录完成）才保存；否则登录页的访客 cookie 也非空，
     //   若只看非空就会「没扫码也返回 cookie、误显示已绑定」。done=false（窗口被关/超时/未登录）→ 抛错不保存。
     if (!r.done) {
       throw new Error(`${p}: 未检测到登录完成（请完成扫码授权，期间勿关闭登录窗口）；未保存任何变更`);
@@ -1626,9 +1653,9 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-29 通解：把 DriveStore 里的网盘凭据**全量**落成「各系 jar 期望的 cookie 文件」。
-   *   · fty 系（Cloud_*Guard）：ext["Cloud-drive"] 指向的 JSON（quarkCookie/ucCookie/…）——syncCloudDriveConfig；
-   *   · Pizazz / 太太太硬了 系（玩偶 csp_Wogg、木偶 csp_PanWebShare、豆瓣 csp_Douban 同族）：
+   * 通解：把 DriveStore 里的网盘凭据**全量**落成「各系 jar 期望的 cookie 文件」。
+   *   · 某影视壳类源（Cloud_*Guard）：ext["Cloud-drive"] 指向的 JSON（quarkCookie/ucCookie/…）——syncCloudDriveConfig；
+   *   · 某壳类源（某影视壳类源的同类家族）：
    *     `<外部存储>/TVBox/<盘>.txt`（桌面桩 = `%TEMP%\tvbox-ext\TVBox\`），内容 `{"cookie":"..."}`——
    *     详情组装播放列表前会按链接域名逐个检查这些文件，缺失即把该网盘链接降级丢弃
    *     （用户侧现象：源能进能搜、详情里却没有可播资源）。
@@ -1677,7 +1704,7 @@ export class SpiderHost {
     }
   }
 
-  /** 把网盘凭据同步写入 fty 的 Cloud-drive 配置文件（jar 源从该文件读 quarkCookie/ucCookie 等） */
+  /** 把网盘凭据同步写入某影视壳类源的 Cloud-drive 配置文件（jar 源从该文件读 quarkCookie/ucCookie 等） */
   private syncCloudDriveConfig(tokens: Record<string, string>): void {
     const path = this.cloudDriveFilePath();
     let obj: Record<string, unknown> = {};
@@ -1697,7 +1724,7 @@ export class SpiderHost {
     }
   }
 
-  /** 定位 fty Cloud-drive 配置文件路径：扫描源 ext["Cloud-drive"]，默认 tvfan/Cloud-drive.txt */
+  /** 定位某影视壳类源的 Cloud-drive 配置文件路径：扫描源 ext["Cloud-drive"]，默认 tvfan/Cloud-drive.txt */
   private cloudDriveFilePath(): string {
     for (const s of this.config?.sites ?? []) {
       try {
@@ -1751,12 +1778,12 @@ export class SpiderHost {
 
   /** 导入配置：apiUrl（http）或本地 JSON 文本 → 解析成功即全量替换持久化配置。
    *  opts.snapshot（默认 true）= 导入前先把旧订阅快照为新档案（新增订阅不丢旧订阅）；自动刷新传 false。
-   *  source.name（★ 2026-09-27）= 用户在导入处自填的订阅名；空则由落库逻辑自动命名（「新订阅 xx」）。 */
+   * source.name = 用户在导入处自填的订阅名；空则由落库逻辑自动命名（「新订阅 xx」）。 */
   async importConfig(source: { url?: string; json?: string; name?: string }, opts: { snapshot?: boolean } = {}): Promise<ParseResult> {
     const snapshot = opts.snapshot !== false;
     let text = source.json || '';
     this.lastConfigFetchHint = ''; // 粘贴导入不涉及拉取，无分档诊断
-    // ★ 2026-09-29：订阅地址尾部可带 `#line=N`（多仓选第几条线，对位 CatClaw `SplitLine`）——
+    // 订阅地址尾部可带 `#line=N`（多仓选第几条线，对位 CatClaw `SplitLine`）——
     //   拉取前剥掉（否则可能 404 / 拉回整份），线路下标转给多仓导入；**落库仍存带 #line 的原串**，
     //   这样后续自动刷新/重新导入都锁定用户选的那条线。
     const sub = splitRepoLine(source.url || '');
@@ -1764,14 +1791,14 @@ export class SpiderHost {
     if (source.url) {
       text = await this.fetchConfigText(fetchUrl);
     }
-    /** ★ 2026-09-29：导入失败时把「为什么拉不到」一并上屏（HTML 拦截页 / 疑似加密 / 逐档特征） */
+    /** 导入失败时把「为什么拉不到」一并上屏（HTML 拦截页 / 疑似加密 / 逐档特征） */
     const hint = (): string => (this.lastConfigFetchHint ? `｜诊断：${this.lastConfigFetchHint}` : '');
-    // ★ 多仓（{urls:[{url,name},...]}）导入：影视仓/多仓盒子订阅格式，逐个子仓取首个可用
+    // 多仓（{urls:[{url,name},...]}）导入：多仓盒子订阅格式，逐个子仓取首个可用
     const multi = parseMultiRepo(text);
     if (multi) {
       return this.importMultiRepo(multi, snapshot, source.name, sub.line);
     }
-    // ★ 从 URL 导入时传基准地址：配置内 `./xxx.jar` 等相对路径需按订阅目录展开
+    // 从 URL 导入时传基准地址：配置内 `./xxx.jar` 等相对路径需按订阅目录展开
     //   （对齐上游 ApiConfig.fixContentPath）。粘贴 JSON（无 url）保持原样。
     let result: ParseResult;
     try {
@@ -1780,7 +1807,6 @@ export class SpiderHost {
       throw new Error(`${(e as Error).message}${hint()}`);
     }
     /**
-     * ★ 2026-09-26（用户报「某份配置导入后一个源都没有、主页/搜索全废」）：
      *   **解析出 0 源时不许静默替换**。此前会直接落库 → 把用户原有的源整个清空，
      *   界面只剩「什么源都没有」，而导入却提示“成功”（R18 那份多仓订阅就踩过：见 multiRepo.ts 注释）。
      *   这里直接抛错并**保持原配置不变**，让用户看到真正的原因。
@@ -1791,20 +1817,20 @@ export class SpiderHost {
     this.report = result.report;
     this.config = result.config;
     this.applyConfig(result.config);
-    // ★ 2026-10-16（用户报「删掉本地包订阅后重新导入、订阅里一个源都没有」）：**用户主动导入** = 明确的
+    // **用户主动导入** = 明确的
     //   「我要这份订阅」意图 → 先清掉它自带源 key 的删除墓碑。否则 `replaceFromImport` / `saveAsProfile`
     //   会按墓碑把这些源全滤掉 ⇒ 订阅落了库却一个源都没有（本地包 `pkg://` 又**不会**自动刷新，等于永远回不来）。
-    //   ★ 自动刷新（`snapshot === false`）**不清** —— 守住「删掉的源不被后台刷新带回来」（2026-10-15 口径）。
+    // 自动刷新（`snapshot === false`）**不清** —— 守住「删掉的源不被后台刷新带回来」。
     if (snapshot) this.manager.clearDeletedSourceKeys(result.config.sites.map((s) => s.key));
     this.applyImportedConfig(result.config, source.url || '', snapshot, source.name);
     return result;
   }
 
   /**
-   * 导入落库（★ 2026-09-26 用户口径）：**新增订阅** = 旧订阅档案改名「旧订阅 xx」+ 新导入另存为
+   * 导入落库：**新增订阅** = 旧订阅档案改名「旧订阅 xx」+ 新导入另存为
    * 「新订阅 xx」并切换过去（不再让新内容顶掉旧档案的名字）；同地址刷新/空状态就地替换当前档案。
    *
-   * ★ 2026-09-27（用户口径）：导入处可自填**订阅名**（`custom`）——填了就用它命名（新增订阅归档 /
+   * 导入处可自填**订阅名**（`custom`）——填了就用它命名（新增订阅归档 /
    *   首次导入建的档案 / 同地址刷新时改名），留空才退回既有自动命名「新订阅 xx」。
    */
   private applyImportedConfig(parsed: SiteConfig, apiUrl: string, snapshot: boolean, name = ''): void {
@@ -1826,20 +1852,20 @@ export class SpiderHost {
     if (id) this.manager.updateProfileName(id, custom);
   }
 
-  /** ★ 2026-09-29：最近一次订阅拉取的**分档诊断**（导入失败时上屏"为什么"）；空 = 无异常 */
+  /** 最近一次订阅拉取的**分档诊断**（导入失败时上屏"为什么"）；空 = 无异常 */
   private lastConfigFetchHint = '';
 
   /**
-   * ★ 2026-09-29：拉订阅文本 —— 改用**统一伪装阶梯**（`fetchWithDisguise`）+ **解密兜底**。
+   * 拉订阅文本 —— 改用**统一伪装阶梯**（`fetchWithDisguise`）+ **解密兜底**。
    *
    * 阶梯（常规）：默认 UA → okhttp UA → okhttp+Referer → okhttp+Referer+Cookie → okhttp+DoH，
    *   全失败后自动**换另一种协议（http↔https）同路径再试一次**；每次尝试的响应特征都写日志。
    *   `quick=true`（多仓扫描上千子仓）只跑「默认 UA → okhttp UA」两档，避免导入跑不完。
-   * 解密兜底（用户口径「用解密来兜底」）：本地 base64/hex → 第三方解密服务（详见 configDecrypt.ts 的隐私口径）。
+   * 解密兜底：本地 base64/hex → 第三方解密服务（详见 configDecrypt.ts 的隐私口径）。
    * 失败时把**分档诊断**记进 `lastConfigFetchHint`，由 importConfig 上屏「为什么导入不了」。
    */
   private async fetchConfigText(url: string, quick = false): Promise<string> {
-    // ★ 2026-09-29（用户要求）本地包：`pkg://<i>/<rel>` —— 不联网，直接读包内订阅文本。
+    // 本地包：`pkg://<i>/<rel>` —— 不联网，直接读包内订阅文本。
     //   文本已由 LocalPkgStore.readSubscription 用 rewritePkgPaths 展开相对路径（"/pkg" 或 file://），
     //   因此后续 parseSiteConfigWithBase 不需要（也不应）再做 http 相对展开。
     //   包被移动/删除时给出可执行提示（重新导入该包）。
@@ -1875,7 +1901,7 @@ export class SpiderHost {
       if (res.altUrl) this.logger.i(`订阅换协议后取到内容（${res.altUrl}）：${url}`);
       return res.buf.toString('utf-8');
     }
-    // ★ 2026-09-29：图片尾部隐写（饭太硬防直连；参照 CatClawVideo TvBoxSubscriptionManager.cs:548）。
+    // 图片尾部隐写（某影视壳类源防直连；参照 CatClawVideo TvBoxSubscriptionManager.cs:548）。
     //   必须拿**原始字节**试 —— 先转 utf-8 字符串会把二进制毁成替换字符，载荷就找不回来了。
     const stego = res.last ? extractStegoConfig(res.last) : null;
     if (stego) {
@@ -1883,7 +1909,7 @@ export class SpiderHost {
       return stego.text;
     }
     const raw = res.last ? res.last.toString('utf-8') : '';
-    // ★ 2026-10-15：**伪装体**兜底（例 `https://yc.wya6.cn/wykj.php`）—— 真体整段是一个 jar 的
+    // **伪装体**兜底（例 `https://yc.wya6.cn/wykj.php`）—— 真体整段是一个 jar 的
     //   十六进制 dump，真配置藏在末行 ASCII 列的 `=XXX**` 标记之后（base64）。属「本地可解释」手段，
     //   故排在图片隐写之后、第三方解密服务之前（见 disguiseConfig.ts 头注释）。
     const disguise = extractDisguiseConfig(raw);
@@ -1894,7 +1920,7 @@ export class SpiderHost {
       );
       return disguise.text;
     }
-    // ★ 解密兜底：本地编码优先，其次第三方解密服务（仅此处、且仅在所有伪装手段失败后）
+    // 解密兜底：本地编码优先，其次第三方解密服务（仅此处、且仅在所有伪装手段失败后）
     const dec = await tryDecryptConfig(this.http, url, raw, this.logger);
     if (dec) return dec.text;
     const encrypted = res.last ? looksEncrypted(res.last) : false;
@@ -1912,23 +1938,22 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 多仓导入：对每个子仓按序拉取解析，取第一个可成功解析的作为当前配置落地；
-   *   clan:// 等本地协议仓与失败仓跳过并在提示中说明（影视仓的本地目录仓桌面版无载体）。
+   * 多仓导入：对每个子仓按序拉取解析，取第一个可成功解析的作为当前配置落地；
+   *   clan:// 等本地协议仓与失败仓跳过并在提示中说明（多仓盒子的本地目录仓桌面版无载体）。
    *
-   * ★ 2026-09-26（用户报「R18 那份配置导进去什么都没有 / 一直转圈」）：
    *   线上多仓动辄**上千个子仓**（实测 `18CR.json` = **1336 项**，全指向 `mirror.ghproxy.com`
    *   这类镜像），逐个「默认 UA → okhttp UA → +DoH」三连尝试（每项最长 90s）会**永远跑不完**
    *   —— 用户看到的就是「导入没反应 / 导进去 0 个源」。这里加两道闸：
    *     ① 单项走**快取模式**（2 次尝试、每次 12s，不做 DoH 兜底）；
    *     ② 整轮有**总预算 60s** 且最多试 12 项，超了就把「还有多少项没试」写进错误里。
    *
-   * ★ 2026-09-29：`preferLine ≥ 0`（订阅地址带 `#line=N`）→ **只取第 N 条**，不走上面的逐条试；
+   * `preferLine ≥ 0`（订阅地址带 `#line=N`）→ **只取第 N 条**，不走上面的逐条试；
    *   越界按上游 `Math.Clamp` 口径收敛到末条，失败时把「第几条 + 名称 + 原因」一次说清。
    */
   private async importMultiRepo(multi: MultiRepo, snapshot: boolean, name = '', preferLine = -1): Promise<ParseResult> {
     const skipped: string[] = [];
     const total = multi.items.length;
-    // ★ 2026-09-29：`#line=N` 指定线路 → **只取那一条**（不做逐条试到可用；越界按上游口径收敛到末条）
+    // `#line=N` 指定线路 → **只取那一条**（不做逐条试到可用；越界按上游口径收敛到末条）
     if (preferLine >= 0) {
       const picked = pickRepoLine(multi.items, preferLine)!;
       const label = repoDisplayName(picked.item.url, picked.item.name);
@@ -1980,7 +2005,7 @@ export class SpiderHost {
         this.report = result.report;
         this.config = result.config;
         this.applyConfig(result.config);
-        // ★ 同 importConfig：用户主动导入的多仓订阅也清各自源 key 的墓碑（自动刷新 snapshot=false 不清）
+        // 同 importConfig：用户主动导入的多仓订阅也清各自源 key 的墓碑（自动刷新 snapshot=false 不清）
         if (snapshot) this.manager.clearDeletedSourceKeys(result.config.sites.map((s) => s.key));
         this.applyImportedConfig(result.config, item.url, snapshot, name);
         const note = `多仓共 ${total} 项，已导入首个可用子仓「${label}」${total > 1 ? `；其余 ${total - 1} 项：${skipped.join('；') || '均可用（可另行单独导入）'}；如需指定线路，在订阅地址尾加 #line=N（N 从 0 起）` : ''}`;
@@ -1998,7 +2023,7 @@ export class SpiderHost {
   private static readonly MULTI_REPO_BUDGET_MS = 60_000;
   private static readonly MULTI_REPO_MAX_TRY = 12;
 
-  /** ★ 启动时自动订阅刷新：当前订阅来自 URL 且距上次成功刷新 ≥7 天 → 重新拉取（不建档案、不打扰用户）。 */
+  /** 启动时自动订阅刷新：当前订阅来自 URL 且距上次成功刷新 ≥7 天 → 重新拉取（不建档案、不打扰用户）。 */
   async maybeAutoRefreshSubscriptions(): Promise<boolean> {
     try {
       const snap = this.manager.snapshot();
@@ -2094,20 +2119,19 @@ export class SpiderHost {
   detail(key: string, ids: string[]) {
     const b = this.getSource(key);
     if (!b) throw new Error(`源不存在: ${key}`);
-    // ★ 2026-09-29（用户报「sun.json 有分类/封面，点进去无详情」）：
-    //   隔离探针（.tmp/probe-detail.cjs，sun.json 全局 jar）实测：盘搜/网盘搜索族
+    //   盘搜/网盘搜索族
     //   （`MiPan` / `Baiku` / `KuLe`）连 homeContent 都抛 StackOverflowError，stderr 先打
     //   「App名称不匹配，疑似二次打包」—— 蜘蛛在类加载期自校验宿主 App 名（源侧 jar 行为）。
     //   桌面侧通用兜底 = 详情为空时引导走「全源聚合搜索」（渲染层 DetailPage）。
     return this.vm.detail(b, ids).then((d) => {
-      // ★ 2026-09-27（缺口 B，别删）：详情里的**播放源名**带网盘字样（实测 wex 玩偶：`夸克原画$$$夸克最高急速…`）
+      // （缺口 B，别删）：详情里的**播放源名**带网盘字样（实测见某影视壳类源：`夸克原画$$$夸克最高急速…`）
       //   ⇒ 该源播放必然要网盘 Cookie ⇒ 立刻学会它（进源即显示绑定入口）。
       //   为什么要这一条：原先只在「播放**成功**产出网盘直链」时才学 —— 没绑定 Cookie 时播放必失败，
       //   于是「学不到 → 不显示绑定入口 → 永远绑不上」死循环。详情数据在播放之前就能判定。
       const hit = driveBindHintFromPlaySources(d?.flags, d ? Object.values(d.episodes || {}).flat().map((e) => e.url) : null);
       if (hit) {
         this.logger.i(`detect 详情播放源含网盘（${hit}）→ 记入绑定清单: ${key}`);
-        // ★ 2026-10-14：同时记住该源用的 provider（供泛化授权文案补位，见 driveBindProviderForGenericAuth）
+        // 同时记住该源用的 provider（供泛化授权文案补位，见 driveBindProviderForGenericAuth）
         const prov = driveProviderKeyFromHint(hit);
         if (prov) this.driveBindProviderByKey.set(key, prov);
         this.markDriveBindNeeded(key);
@@ -2122,20 +2146,18 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 聚合搜索：遍历当前配置里全部"可搜索"源（searchable=1 且类型可用），
+   * 聚合搜索：遍历当前配置里全部"可搜索"源（searchable=1 且类型可用），
    * 并发（≤SEARCH_ALL_WORKERS）执行关键词查询，逐个收集成功/空/出错状态，汇总后返回。
    *
-   * ★ 2026-09-23 提速三改（用户反馈「搜索半天搜不出来」）：
+   * 提速三改
    *   ① 并发 4 → 6：单源超时降下来后，靠并发压住「30+ 源」的总时长；
    *   ② 单源超时 = **源声明 timeout**（原固定 25s）：卡死的源最多只占一个 worker 一次源级超时；
    *   ③ 总体预算 SEARCH_ALL_BUDGET_MS：到点先返回**已拿到的结果**，未完成的源标注超时错误
    *      （原行为是一直等所有 worker 跑完，最坏 N/4 × 25s → 分钟级无响应）。
    *   ④ .py 源纳入（此前被排除，是嵌入式 CPython3 接入前的历史遗留）。
-   *   ★ 2026-09-23 第二轮（用户要求「全源搜索也像单源搜索一样秒出」）：
-   *     ⑤ 源健康调度（scheduleOrder）：上次成功的快源先派发、近期失败源排最后且只给 3.5s 短预算 ——
+   *   ⑤ 源健康调度（scheduleOrder）：上次成功的快源先派发、近期失败源排最后且只给 3.5s 短预算 ——
    *        首屏命中不再被死源压在队尾；结果仍按配置顺序回填，展示顺序不变。
-   *   ★ 2026-09-23 第三轮（用户反馈「展示还是太慢、要等很久很久」，要求真·秒出）：
-   *     ⑥ 调度并发 6 → **12**（真机取证：33 个可搜索源全是 jar/py 子进程；池同 key 并行度 4 → 8）；
+   *   ⑥ 调度并发 6 → **12**（实测确认：33 个可搜索源全是 jar/py 子进程；池同 key 并行度 4 → 8）；
    *     ⑦ **同关键词 5 分钟缓存**：再搜一次直接秒回（`refresh:true` 可强制重搜）；
    *     ⑧ 启动预热 2 个进程 → **按 key 预热 4 个/多 key**（首波搜索即 4~8 路全热并行）。
    *
@@ -2144,7 +2166,7 @@ export class SpiderHost {
   async searchAll(wd: string, opts?: { refresh?: boolean }): Promise<SearchAllReport> {
     const term = (wd || '').trim();
     if (!term) throw new Error('请输入搜索关键词');
-    // ★ 秒回：同一关键词 TTL 内再搜 → 直接给上次报告（带 cachedAt，UI 提示「本地缓存 · 点「重新搜索」刷新」）
+    // 秒回：同一关键词 TTL 内再搜 → 直接给上次报告（带 cachedAt，UI 提示「本地缓存 · 点「重新搜索」刷新」）
     if (!opts?.refresh) {
       const hit = this.searchCache.getEntry(term);
       if (hit) {
@@ -2157,7 +2179,7 @@ export class SpiderHost {
     const pool = this.searchableSites();
     const results = new Array<AggSearchInput | null>(pool.length).fill(null);
     /**
-     * ★ 会话级「桌面端不支持」跳过集（2026-09-23 三轮续）：drpy 类 JS 源、需安卓原生库的壳源等
+     * 会话级「桌面端不支持」跳过集：drpy 类 JS 源、需安卓原生库的壳源等
      * 会**卡满预算才报错**且永远出不了结果（实测 2 个 drpy 源各占 10s）。首次失败即记入跳过集，
      * 后续全源搜索直接跳过（并在报告里给出明确原因），把尾巴和噪音一起去掉。
      */
@@ -2167,11 +2189,11 @@ export class SpiderHost {
     let firstHitAt = 0;
     let pushed = 0;
     /**
-     * ★★ 预备阶段（2026-09-24 二次修正）：**先等一等，不要直接跳过** ★★
+     * 预备阶段（二次修正）：**先等一等，不要直接跳过** 
      *   上一版「未就绪就跳过」在「清缓存/首装」后会把**全部 jar 源**跳过 → 用户看到空结果
      *   （实测反馈：「只有『正在逐源检查…』然后什么都没有」）。现在：
      *     ① 收集所有「正在后台下载/转换」的源，**最多等 SEARCH_ALL_PREPARE_MS**；
-     *     ② 等到了就正常参与本轮（这才是用户预期的「首次调用 jar 蜘蛛较慢，请稍候」）；
+     *     ② 等到了就正常参与本次搜索（这才是用户预期的「首次调用 jar 蜘蛛较慢，请稍候」）；
      *     ③ 仍未就绪的才跳过，并在报告里给出可读原因 + 计数（UI 据此显示横幅并自动重搜）。
      */
     const prepWaiters: Array<Promise<unknown>> = [];
@@ -2232,7 +2254,7 @@ export class SpiderHost {
         continue;
       }
       if (notReadyYet.has(i)) {
-        // 预备等待后**再判一次**：等到了就照常参与本轮
+        // 预备等待后**再判一次**：等到了就照常参与本次搜索
         let state = 'ready';
         let reason = '';
         try {
@@ -2261,8 +2283,8 @@ export class SpiderHost {
     const workerCount = Math.min(SEARCH_ALL_WORKERS_MAX, Math.max(SEARCH_ALL_WORKERS, Math.ceil(total / 5)));
     const deadline = Date.now() + SEARCH_ALL_BUDGET_MS;
     /**
-     * ★ 派发顺序（源索引）：健康源（快者优先）→ 未知源 → 近期失败源（短预算）。
-     * ★ 三轮：**当前选中源置顶** —— 用户刚在浏览的那个源最先出结果，
+     * 派发顺序（源索引）：健康源（快者优先）→ 未知源 → 近期失败源（短预算）。
+     * **当前选中源置顶** —— 用户刚在浏览的那个源最先出结果，
      *   观感就是「一点全源搜索，熟悉的那个源立刻回来了」（单源搜索本来就快）。
      */
     const order = scheduleOrder(pool.length, (i) => pool[i].key, this.sourceHealth).filter((i) => !skipped[i]);
@@ -2277,7 +2299,7 @@ export class SpiderHost {
       results[i] = input;
       done++;
       if (input.status === 'ok' && !firstHitAt) firstHitAt = Date.now() - searchT0;
-      // ★ 2026-09-24：`pushed` 只在**回调真实存在且推送成功**时自增 —— 此前 `?.()` 之后
+      // `pushed` 只在**回调真实存在且推送成功**时自增 —— 此前 `?.()` 之后
       //   无条件 `pushed++`，日志会打出「推送进度 32 条」而 IPC 实际上一条都没发（排障被误导）。
       const cb = this.onSearchAllProgress;
       if (cb) {
@@ -2287,7 +2309,7 @@ export class SpiderHost {
         } catch { /* 进度推送失败不影响搜索本身 */ }
       }
     };
-    // ★ 快速窗口：3s 后推一条「不带 source」的进度 → UI 明确显示「已出 X 个 · 其余 N 个仍在补搜」
+    // 快速窗口：3s 后推一条「不带 source」的进度 → UI 明确显示「已出 X 个 · 其余 N 个仍在补搜」
     const quickTimer = setTimeout(() => {
       try {
         this.onSearchAllProgress?.({ wd: term, done, total, pending: Math.max(0, total - done) });
@@ -2326,7 +2348,7 @@ export class SpiderHost {
         } catch (e) {
           const ms = Date.now() - t0;
           const msg = (e as Error).message || String(e);
-          // ★「桌面端不支持」类错误 → 记入跳过集（下次全源搜索不再为它花时间）
+          // 「桌面端不支持」类错误 → 记入跳过集（下次全源搜索不再为它花时间）
           if (UNSUPPORTED_ERR.test(msg)) {
             if (!this.unsupportedSources.has(b.key)) {
               this.unsupportedSources.add(b.key);
@@ -2342,12 +2364,12 @@ export class SpiderHost {
     clearTimeout(quickTimer);
     const all = pool.map((_, i) => results[i] ?? skipped[i]).filter((r): r is AggSearchInput => r !== null);
     const report = mergeSearchResults(all);
-    // ★ 仍有源在「准备运行时」→ 报告里带计数，UI 据此显示横幅并自动重搜（不让用户面对空屏）
+    // 仍有源在「准备运行时」→ 报告里带计数，UI 据此显示横幅并自动重搜（不让用户面对空屏）
     const pendingSources = all.filter((r) => r.status === 'error' && (r.error || '').startsWith('运行时就绪中')).length;
     if (pendingSources > 0) report.pendingSources = pendingSources;
-    this.searchCache.set(term, report); // ★ 下次同关键词直接秒回
-    // ★ 诊断摘要（2026-09-24）：一行看清「引擎侧到底卡在哪」——首结果耗时/总耗时/推送条数/跳过数。
-    //   下次用户再报「慢」，看这一行即可区分是引擎慢还是界面慢（跳过数 > 0 说明有源还在后台准备运行时）。
+    this.searchCache.set(term, report); // 下次同关键词直接秒回
+    // 诊断摘要：一行看清「引擎侧到底卡在哪」——首结果耗时/总耗时/推送条数/跳过数。
+    //   下次再遇「慢」的反馈，看这一行即可区分是引擎慢还是界面慢（跳过数 > 0 说明有源还在后台准备运行时）。
     this.logger.i(
       `全源搜索「${term}」：可搜 ${pool.length} 源（本次执行 ${total} / 跳过 ${pool.length - total}）；` +
         `首结果 ${firstHitAt || '-'}ms；完成 ${Date.now() - searchT0}ms；命中 ${report.hitSources} 源 ${report.items.length} 条；` +
@@ -2357,8 +2379,8 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-24：**.py 源后台预热**（脚本下载 + 嵌入式 Python 运行时准备）。
-   * 背景：用户反馈「py 源加载太慢，尤其首次」——根因是首次进源才现付
+   * **.py 源后台预热**（脚本下载 + 嵌入式 Python 运行时准备）。
+   * 背景：典型反馈是「py 源加载太慢，尤其首次」——根因是首次进源才现付
    *   「11MB embed 下载 + 解压 + 6 个 wheel 安装 + 脚本下载」，全在关键路径上。
    * 与 prewarmSpiders 分开做：那条只预热前 3 个池 key 且 30s 节流，py 源常排不上号。
    * 预热完全后台、可重复调用（在途工作由 bridge/PySpider 共享），失败静默（首次正常调用会重试）。
@@ -2385,7 +2407,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-17（B1，用户报「播放时太臃肿」）：用户开始播放 → 布防常驻蜘蛛池的**播放期收缩**。
+   * （B1，播放时资源占用偏高）：用户开始播放 → 布防常驻蜘蛛池的**播放期收缩**。
    *   播放期间不再发搜索请求，池纯属白占内存：整体空闲 30s 后收敛到 1 个热进程
    *   （见 SpiderProcPool.armPlaybackShrink）。由主进程 `media:state` 的播放器窗口 play/playing 触发。
    */
@@ -2394,7 +2416,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★「清理缓存」之后重新预热（2026-09-24）：清缓存会删掉 jar 转换产物与常驻进程，
+   * 「清理缓存」之后重新预热：清缓存会删掉 jar 转换产物与常驻进程，
    * 若不重建，用户下一次进源就要在请求里现付「下载 + dex2jar + JVM 冷启动」（实测 37s，会把请求顶成超时）。
    * 这里立刻在后台把全局 jar 重新转换 + 重启热进程；用户再点源时通常已经就绪。
    */
@@ -2420,7 +2442,7 @@ export class SpiderHost {
   }
 
   /** 可搜索源（非 `searchable: 0` 且类型可用）：聚合搜索与预热共用同一集合。
-   *  ★ 2026-09-25：口径由「searchable === 1」改为「非 0 即参与」（见 aggSearch.isSearchableSource）——
+   * 口径由「searchable === 1」改为「非 0 即参与」（见 aggSearch.isSearchableSource）——
    *   生态里 `searchable: 2` 的源（drpy 模板、R18/19.json 等大配置）此前被整体排除，
    *   表现为「整份配置搜不出东西」。 */
   private searchableSites(): SourceBean[] {
@@ -2428,8 +2450,8 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 常驻蜘蛛进程预热（2026-09-23 三轮重做配套）：按调度顺序把**前 maxKeys 个不同的池 key**
-   * 各预热 perKey 个进程（默认 1 个 —— 三轮后进程内已并发，一个热 JVM 就能跑完整轮搜索）。
+   * 常驻蜘蛛进程预热（重做配套）：按调度顺序把**前 maxKeys 个不同的池 key**
+   * 各预热 perKey 个进程（默认 1 个 —— 进程内已并发，一个热 JVM 就能跑完整轮搜索）。
    * - 只预热**已转换的 jar / 已落盘的脚本**：预热绝不触发下载或 dex2jar（那是重活，不进启动路径）；
    * - 以「真的新起了进程」计数（同 key 的后续源返回 0 → 自动跳到下一个 key）；
    * - 节流 + 静默失败：任何异常都不影响正常功能（最多就是没预热）。
@@ -2458,7 +2480,7 @@ export class SpiderHost {
     return started;
   }
   /**
-   * ★ 2026-09-24：需要走解析的播放源 flag 列表 = **订阅顶层 `flags`**（对齐上游 ApiConfig.getFlags()）。
+   * 需要走解析的播放源 flag 列表 = **订阅顶层 `flags`**（对齐上游 ApiConfig.getFlags()）。
    *   此前由渲染层把「详情页的播放源名」当 vipFlags 传进来 —— 而 flag 本身就取自那份列表，
    *   于是 `vipFlags.includes(flag)` **恒为真** → 所有 CMS 源都被判成 parse=1
    *   （用户看到的「该播放地址需要网页解析/嗅探，桌面版暂不支持」即由此而来）。
@@ -2468,7 +2490,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-25：网络代理设置变更后调用 —— 丢弃蜘蛛实例缓存。
+   * 网络代理设置变更后调用 —— 丢弃蜘蛛实例缓存。
    *   常驻进程池的 key 含代理参数（JVM `-D` 与 Python env），下次调用会按新参数拉起新进程；
    *   这里只需清掉引擎侧的实例缓存，避免继续复用「按旧代理参数」建好的实例。
    */
@@ -2477,8 +2499,8 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-26：网盘凭据变更后调用 —— 必须让蜘蛛**重新 init**。
-   *   fty 系 Cloud_* 蜘蛛的 cookie 在 init 时从 `<userData>/tvfan/Cloud-drive.txt` 读取，
+   * 网盘凭据变更后调用 —— 必须让蜘蛛**重新 init**。
+   *   某影视壳类源 Cloud_* 蜘蛛的 cookie 在 init 时从 `<userData>/tvfan/Cloud-drive.txt` 读取，
    *   文件内容变了但常驻进程/实例的 key（类名 + ext）没变 → 旧 cookie 会一直生效
    *   （表现为「刚绑定成功却仍然取不到流」）。这里同时清引擎实例缓存与常驻子进程。
    */
@@ -2505,10 +2527,10 @@ export class SpiderHost {
     this.bridge.resetPool();
   }
 
-  /**
-   * ★ 2026-09-28：`play` 外层只做**诊断埋点**（阶段/耗时/结果/原因），解析逻辑原样在 `playInner`。
+   /**
+    * `play` 外层只做**诊断埋点**（阶段/耗时/结果/原因），解析逻辑原样在 `playInner`。
    *
-   * 为什么：用户报「部分源正常但资源落不了盘/放不出来，成功率约 50%」——只有把每次播放的
+   * 为什么：部分源「资源落不了盘/放不出来，成功率约 50%」——只有把每次播放的
    * 结果与耗时按行落盘（`<userData>/logs/play-diag-*.jsonl`），才能分清是「源解析慢/失败」
    * 还是「网盘落盘/中继失败」，再决定改哪里。
    */
@@ -2531,7 +2553,7 @@ export class SpiderHost {
         parse: r.parse,
         needBind: r.needDriveCookieBind,
         msg: r.message ? String(r.message).slice(0, 120) : undefined,
-        // ★ 2026-10-09：地址前缀（判别「蜘蛛给了什么形态」——JSON 描述 / do=pan / 直链；前 80 字符）
+        // 地址前缀（判别「蜘蛛给了什么形态」——JSON 描述 / do=pan / 直链；前 80 字符）
         url: r.url ? String(r.url).slice(0, 80) : undefined,
       });
       return r;
@@ -2551,10 +2573,10 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-09（第七轮）：jar 自解链地址**预检** —— 用 `Range: bytes=0-0` 打一次 `/proxy/<port>`，
-   * 应答 2xx 且 Content-Type 是媒体才算通过。真机实证 jar 业务失败会回 200 `text/plain`「播放链接为空」
+   * jar 自解链地址**预检** —— 用 `Range: bytes=0-0` 打一次 `/proxy/<port>`，
+   * 应答 2xx 且 Content-Type 是媒体才算通过。实测确认 jar 业务失败会回 200 `text/plain`「播放链接为空」
    * 或 500「response code: 412」—— 直接把这种地址交给播放器只会黑屏且无线索；
-   * 预检失败 ⇒ 调用方回落**原生通道**（绑定 Cookie 最新、夸克转存链路已实证可用）。
+   * 预检失败 ⇒ 调用方回落**原生通道**（绑定 Cookie 最新、夸克转存链路实测可用）。
    * protected：单测里以实例属性覆写（不起真实 JVM）。
    */
   protected async probeSelfResolveUrl(url: string): Promise<boolean> {
@@ -2584,7 +2606,7 @@ export class SpiderHost {
   private async playInner(key: string, flag: string, id: string, retried = false): Promise<PlayResult> {
     const b = this.getSource(key);
     if (!b) throw new Error(`源不存在: ${key}`);
-    // ★ 2026-10-14（用户报 wex 立播「夸克原画」）：嵌套信封里若是桌面端**暂不支持**的网盘商
+    // 嵌套信封里若是桌面端**暂不支持**的网盘商
     //   （thunder / 115 / ali…），原样丢给蜘蛛只会得到「加固壳内部蜘蛛未就绪」这类无关提示。
     //   直接说明原因，避免用户反复重进该源。夸克 / UC / 百度仍走下方各自的原生通道。
     const unsupportedDrive = unsupportedNestedProvider(id);
@@ -2594,7 +2616,7 @@ export class SpiderHost {
         message: `该线路使用「${unsupportedDrive}」网盘（桌面端暂不支持解链）——请换夸克 / 百度 / UC 线路再播`,
       };
     }
-    // fty「优汐」与夸克共用 sId/fid 描述；明确 UC 上下文优先，不能误发到夸克。
+    // 某影视壳类源的 UC 线路与夸克共用 sId/fid 描述；明确 UC 上下文优先，不能误发到夸克。
     if (extractUcShare(id, flag) && !isUcSharePlay(id)) {
       const miss: string[] = [];
       const got = await this.ucFromPanUrl(id, flag, miss, id);
@@ -2612,12 +2634,11 @@ export class SpiderHost {
         ...(!this.driveList()['quark'] ? { needDriveCookieBind: 'quark' } : {}),
         message: `夸克网盘取流失败（${miss.join('；') || '缺少分享或文件信息'}）` };
     }
-    // ★ 2026-09-29（用户报「部分资源夸克网盘播放还是存在播放失败」）：
     //   转存失败原来只写日志（`quarkTransfer 未成功(reason)，回退蜘蛛`）→ 用户看到黑屏没有原因。
     //   这里记下原因，蜘蛛也拿不到地址时**翻译成可执行的中文提示上屏**（走既有 parse:1 + message 通道）。
     let quarkFail = '';
-    // ★ 夸克分享型播放（episode 是 pan.quark.cn/s/ 链接或含 sId 的 JSON）且已绑定夸克 →
-    //   用原生 quarkTransfer 复刻「分享→转存→直链」，绕开超时的 fty jar 与被 pin 的主机。
+    // 夸克分享型播放（episode 是 pan.quark.cn/s/ 链接或含 sId 的 JSON）且已绑定夸克 →
+    //   用原生 quarkTransfer 复刻「分享→转存→直链」，绕开超时的某影视壳类源 jar 与被 pin 的主机。
     if (isQuarkSharePlay(id, flag)) {
       const quarkCookie = (this.driveList() as Record<string, string>)['quark'] || '';
       if (quarkCookie) {
@@ -2625,10 +2646,10 @@ export class SpiderHost {
         const pwdId = share?.sId || '';
         if (pwdId) {
           try {
-            // ★ 修复「点第6集落盘第29集」：fid 提取兼容 fid/vfid/file_id/URL 参数（旧正则只认 "fid"）
+            // 修复「点第6集落盘第29集」：fid 提取兼容 fid/vfid/file_id/URL 参数（旧正则只认 "fid"）
             const innerFid = extractEpisodeFid(id);
-            // ★ 2026-09-29：集名一并传入 —— fid 在分享内匹配不到时按「集名/集号唯一匹配」兜底
-            // ★ 2026-10-09：提取码（若有）透传 —— 带码分享的 share/token 请求必带正确 passcode
+            // 集名一并传入 —— fid 在分享内匹配不到时按「集名/集号唯一匹配」兜底
+            // 提取码（若有）透传 —— 带码分享的 share/token 请求必带正确 passcode
             const t = await quarkTransfer(pwdId, quarkCookie, {
               passcode: share?.passcode || '',
               innerFid,
@@ -2637,13 +2658,13 @@ export class SpiderHost {
             });
             if (t.ok && t.url) {
               fileLogger.i(`quarkTransfer 直链 ok: ${t.url.slice(0, 90)}...`);
-              // ★ 记录待清理：关闭播放窗口/播放页时删除本次落盘文件（进度留在本地历史）
+              // 记录待清理：关闭播放窗口/播放页时删除本次落盘文件（进度留在本地历史）
               if (t.fid) {
                 this.pendingQuarkDeletes.push({ cookie: quarkCookie, pdirFid: t.pdirFid || '', dirFid: t.pdirFid || '', fid: t.fid, at: Date.now() });
                 if (this.pendingQuarkDeletes.length > 200) this.pendingQuarkDeletes.shift(); // 防无限增长
                 this.persistPendingQuark();
               }
-              // ★ 必须经 /play 中继注入直链的 header（Referer/UA），否则播放器直连
+              // 必须经 /play 中继注入直链的 header（Referer/UA），否则播放器直连
               //   dl-pc-zb.drive.quark.cn 会被 CDN 按来源拒绝（与下方 vm.play 的 header 注入一致）。
               //   注意 wrapPlayUrlWithHeaders 只提取 cookie/ua/referer 三个键；
               //   quarkTransfer 返回的 header 用的是大小写无关匹配，可以命中。
@@ -2667,7 +2688,7 @@ export class SpiderHost {
         quarkFail = '未绑定夸克账号（Cookie 缺失）';
       }
     }
-    // ★ 2026-09-30（用户要求「实现 UC 桌面端解链」）：UC 分享型播放（episode 是 drive.uc.cn/s/…）
+    // UC 分享型播放（episode 是 drive.uc.cn/s/…）
     //   且已绑定 UC → 用原生 ucResolveShare 取直链（**免转存优先**，不占用户网盘空间），
     //   绕开 jar 侧那套依赖 App「do=pan」路由的地址（桌面端没有该路由，jar 会给
     //   `http://127.0.0.1:-1/proxy?do=pan&…`，中继必失败）。
@@ -2709,12 +2730,12 @@ export class SpiderHost {
         }
       }
     }
-    // ★ 2026-09-30（用户要求「实现百度网盘桌面端解链」）：百度分享型播放（episode 本身就是
+    // 百度分享型播放（episode 本身就是
     //   `pan.baidu.com/s/…`，如「盘搜/百酷」这类聚合源）且已绑定百度 → 原生 baiduResolveShare 取直链。
     //   精确定位后优先签名分享免转存；失败时才落盘到应用专用目录「Win-Box缓存」，
     //     播完即删（走 pendingQuarkDeletes 队列）。
     let bdFail = '';
-    // FTY 详情描述已带所选文件与 seKey：无需等待可能超时的 playerContent 再取回同一描述。
+    // 该壳类源的详情描述已带所选文件与 seKey：无需等待可能超时的 playerContent 再取回同一描述。
     if (extractBaiduSharedFile(id)) {
       const miss: string[] = [];
       const got = await this.baiduFromPanUrl(id, flag, miss);
@@ -2726,9 +2747,9 @@ export class SpiderHost {
         message: `百度网盘取流失败（${miss.join('；') || '分享文件解链失败'}）`,
       };
     }
-    // ★ 2026-10-09：**百度「播放描述 JSON」形态跳过原生预钩子**（嘟嘟无限等）——
+    // **百度「播放描述 JSON」形态跳过原生预钩子**（部分网盘源等）——
     //   该形态的提取码/BDCLND 在 jar 详情阶段的内存状态里，原生 baiduResolveShare 没带提取码必失败
-    //   （真机实证「分享需要提取码（该线路没带提取码）」白等数秒）→ 直接让蜘蛛接手，
+    //   （实测确认「分享需要提取码（该线路没带提取码）」白等数秒）→ 直接让蜘蛛接手，
     //   由 playInner 的「描述 JSON → 合成 do=pan → jar 自解链」处理。
     if (isBaiduSharePlay(id) && !isBaiduPanDescriptor(id)) {
       const bdCookie = (this.driveList() as Record<string, string>)['baidu'] || '';
@@ -2767,21 +2788,21 @@ export class SpiderHost {
       }
     }
     return this.vm.play(b, flag, id, this.vipFlags).then(async (r) => {
-      // ★★ 2026-09-30（真机实测）：jar 侧「App 网盘代理」地址在桌面端**没有对应路由** ——
+      // jar 侧「App 网盘代理」地址在桌面端**没有对应路由** ——
       //   形如 `http://127.0.0.1:-1/proxy?do=pan&type=2&site=baidu&…`（安卓由 App 的 Pan 子系统承担），
       //   交给 /play 中继只会 `new URL('http://127.0.0.1:-1/…')` 抛 Invalid URL → 用户看到黑屏、
       //   且真正原因（转存失败）被吞掉。这类地址一律视为「蜘蛛没给可用地址」，走下面的原因上屏。
       const panJson = !!r.url && isBaiduPanDescriptor(r.url);
       if (r.url && (/[?&]do=pan\b/i.test(r.url) || /127\.0\.0\.1:-1/i.test(r.url) || panJson)) {
-        // ★ 落**参数值里的关键线索**：这条日志是排查「网盘线路播不了」的唯一入口。
-        //   ★ 2026-10-08 加强：此前只记参数名（keys=…），而「fileId 是不是分享链接、site 是哪个网盘、
+        // 落**参数值里的关键线索**：这条日志是排查「网盘线路播不了」的唯一入口。
+        // 加强：此前只记参数名（keys=…），而「fileId 是不是分享链接、site 是哪个网盘、
         //   值有没有被 percent-encode」正是判因关键。现在并记 `site` / `shareId` / **解码后**的 fileId 预览
         //   （截断 140）。注意**不能**用 `new URL` 解析 —— 端口是 `:-1`（非法），一定抛异常；
         //   值里可能带 token，故 fileToken 一律不落。
         const pan = parsePanProxyQuery(r.url);
         const panKeys = Object.keys(pan).join(',');
         if (panJson) {
-          // ★ 2026-10-09：饭太硬系（嘟嘟无限等）`playerContent` 直接返回百度网盘**播放描述 JSON**
+          // 某影视壳类源（部分网盘源等）`playerContent` 直接返回百度网盘**播放描述 JSON**
           this.logger.w(
             `play: 蜘蛛返回「百度网盘播放描述 JSON」→ 走原生解链: ${key} | surl=${(extractBaiduShare(r.url)?.short || '-').slice(0, 40)}`,
           );
@@ -2791,7 +2812,7 @@ export class SpiderHost {
               ` | site=${pan.site || '-'} | shareId=${(pan.shareId || '-').slice(0, 40)} | fileId=${(pan.fileId || '-').slice(0, 140)}`,
           );
         }
-        // ★★ 2026-10-09（jar 自解链优先，勿删）★★
+        // jar 自解链优先（勿删）
         //   9978 已应答 `/proxy?do=ck`→`ok`（LocalProxyServer），SpiderRunner 启动即拉起 JVM 内宿主代理
         //   （-Dtvbox.proxy.port）⇒ jar 产出的 `do=pan` 播放地址可改写 `/proxy/<jvmPort>` 回**它自己**解链
         //   （`Pan.proxy`：分享内 fs_id 需要 jar 详情阶段存下的 shareid/uk/BDCLND，桌面原生通道拿不到；
@@ -2809,16 +2830,16 @@ export class SpiderHost {
             this.logger.i(
               `play: 网盘/代理地址改写 → 蜘蛛 JVM 自解链(/proxy/${jvmPort}) do=${pan.do || '-'} site=${pan.site || '-'}: ${key}`,
             );
-            // ★★ 2026-10-09（第七轮）：**预检后才采用**。jar 自解链管道已通（CNFE 已修），
-            //   但业务可能失败（真机实证：baidu「播放链接为空」/ quark「response code: 412」）
+            // **预检后才采用**。jar 自解链管道已通（CNFE 已修），
+            //   但业务可能失败（实测确认：baidu「播放链接为空」/ quark「response code: 412」）
             //   —— 直接返回会让播放器黑屏且无线索。预检一次（Range 0-0，代价一个极小请求）：
-            //   出流 ⇒ 采用；不出流 ⇒ 落到下方**原生通道**（Cookie 最新、夸克转存已实证可用）。
+            //   出流 ⇒ 采用；不出流 ⇒ 落到下方**原生通道**（Cookie 最新、夸克转存实测可用）。
             if (await this.probeSelfResolveUrl(rewritten)) {
               return { ...r, parse: 0, url: rewritten, playUrl: '', jx: 0 };
             }
             this.logger.w(`play: jar 自解链预检不通过 → 原生通道兜底: ${key}`);
           } else if (panJson) {
-            // ★ 嘟嘟无限等「百度描述 JSON」：取 `share_id` + `fs_id` **合成 do=pan** 交 jar 自解链
+            // 部分网盘源等「百度描述 JSON」：取 `share_id` + `fs_id` **合成 do=pan** 交 jar 自解链
             //   （安卓同契约；提取码/BDCLND 由 jar 内部状态处理 —— 原生通道没带提取码必失败）。
             const shareId = /"share_id"\s*:\s*"([0-9a-zA-Z_-]+)"/.exec(r.url)?.[1] || '';
             const fsId = /"fs_id"\s*:\s*"([0-9]+)"/.exec(r.url)?.[1] || '';
@@ -2828,7 +2849,7 @@ export class SpiderHost {
               this.logger.i(
                 `play: 百度描述 JSON → 合成 do=pan 交 jar 自解链(/proxy/${jvmPort}) share_id=${shareId.slice(0, 24)} fs_id=${fsId.slice(0, 24)}: ${key}`,
               );
-              // ★ 同上：预检后才采用，失败落原生通道（描述里的 surl 走 baiduResolveShare）
+              // 同上：预检后才采用，失败落原生通道（描述里的 surl 走 baiduResolveShare）
               if (await this.probeSelfResolveUrl(synth)) {
                 return { ...r, parse: 0, url: synth, playUrl: '', jx: 0 };
               }
@@ -2840,11 +2861,11 @@ export class SpiderHost {
         } else if (/[?&]do=pan\b/i.test(r.url) || /127\.0\.0\.1:-1/i.test(r.url) || panJson) {
           this.logger.w(`play: 拿不到该源 JVM 端口（蜘蛛未被调用过/非 jar 源）→ 原生解链兜底: ${key}`);
         }
-        // ★ 2026-09-30：这个地址里若带**分享链接**（实测形态 `do=pan&site=baidu&shareId=&fileId=<分享URL>`），
+        // 这个地址里若带**分享链接**（实测形态 `do=pan&site=baidu&shareId=&fileId=<分享URL>`），
         //   改走原生解链（比上面的 episode id 判据更晚，覆盖「id 不是分享链接、jar 才拼出分享」的源）。
-        // ★ 2026-10-08：扩为**百度 + UC 双通道**（此前只有百度 —— jar 给 UC 分享的线路必然黑屏），
+        // 扩为**百度 + UC 双通道**（此前只有百度 —— jar 给 UC 分享的线路必然黑屏），
         //   两条通道的失败原因汇总落日志；全失败则**原因上屏**（不再静默 parse:0 黑屏，与 quarkFail 同口径）。
-        // ★ 2026-10-09（用户报「（百度：未识别分享链接；UC：未识别分享链接）」）：三段改造 ——
+        // 三段改造 ——
         //   ① 新增**夸克通道**（此前 site=quark 的 do=pan 必然双未识别）；
         //   ② 按 query 的 `site` 参数**优先试对应通道**（其余通道兜底，兼容 site 缺失/不规范）；
         //   ③ 「未识别」不再逐通道双报 —— 全部通道都未识别时，统一给一条带 `site` 的原因（便于反馈定位）。
@@ -2881,12 +2902,12 @@ export class SpiderHost {
             : `该线路需要网盘解链但未成功（${miss.join('；')}）—— 多为分享失效或源侧改版，建议换线路或换源`,
         };
       }
-      // ★ 2026-09-29：协议识别（用户选定「先做 A：协议解析 + 链路识别」）
+      // 协议识别
       //   · thunder:// → 解出内层 http(s) 直链，替换后用既有链路播（此前原样交给 <video> ⇒ 黑屏）；
       //   · magnet/ed2k/ftp → 无载体：{url:'', parse:1, message} 上屏原因 + externalLink（IPC 层复制剪贴板）。
       const link = classifyPlayLink(r.url || '');
       if (link.unsupported) {
-        // ★ 2026-09-29（磁力 B）：磁力不再直接判死 —— 先交内置 BT 引擎（aria2c）起播；
+        // （磁力 B）：磁力不再直接判死 —— 先交内置 BT 引擎（aria2c）起播；
         //   引擎缺失/冷门无做种/无外部播放器才回到 A 的「人话提示 + 复制链接」兜底。
         if (link.kind === 'magnet') return this.tryMagnetPlay(link.externalLink || r.url || '', link.unsupported, r);
         this.logger.w(`play: 链接无桌面载体（${link.kind}）→ 上屏引导: ${key}`);
@@ -2896,12 +2917,11 @@ export class SpiderHost {
         this.logger.i(`play: thunder 链接解出内层地址（${link.url.slice(0, 60)}…）: ${key}`);
         r = { ...r, url: link.url };
       }
-      // ★ 2026-09-28（诊断实测发现，用户第 6 项的一类）：蜘蛛把「未登录网盘」当成
+      // 诊断实测发现的一类：蜘蛛把「未登录网盘」当成
       //   **空地址 + 一句提示**返回（`parse:0`），而渲染层只认 `parse:1` 才上屏原因 →
       //   表现为「点了播放没反应/黑屏」，用户不知道要绑网盘。
       //   实测原话：`还未登录百度账号,请前往【配置中心】登录`（至臻源 · 百度线路）。
       //   这里翻译成「去绑定该网盘」的既有通道（parse:1 + needDriveCookieBind + message）。
-      //   ★★ 2026-09-30（用户报「潇洒/摸鱼这类配置，网盘资源播不了、已绑定还每次都弹绑定窗」）：
       //     **必须先看本地绑定态** —— 已绑定却收到「需登录」的提示，说明是**常驻蜘蛛的旧状态**
       //     （cookie 文件在它 init 之后才写入 / `%TEMP%` 被系统清理过 / 绑定前的实例仍被复用）；
       //     此时正确动作是「重置蜘蛛池并重试一次」而不是让用户去绑定（他会看到永远弹的绑定窗）。
@@ -2914,7 +2934,7 @@ export class SpiderHost {
           const bound = !!String((this.driveList() as Record<string, string>)[prov] || '').trim();
           if (bound && !retried) {
             this.logger.w(`play: 蜘蛛称「需登录${prov}」但本地已绑定 → 重置蜘蛛池并重试一次: ${key}`);
-            // ★ 2026-10-09：重试前**补写各系 cookie 文件**（wex 系读 `<沙箱>/files/TV/.quarkcookie` 等；
+            // 重试前**补写各系 cookie 文件**（某影视壳类源读 `<沙箱>/files/TV/.quarkcookie` 等；
             //   沙箱/%TEMP% 被清缓存清掉、或旧版本从未写过时，这一步自愈），再重置池让新 JVM 读到。
             this.syncDriveFiles();
             this.resetSpidersAfterDriveChange();
@@ -2927,8 +2947,8 @@ export class SpiderHost {
               // generic invalid-share message would hide the real failure.
               return r;
             }
-            // ★ 2026-10-09（用户报「还未登录夸克账号」类文案定位需要）：日志落**原文全文**（上屏仍截 100 字）
-            //   —— 不同 jar 家族的「未登录」文案措辞不同（如 fty「接口列表配置中心」/ wex「还没有配置夸克
+            // 日志落**原文全文**（上屏仍截 100 字）
+            //   —— 不同 jar 家族的「未登录」文案措辞不同（如「接口列表配置中心」/「还没有配置夸克
             //   Cookie」/ 未知族「【配置中心】」），全文是判定 jar 家族与读取通道的第一手证据。
             this.logger.w(
               `play: 重试后蜘蛛仍称需登录「${prov}」→ 如实上屏（不再弹绑定窗）: ${key} | 原文=${String(r.message).slice(0, 300)}`,
@@ -2953,7 +2973,7 @@ export class SpiderHost {
       // 仅对单个 http(s) 且非多段（# 连接）的播放地址做中继包装
       const single = /^https?:\/\//i.test(r.url || '') && !(r.url || '').includes('#');
       if (!single || !r.url) {
-        // ★ 2026-09-29：蜘蛛连地址都没给（`url:''`）但**集地址本身就是磁力/电驴**（部分源把磁力写在
+        // 蜘蛛连地址都没给（`url:''`）但**集地址本身就是磁力/电驴**（部分源把磁力写在
         //   vod_play_url 里，播放方法直接返回空）→ 按 id 再识别一次，给出同一套上屏引导。
         if (!r.url) {
           const byId = classifyPlayLink(id);
@@ -2963,7 +2983,7 @@ export class SpiderHost {
             return { ...r, parse: 1, url: '', playUrl: '', message: byId.unsupported, externalLink: byId.externalLink };
           }
         }
-        // ★ 2026-09-29：夸克转存失败 + 蜘蛛也没给出地址（或给的地址不可用）→ 把原因上屏，
+        // 夸克转存失败 + 蜘蛛也没给出地址（或给的地址不可用）→ 把原因上屏，
         //   不让用户对着黑屏猜（原来原因只写在日志里）。
         if (!r.url && quarkFail) {
           const needLogin = /401|403|未登录|登录已|login/i.test(quarkFail);
@@ -2980,7 +3000,7 @@ export class SpiderHost {
               : `夸克转存失败：${quarkFail}（分享可能已失效/更新，或该集文件已不在分享内 —— 建议换线路或换源）`,
           };
         }
-        // ★ 2026-09-30：UC 解链失败 + 蜘蛛也没给出可用地址 → 同样把原因上屏（不让用户对着黑屏猜）
+        // UC 解链失败 + 蜘蛛也没给出可用地址 → 同样把原因上屏（不让用户对着黑屏猜）
         if (!r.url && ucFail) {
           const needLogin = /401|403|未登录|登录已|login/i.test(ucFail);
           if (needLogin) this.markDriveBindNeeded(key);
@@ -2996,7 +3016,7 @@ export class SpiderHost {
               : `UC 网盘取流失败：${ucFail}（分享可能已失效/更新，或网盘空间不足 —— 建议换线路或换源）`,
           };
         }
-        // ★ 2026-09-30：百度解链失败 + 蜘蛛也没给出可用地址 → 同样把原因上屏
+        // 百度解链失败 + 蜘蛛也没给出可用地址 → 同样把原因上屏
         if (!r.url && bdFail) {
           const needLogin = /401|403|未登录|登录已|login|bdstoken/i.test(bdFail);
           if (needLogin) this.markDriveBindNeeded(key);
@@ -3022,20 +3042,20 @@ export class SpiderHost {
       // 2) 否则按网盘域名注入对应 provider 的绑定 Cookie
       const prov = matchDriveCookieProvider(r.url);
       if (prov) {
-        // ★ 2026-09-27：本源真实产出了网盘直链 ⇒ **确定需要网盘绑定** → 学会它。
-        //   这样源主页的「网盘绑定」入口不依赖蜘蛛类名清单（摸鱼/fty 类名写法不同、
+        // 本源真实产出了网盘直链 ⇒ **确定需要网盘绑定** → 学会它。
+        //   这样源主页的「网盘绑定」入口不依赖蜘蛛类名清单（各壳类源类名写法不同、
         //   同一只蜘蛛在不同订阅里 ext 也不同），换任何订阅、任何新蜘蛛都能覆盖。
-        // ★ 2026-10-14：同时记住该源的 provider（供泛化授权文案补位，见 driveBindProviderForGenericAuth）
+        // 同时记住该源的 provider（供泛化授权文案补位，见 driveBindProviderForGenericAuth）
         this.driveBindProviderByKey.set(key, prov);
         this.markDriveBindNeeded(key);
         const tokens = this.driveList() as Record<string, string>;
         /**
-         * ★★ 2026-09-29（用户要求）：**未绑定就拦下这次播放**，让渲染层直接弹「网盘绑定」窗口 ★★
+         * **未绑定就拦下这次播放**，让渲染层直接弹「网盘绑定」窗口 
          *
          * 旧行为：把（无 Cookie 必然 401 的）网盘直链仍交给播放器 → 用户看到黑屏 + 一句提示，
          *   还得自己找「点播页 → 网盘绑定」入口；现在改为走既有通道 `parse:1 + needDriveCookieBind`，
          *   详情页/播放器窗口据此**自动弹出**对应网盘的绑定弹窗（预选该网盘），绑定成功自动重播。
-         * 依据：夸克/UC/百度/115 直链无绑定 Cookie 必失败（见 docs 与 §C 的既有结论）。
+         * 依据：夸克/UC/百度/115 直链无绑定 Cookie 必失败（见 docs 的既有结论）。
          */
         if (!tokens[prov]) {
           this.logger.w(`play: 网盘直链但未绑定「${prov}」→ 拦下本次播放并提示绑定: ${key}`);
@@ -3053,8 +3073,8 @@ export class SpiderHost {
       }
       return r;
     }).then((r) => this.resolveNeededParse(r)).catch((e) => {
-      // ★ 2026-09-27（缺口 B，别删）：**未绑定网盘 Cookie 时的失败要翻译成「去绑定」**。
-      //   实测 wex 玩偶（夸克盘）：蜘蛛抛 `org.json.JSONException: JSONObject["data"] not found.`
+      // （缺口 B，别删）：**未绑定网盘 Cookie 时的失败要翻译成「去绑定」**。
+      //   实测某影视壳类源（夸克盘）：蜘蛛抛 `org.json.JSONException: JSONObject["data"] not found.`
       //   —— 上游网盘接口无 Cookie 时回的是错误 JSON（没有 data 字段），蜘蛛没做兜底。
       //   这里同时做两件事：① 记入绑定清单（学到的判据不依赖类名清单）；② 把失败变成一条**可执行的中文提示**
       //   走既有上屏通道（`parse:1` + `message`，PlayerPage 会在播放器上方显示，并保底播原始地址）
@@ -3062,12 +3082,12 @@ export class SpiderHost {
       const msg = String((e as Error)?.message ?? e);
       if (looksLikeDriveBindFailure(msg)) {
         this.markDriveBindNeeded(key);
-        // ★ 2026-09-30：已绑定该网盘时不再引导「去绑定」（否则用户会以为绑定没生效）
-        // ★ 2026-10-14：泛化授权文案（如「请先完成网盘授权」）不含网盘名 → 用该源学到的 provider 补位，
+        // 已绑定该网盘时不再引导「去绑定」（否则用户会以为绑定没生效）
+        // 泛化授权文案（如「请先完成网盘授权」）不含网盘名 → 用该源学到的 provider 补位，
         //   否则 prov='' 会把「已绑定」误判成「未绑定」并错误引导用户去绑定。
         const prov = driveBindProviderFromText(msg) || this.driveBindProviderForGenericAuth(msg, key) || '';
         const bound = !!String((this.driveList() as Record<string, string>)[prov] || '').trim();
-        // ★ 2026-10-14：与「返回空地址 + 需登录文案」同口径 —— 已绑定却抛授权错，说明是**常驻蜘蛛的旧状态**
+        // 与「返回空地址 + 需登录文案」同口径 —— 已绑定却抛授权错，说明是**常驻蜘蛛的旧状态**
         //   （cookie 文件在它 init 之后才写入 / `%TEMP%` 被清理过 / 旧实例仍被复用）→ 补写 cookie 文件 +
         //   重置蜘蛛池后**重试一次**（`retried` 防死循环），而不是直接判死。
         if (bound && !retried) {
@@ -3093,7 +3113,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-29（磁力 B，用户选定方案）：磁力 → 内置 BT 引擎（aria2c sidecar）起播。
+   * （磁力 B）：磁力 → 内置 BT 引擎（aria2c sidecar）起播。
    *
    * 三种出口（见 TorrentPlay.open）：
    *   · inline   —— mp4/webm：给本机中继地址 `/bt/<hash>/<idx>`，`<video>` 直接播（Range + piece 门控）；
@@ -3137,7 +3157,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-24：`parse===1`（需网页解析/嗅探）的地址 → 走解析接口链拿可直连地址。
+   * `parse===1`（需网页解析/嗅探）的地址 → 走解析接口链拿可直连地址。
    *   成功：parse 置 0，url 换成解析/嗅探结果（带 Referer/UA/Cookie 经 /play 注入）；
    *   失败：保留 parse=1 并附 `message`，渲染层据它提示（替代原「桌面版暂不支持」的笼统说法）。
    *   多段地址（# 分隔）只取第一段试解析（与 TVBox 播放器取首段一致）。
@@ -3187,7 +3207,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-18 直播输出模板列表 = **内置 2 个**（`builtin:txt` / `builtin:m3u`）+ 插件模板。
+   * 直播输出模板列表 = **内置 2 个**（`builtin:txt` / `builtin:m3u`）+ 插件模板。
    * 内置先占 id（同 id 的插件模板被忽略）；插件未注入 / 抛错 → 只有内置（**内置永远可用**）。
    */
   async liveTemplates(): Promise<LiveTemplateView[]> {
@@ -3216,8 +3236,8 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-10-18 按模板渲染导出文本（**纯本地**：不取数、不发请求、不弹框）。
-   * ★ 本类型只做**输出侧格式化** —— 频道来自调用方已解析的 `LiveGroup[]`，宿主不解析任何订阅格式。
+   * 按模板渲染导出文本（**纯本地**：不取数、不发请求、不弹框）。
+   * 本类型只做**输出侧格式化** —— 频道来自调用方已解析的 `LiveGroup[]`，宿主不解析任何订阅格式。
    * 找不到 `templateId` → 回落第一个模板（内置 `builtin:txt`）。
    */
   async renderLiveExport(templateId: string, groups: LiveGroup[]): Promise<LiveTemplateView & { content: string }> {
@@ -3231,7 +3251,7 @@ export class SpiderHost {
   }
 
   /**
-   * ★ 2026-09-29 EPG：拉取当前直播线路的 XMLTV（磁盘缓存：缺失/非当天/>6h 才回源）→ 解析 → 匹配频道 →
+   * EPG：拉取当前直播线路的 XMLTV（磁盘缓存：缺失/非当天/>6h 才回源）→ 解析 → 匹配频道 →
    * 返回每个频道的「当前 / 下一档」。频道引用由渲染层传入（它已持有 loadLive 的分组，免再拉一次直播源）。
    * 匹配与时间解析语义对齐 FongMi/TV `EpgParser`。
    */
@@ -3273,8 +3293,8 @@ export class SpiderHost {
   /** 设置并预热全局 spider jar；URL 未变化时不重复预热 */
   private setSpiderJar(url: string): void {
     const u = (url || '').trim();
-    // ★ 用规范化后的 URL 做「是否变化」判定与预热入参。
-    //   配置里 spider 常为 `./fty.jar;md5;xxx`，若拿原始串当身份，
+    // 用规范化后的 URL 做「是否变化」判定与预热入参。
+    //   配置里 spider 常为 `./xxx.jar;md5;xxx`，若拿原始串当身份，
     //   同一 jar 会因为后缀差异被误判为"变了"而重复预热/重复下载。
     const normalized = normalizeJarUrl(u);
     if (normalized === this.lastSpiderJar) return;
@@ -3289,7 +3309,6 @@ export class SpiderHost {
   /** 用户配置每次变更（含启动恢复/导入替换/增删改排序/选中源）后同步内存态 */
   private onUserConfigChange(snap: UserConfig, kind: ConfigChangeKind = 'content'): void {
     /**
-     * ★★ 2026-09-27（用户报「摸鱼切换源很慢、一直加载中；从搜索结果返回也很慢」）★★
      *   「只换选中源 / 直播线路」不是配置变更 —— 此时 `sites/parses/lives/flags/spider` 一字未变，
      *   下面这些重活**全部不该做**：
      *     ① `applyConfig`：重放整份 SiteConfig（1000 源时是纯浪费）；
@@ -3301,12 +3320,12 @@ export class SpiderHost {
      *   实测观感：切一次源 = 界面长时间转圈。⇒ ui-only 变更直接返回（选中键持久化仍照常写盘）。
      */
     if (kind === 'ui') return;
-    // ★ 已持久化的旧配置（导入时未做相对路径归一）在此补齐：
+    // 已持久化的旧配置（导入时未做相对路径归一）在此补齐：
     //   以档案 apiUrl 为基准展开 `./xxx.jar`。已是绝对 URL 的值不受影响。
     const base = snap.apiUrl || '';
     const cfg: SiteConfig = {
       sites: base ? snap.sources.map((s) => normalizeBeanPaths(s, base)) : snap.sources,
-      // ★ 2026-09-24 修复：此前恒为 []，订阅的解析接口（parses）根本没进运行时 →
+      // 修复：此前恒为 []，订阅的解析接口（parses）根本没进运行时 →
       //   parse===1 的播放地址只能报「暂不支持」。现由 UserConfig 透传（见 UserConfig.parses）。
       parses: snap.parses || [],
       lives: snap.lives,
@@ -3327,9 +3346,9 @@ export class SpiderHost {
     this.vm.spiderFactory.clear();
     this.searchCache.clear(); // 源列表变了 → 旧的全源搜索报告作废（可能含已删除源）
     this.unsupportedSources.clear(); // 源列表变了 → 「不支持」判定重新学习
-    // ★ 预热常驻蜘蛛进程（延后 1s：只要不抢窗口首帧即可，越早预热用户越早受益）。
+    // 预热常驻蜘蛛进程（延后 1s：只要不抢窗口首帧即可，越早预热用户越早受益）。
     //   深度预热（__warm__：加载类 + 预建实例）覆盖前 3 个不同 key。
-    //   ★ 2026-09-24 起同时调度 .py 源预热（脚本 + 嵌入式 Python 运行时）——见 prewarmPythonSources。
+    // 同时调度 .py 源预热（脚本 + 嵌入式 Python 运行时）——见 prewarmPythonSources。
     const schedule = () => {
       if (!this.prewarmEnabled) {
         setTimeout(schedule, 250).unref?.();
@@ -3360,7 +3379,7 @@ function resolvePathValue(value: string, baseUrl: string): string {
   if (!/^https?:\/\//i.test(baseUrl)) return value;
   const dir = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
   if (!dir) return value;
-  // `./fty.jar;md5;xxx` → URL 段归一，后缀（;md5;…）保持
+  // `./xxx.jar;md5;xxx` → URL 段归一，后缀（;md5;…）保持
   const [head, ...tail] = v.split(';');
   let resolved: string;
   try {

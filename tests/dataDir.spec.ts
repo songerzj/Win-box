@@ -1,5 +1,5 @@
 // tests/dataDir.spec.ts
-// ★ 2026-09-30：数据目录迁移（安装目录/data）单测 —— planDataDir / ensureWritableDir /
+// 数据目录迁移（安装目录/data）单测 —— planDataDir / ensureWritableDir /
 //   shouldSkipRel / migrateLegacy（moved / copied 跳过缓存 / 断点续传 / 失败保留旧目录 / 已有标记只清残留）。
 import { describe, it, expect, afterEach } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';

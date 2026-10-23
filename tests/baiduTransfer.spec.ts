@@ -1,4 +1,4 @@
-// tests/baiduTransfer.spec.ts — 百度解链的纯函数（★ 2026-09-30 新增）
+// tests/baiduTransfer.spec.ts — 百度解链的纯函数（新增）
 // 覆盖两个真机踩过的协议坑：surl 去首位 `1`、分享页 HTML 的条目解析。
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { isBaiduSharePlay, extractBaiduShare, verifySurl, parseShareItems, extractBaiduInnerName, extractBaiduSharedFile, baiduErrnoText, baiduResolveSharedFile, baiduResolveShare, baiduFileDelete, baiduShareRand, BAIDU_DL_UA } from '../src/main/net/baiduTransfer';
@@ -303,7 +303,7 @@ describe('extractBaiduShare', () => {
     const pan = 'http://127.0.0.1:-1/proxy?do=pan&site=baidu&shareId=&fileId=https://pan.baidu.com/s/1jJYCvRQ47rKhE8J4wwciyw?pwd=moCu&fileToken=';
     expect(extractBaiduShare(pan)).toEqual({ short: '1jJYCvRQ47rKhE8J4wwciyw', pwd: 'moCu' });
   });
-  it('★ 2026-10-09：yun 旧域名与 share/init?surl= 形态（surl 恒补首位 1）', () => {
+  it('yun 旧域名与 share/init?surl= 形态（surl 恒补首位 1）', () => {
     expect(extractBaiduShare('https://yun.baidu.com/s/1FQlot5_c063Bdw05ChknbQ')).toEqual({
       short: '1FQlot5_c063Bdw05ChknbQ',
       pwd: '',
@@ -322,7 +322,7 @@ describe('extractBaiduShare', () => {
   });
 });
 
-// ★ 2026-10-08（用户日志实证：玩偶/花卷/木偶「百度无限」线路全部黑屏且日志无线索）：
+// （实测：部分源「某网盘线路」全部黑屏且日志无线索）
 //   jar 把分享链接塞进 do=pan 的 query 参数值时会 percent-encode（部分 jar 还会二次编码），
 //   旧实现裸正则匹配不到 → 解链静默 return null。这里锁定 encoded/二次编码/非法转义三种形态。
 describe('do=pan 的 percent-encoded 形态', () => {
@@ -349,7 +349,7 @@ describe('do=pan 的 percent-encoded 形态', () => {
   });
 });
 
-describe('★ 2026-10-09：百度网盘「播放描述 JSON」（饭太硬系「嘟嘟无限」把这段 JSON 当播放地址返回）', () => {
+describe('百度网盘「播放描述 JSON」（某壳源把这段 JSON 当播放地址返回）', () => {
   const desc =
     '{"pg":"","parent":"","share_id":"33432245846","uk":"1099891027153","surl":"1DssJrJXy-2W4yPXvwew5QA",' +
     '"fs_id":"328674630465284","shareUser":"","path":"%2Fsharelink0-480637669818448%2F%E5%8D%83%E9%87%91%2FE01.mp4"}';
@@ -382,7 +382,7 @@ describe('★ 2026-10-09：百度网盘「播放描述 JSON」（饭太硬系「
   });
 });
 
-describe('★ 2026-10-09：baiduErrnoText（errno → 可执行人话；-6 登录失效是关键区分）', () => {
+describe('baiduErrnoText（errno → 可执行人话；-6 登录失效是关键区分）', () => {
   it('-6 → 引导重新扫码（而非误导成提取码问题）', () => {
     expect(baiduErrnoText(-6)).toContain('重新扫码绑定百度');
   });
@@ -400,7 +400,7 @@ describe('★ 2026-10-09：baiduErrnoText（errno → 可执行人话；-6 登�
 });
 
 describe('verifySurl', () => {
-  // ★ 真机实测：带首位 1 → 恒定 errno 105；去掉后 → errno 0
+  // 实测：带首位 1 → 恒定 errno 105；去掉后 → errno 0
   it('去掉首位 1（百度分享 id 固定以 1 开头）', () => {
     expect(verifySurl('1FQlot5_c063Bdw05ChknbQ')).toBe('FQlot5_c063Bdw05ChknbQ');
     expect(verifySurl('1utOcrcv4EuQ4juj9jb4ENA')).toBe('utOcrcv4EuQ4juj9jb4ENA');

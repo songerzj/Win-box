@@ -1,4 +1,4 @@
-// tests/ucTransfer.spec.ts — UC 解链的纯函数（★ 2026-09-30 新增）
+// tests/ucTransfer.spec.ts — UC 解链的纯函数（新增）
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { isUcSharePlay, extractUcShare, ucResolveShare, validateUcMediaUrl } from '../src/main/net/ucTransfer';
 
@@ -19,14 +19,14 @@ describe('isUcSharePlay', () => {
 });
 
 describe('extractUcShare', () => {
-  it('按明确 UC 线路解析潇洒玩偶复合选集，不误识别其他提供商', () => {
+  it('按明确 UC 线路解析某壳源复合选集，不误识别其他提供商', () => {
     const id = '03~4K.mp4[1.01GB]__' + 'a'.repeat(32) + '+11adf8105c314+' + 'b'.repeat(32);
     expect(extractUcShare(id, 'UC无限#5')).toEqual({ pwdId: '11adf8105c314', passcode: '' });
     expect(extractUcShare(id, '优汐无限1')).toEqual({ pwdId: '11adf8105c314', passcode: '' });
     expect(extractUcShare(id, '夸克无限#4')).toBeNull();
     expect(extractUcShare(id)).toBeNull();
   });
-  it('明确 UC/优汐线路的 sId/fid 描述不再误判成夸克，但无线路上下文不猜', () => {
+  it('明确 UC 线路的 sId/fid 描述不再误判成夸克，但无线路上下文不猜', () => {
     const d = JSON.stringify({ sId: 'uc-share-1', fid: 'file-2', file_name: '02.mkv' });
     expect(extractUcShare(d, '优汐无限1')).toEqual({ pwdId: 'uc-share-1', passcode: '' });
     expect(extractUcShare(d, 'UC网盘')).toEqual({ pwdId: 'uc-share-1', passcode: '' });
@@ -52,7 +52,7 @@ describe('extractUcShare', () => {
     expect(extractUcShare('https://drive.uc.cn/s/abc123?passcode=Zz09')?.passcode).toBe('Zz09');
     expect(extractUcShare('https://drive.uc.cn/s/abc123?password=1234')?.passcode).toBe('1234');
   });
-  it('★ 2026-10-09：fast.uc.cn 短域名形态', () => {
+  it('fast.uc.cn 短域名形态', () => {
     expect(extractUcShare('https://fast.uc.cn/s/abc9x9?pwd=q1w2')).toEqual({ pwdId: 'abc9x9', passcode: 'q1w2' });
     expect(isUcSharePlay('https://fast.uc.cn/s/abc9x9')).toBe(true);
   });
@@ -216,7 +216,7 @@ describe('validateUcMediaUrl', () => {
   });
 });
 
-// ★ 2026-10-08（用户报「UC 网盘资源无法播放」）：jar 把 UC 分享链接塞进 do=pan 的 query
+// jar 把 UC 分享链接塞进 do=pan 的 query
 //   参数值时会 percent-encode，旧实现裸正则匹配不到；且桌面端当时只有百度兜底、没有 UC 通道。
 describe('do=pan 的 percent-encoded 形态', () => {
   const encPan =

@@ -13,7 +13,7 @@ import org.python.util.PythonInterpreter;
  *   结果 JSON 打到 stdout；错误/日志走 stderr（复用 [SpiderRunner.ERROR] 标签，
  *   让 JarSpiderBridge 的 lastReason 提取零改动即生效）。
  *
- * ★ 硬约束：Jython 仅支持 Python 2.7。Python3-only 脚本（f-string / requests /
+ * 硬约束：Jython 仅支持 Python 2.7。Python3-only 脚本（f-string / requests /
  *   type hints 等）必然失败 —— 上层已就这一点给出诚实文案（translateSpiderLog）。
  *   本运行器只负责"尽力执行 + 精确报错"，不承诺 1:1 语义。
  */
@@ -89,7 +89,7 @@ public class PythonRunner {
       } else {
         throw new IllegalArgumentException("unknown method: " + method);
       }
-      // ★ 结果序列化成**严格 JSON**：Python dict 的 str() 是单引号 repr，非合法 JSON。
+      // 结果序列化成**严格 JSON**：Python dict 的 str() 是单引号 repr，非合法 JSON。
       //   用 jython 的 json.dumps 编码；若蜘蛛已自行返回 JSON 字符串则原样透传。
       pi.set("__py_out__", result);
       Object encoded = pi.eval(

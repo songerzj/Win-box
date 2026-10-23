@@ -1,4 +1,4 @@
-// tests/torrentSidecar.spec.ts — 磁力 B 的主进程组件（★ 2026-09-29）：
+// tests/torrentSidecar.spec.ts — 磁力 B 的主进程组件：
 //   · aria2c 引擎命令行（纯构造：参数写错会静默劣化体验 —— 门控/续传/孤儿进程全靠它）
 //   · 外部播放器探测（MKV/HEVC 接力）
 //   · PlayerSettings 的 btExternalPlayer 归一（老配置容错）
@@ -180,8 +180,8 @@ describe('PlayerSettings 归一 — btExternalPlayer / vodExternalPlayer（容�
     expect(DEFAULT_PLAYER_SETTINGS.vodExternalPlayer).toBe('');
     expect(DEFAULT_PLAYER_SETTINGS.vodExternalPlayerEnabled).toBe(false);
     expect(DEFAULT_PLAYER_SETTINGS.mpvPath).toBe('');
-    expect(DEFAULT_PLAYER_SETTINGS.srMode).toBe('off'); // ★ 超分插件（M1）：默认关
-    // ★ R11：插件播放内核默认全关（空表）
+    expect(DEFAULT_PLAYER_SETTINGS.srMode).toBe('off'); // 超分插件（M1）：默认关
+    // R11：插件播放内核默认全关（空表）
     expect(DEFAULT_PLAYER_SETTINGS.engineEnabled).toEqual({});
     expect(DEFAULT_PLAYER_SETTINGS.enginePaths).toEqual({});
     expect(normalizePlayerSettings(undefined)).toEqual({
@@ -206,7 +206,7 @@ describe('PlayerSettings 归一 — btExternalPlayer / vodExternalPlayer（容�
     expect(normalizePlayerSettings({ m3u8Purify: true }).m3u8Purify).toBe(true);
   });
 
-  it('★ 2026-09-30：点播外部播放器与磁力分开（vodExternalPlayer 独立归一）', () => {
+  it('点播外部播放器与磁力分开（vodExternalPlayer 独立归一）', () => {
     expect(normalizePlayerSettings({ vodExternalPlayer: '  C:\\PF\\PotPlayer\\PotPlayerMini64.exe  ' }).vodExternalPlayer)
       .toBe('C:\\PF\\PotPlayer\\PotPlayerMini64.exe');
     expect(normalizePlayerSettings({ vodExternalPlayer: 5 as unknown as string }).vodExternalPlayer).toBe('');
@@ -215,13 +215,13 @@ describe('PlayerSettings 归一 — btExternalPlayer / vodExternalPlayer（容�
     expect(normalizePlayerSettings({ vodExternalPlayer: 'D:\\vlc.exe' }).btExternalPlayer).toBe('');
   });
 
-  // ★ 2026-10-08（用户要求「换成勾选项，不要根据路径选择是否启用；就算填了路径，不勾选依旧不使用第三方播放器」）
-  it('★ 2026-10-08：点播总开关 —— 显式值优先，旧配置按「路径非空」迁移', () => {
+  // 
+  it('点播总开关 —— 显式值优先，旧配置按「路径非空」迁移', () => {
     // 旧配置（无该字段）：有路径 → 迁移为启用（保持 09-30 起「填了就直接用它播」的既有行为）
     expect(normalizePlayerSettings({ vodExternalPlayer: 'D:\\PotPlayer\\PotPlayerMini64.exe' }).vodExternalPlayerEnabled).toBe(true);
     // 旧配置无路径 → 不启用（新装默认）
     expect(normalizePlayerSettings({}).vodExternalPlayerEnabled).toBe(false);
-    // ★ 显式 false **必须压过路径**（用户要求：不勾选依旧不使用第三方播放器）
+    // 显式 false **必须压过路径**（不勾选依旧不使用第三方播放器）
     expect(normalizePlayerSettings({ vodExternalPlayer: 'D:\\vlc.exe', vodExternalPlayerEnabled: false }).vodExternalPlayerEnabled).toBe(false);
     // 显式 true → 启用；非布尔（老档案脏值）一律按「路径非空」推导
     expect(normalizePlayerSettings({ vodExternalPlayer: 'D:\\vlc.exe', vodExternalPlayerEnabled: true }).vodExternalPlayerEnabled).toBe(true);
@@ -229,8 +229,8 @@ describe('PlayerSettings 归一 — btExternalPlayer / vodExternalPlayer（容�
     expect(normalizePlayerSettings({ vodExternalPlayerEnabled: true }).vodExternalPlayerEnabled).toBe(true);
   });
 
-  // ★ 2026-10-08（用户拍板「内置官方构建」）：MPV 内核路径覆盖归一（空 = 用随包内置构建）
-  it('★ 2026-10-08：mpvPath —— 去空白 / 脏值回落空串 / 老配置可读', () => {
+  // MPV 内核路径覆盖归一（空 = 用随包内置构建）
+  it('mpvPath —— 去空白 / 脏值回落空串 / 老配置可读', () => {
     expect(normalizePlayerSettings({ mpvPath: '  R:\\resources\\mpv\\mpv.exe  ' }).mpvPath).toBe('R:\\resources\\mpv\\mpv.exe');
     expect(normalizePlayerSettings({ mpvPath: 5 as unknown as string }).mpvPath).toBe('');
     expect(normalizePlayerSettings({ mpvPath: null as unknown as string }).mpvPath).toBe('');

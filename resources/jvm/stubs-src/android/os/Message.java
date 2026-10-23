@@ -6,11 +6,11 @@ package android.os;
  * <p>真实调用面：WebViewClient#onFormResubmission / WebChromeClient#onCreateWindow
  * / WebView#requestFocusNodeHref 的形参类型。
  *
- * <p>★ 这是**数据承载类**，必须真实保存 {@code what}/{@code arg1}/{@code arg2}/
+ * <p>这是**数据承载类**，必须真实保存 {@code what}/{@code arg1}/{@code arg2}/
  * {@code obj}：内嵌库创建 Message 后由调用方读取这些字段做分发。
  * 空壳会让消息路由静默失效（不报错，但没有回调）。
  *
- * <p>★ {@code obtain()} 静态工厂返回非 null 实例，参考安卓原版的复用池语义
+ * <p>{@code obtain()} 静态工厂返回非 null 实例，参考安卓原版的复用池语义
  * （这里简化为直接 new，桌面端消息量极小，不需要池）。
  */
 public final class Message {

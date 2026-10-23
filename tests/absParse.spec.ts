@@ -142,7 +142,7 @@ describe('VodNormalizer — Movie → DTO', () => {
     expect(it.sourceKey).toBe('src1');
   });
   it('toVodItem：vod_tag=folder 原样透传（盘搜文件夹条目 → 渲染层走 categoryContent 展开）', () => {
-    // ★ 2026-09-30：盘搜族源搜索结果里 vod_tag=folder 是「夸克 (92个)」这类分组，不能当片子进详情
+    // 盘搜族源搜索结果里 vod_tag=folder 是「夸克 (92个)」这类分组，不能当片子进详情
     const folderVod = JSON.parse(JSON_SAMPLE).list[0];
     folderVod.vod_tag = 'folder';
     const abs = parseAbsJson(JSON.stringify({ list: [folderVod] }), 'src1')!;

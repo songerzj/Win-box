@@ -1,5 +1,5 @@
 /* Win-Box — 皮肤令牌基线 + 宿主结构层。
-   ★ 2026-10-18（用户要求「统一皮肤标准」）：本文件是**唯一的宿主样式表** ——
+本文件是**唯一的宿主样式表** ——
      ① `:root` = **深色基线**（`layout.base='dark'` 的皮肤在此之上覆盖令牌）；
      ② `:root[data-base='light']` = **亮色基线**；
      ③ 各外壳（`data-shell`）/ 详情 / 发现 / 筛选的结构规则 → 见文件末尾「宿主结构层」；
@@ -178,8 +178,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   display: flex; align-items: center; gap: 2px; flex: none; -webkit-app-region: no-drag;
 }
 .ap-extra .tb-btn { width: 32px; height: 28px; }
-/* ★ 2026-10-08（用户要求「置顶按钮挪到最小化按钮旁边」）：标题栏置顶按钮开启态（accent 高亮 + 淡底）。
-   带 `:root[data-theme]` 前缀压过皮肤（`.app.pwin .tb-btn:hover` 等），同 §C54 教训。 */
+/* 标题栏置顶按钮开启态（accent 高亮 + 淡底）。
+   带 `:root[data-theme]` 前缀压过皮肤（`.app.pwin .tb-btn:hover` 等）。 */
 :root[data-theme] .tb-btn.tb-pin-on { color: var(--accent); background: rgba(255, 255, 255, .12); }
 :root[data-theme] .tb-btn.tb-pin-on:hover { color: var(--accent); background: rgba(255, 255, 255, .18); }
 
@@ -217,7 +217,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .nav-ico { width: 20px; text-align: center; font-size: 15px; }
 .side-foot { margin-top: auto; padding: 12px; font-size: 11px; color: #4c5563; line-height: 1.5; }
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-/* ★ 2026-09-29 缺陷修复（用户报「点播页换源列表被封面遮挡」）：
+/* 缺陷修复：
    真因 = 层序。`.topbar` 被 backdrop-filter 提升为**堆叠上下文**，但它 position:static、z-index:auto
    ⇒ 与 `.card-media`（`position: relative`、z-index:auto）**同属「定位元素/堆叠上下文（z-index:auto）」绘制层**，
    而封面在 DOM 里靠后 ⇒ 后绘制 ⇒ 盖住顶栏里弹出的换源列表（实测弹层内 3 个采样点有 2 个命中封面 IMG）。
@@ -225,30 +225,30 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
    （顶栏与内容不重叠，视觉零变化；顶栏内的弹层/下拉从此都不再被封面压住）。 */
 .topbar { position: relative; z-index: 30; min-height: 54px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px;
   padding: 0 18px; background: var(--surface-1); backdrop-filter: blur(6px); }
-/* ★ 2026-09-24：顶栏按钮固定「横板」形状 —— 此前长提示文字会把它压成竖排异形（文字折成两三行） */
+/* 顶栏按钮固定「横板」形状 —— 此前长提示文字会把它压成竖排异形（文字折成两三行） */
 .topbar button { flex: 0 0 auto; white-space: nowrap; }
 /* 顶栏里的说明文字可被压缩并省略号截断（给右侧按钮让位） */
 .topbar > .muted { min-width: 0; }
 .content { flex: 1; overflow: auto; padding: 18px; scrollbar-gutter: stable; }
 
-/* ---- ★ 2026-09-24（用户定稿）：页面切换过渡动画（轻微淡入 + 上移） ----
+/* ---- 页面切换过渡动画（轻微淡入 + 上移） ----
    做法：App 里给路由容器加 key=pathname → 切页时容器重建 → 触发一次入场动画。
-   ★ 2026-10-08：动画本体与关键帧统一挪到文件末尾的「交互态/动效系统」里（走 --dur-page / --ease-enter 令牌）。
+动画本体与关键帧统一挪到文件末尾的「交互态/动效系统」里（走 --dur-page / --ease-enter 令牌）。
    注意：动画结束后 transform 回到 none（不构成 fixed 定位的包含块），页面内弹窗仍按视口定位。 */
 .page-anim {
   flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  /* ★ 2026-10-08：尊重应用内「界面动效 = 始终开启」的覆盖（data-motion='on' 时不关页面动画） */
+  /* 尊重应用内「界面动效 = 始终开启」的覆盖（data-motion='on' 时不关页面动画） */
   html:not([data-motion='on']) .page-anim { animation: none; }
 }
 
-/* ---- ★ 2026-10-15（用户要求「伪墓碑」）：单页内跳转时上一个页面**保持挂载、仅隐藏** ----
+/* ---- 单页内跳转时上一个页面**保持挂载、仅隐藏** ----
    新页面只替换可见内容，返回时零重载（滚动/分类/搜索态原样保留）。
    隐藏页不参与布局与命中测试（display:none），页面内的懒加载/观察器也随之停摆。 */
 .page-anim.keep-page[data-active='0'] { display: none; }
 
-/* ---- ★ 2026-09-24：换源（手机 TVBox 式：源名纯文字，长按/右键弹列表）与顶栏搜索面板 ---- */
+/* ---- 换源（手机 TVBox 式：源名纯文字，长按/右键弹列表）与顶栏搜索面板 ---- */
 .srcpick { position: relative; flex: 0 0 auto; }
 .srcpick-name {
   display: inline-flex; align-items: center; gap: 6px; cursor: default; user-select: none;
@@ -261,7 +261,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .srcpick-caret { color: var(--text-dim); font-size: 10px; }
 .srcpick-side { margin: 6px 8px 10px; }
 .srcpick-side .srcpick-name { border-radius: var(--radius-sm); max-width: none; width: 100%; justify-content: space-between; }
-/* ★ 2026-09-29 缺陷修复（用户报「侧边换源列表向下展开什么都看不到」）：
+/* 缺陷修复：
    侧栏的换源入口就在窗口**底部**，向下展开必然被窗口下沿裁掉（实测弹层 bottom 962 > 视口 800）。
    修：侧栏变体的列表**向上展开**（`top:auto` + `bottom:100%+6px`）。 */
 .srcpick-side .srcpick-pop { top: auto; bottom: calc(100% + 6px); }
@@ -273,7 +273,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   box-shadow: 0 12px 40px rgba(0,0,0,.5); backdrop-filter: blur(8px);
 }
 .srcpick-pop-tip { color: var(--text-dim); font-size: 10px; padding: 4px 8px 6px; border-bottom: 1px solid var(--border-soft); margin-bottom: 4px; }
-/* ★ 2026-09-30（用户要求）：弹层加宽为「左订阅 / 右源」双栏；右侧空间不足时右锚（由组件量测后加类） */
+/* 弹层加宽为「左订阅 / 右源」双栏；右侧空间不足时右锚（由组件量测后加类） */
 .srcpick-pop-wide { min-width: 380px; max-width: 440px; }
 .srcpick-pop-right { left: auto; right: 0; }
 /* 源名实时检索：随输入过滤当前订阅下的源 */
@@ -287,7 +287,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .srcpick-item { padding: 7px 10px; border-radius: 6px; font-size: 13px; cursor: default; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .srcpick-item:hover { background: var(--accent-soft, rgba(120,170,255,.12)); }
 .srcpick-item.active { color: var(--accent); font-weight: 650; }
-/* ★ 2026-10-09（用户要求「删除换源下拉里调源位置的功能，不美观」）：源行回到「纯源名」——
+/* 源行回到「纯源名」——
    行内管理按钮（⤒/↑/↓/✕）已从 SourcePicker 删除，相关样式一并移除；源管理只在配置页保留。 */
 .srcpick-col-src .srcpick-item { display: flex; align-items: center; gap: 6px; }
 .srcpick-sname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -302,14 +302,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
   box-shadow: 0 12px 40px rgba(0,0,0,.5); backdrop-filter: blur(8px);
 }
 .sp-row { display: flex; gap: 8px; }
-/* ★ 2026-09-29（用户要求「搜索框做大一点」）：加高加大输入框 */
+/* 加高加大输入框 */
 .sp-input { flex: 1; min-width: 0; height: 38px; font-size: 14px; padding: 0 12px; }
 .sp-list { margin-top: 8px; max-height: 300px; overflow: auto; }
 .sp-item { display: flex; justify-content: space-between; gap: 10px; padding: 7px 8px; border-radius: 6px; font-size: 13px; cursor: default; }
 .sp-item:hover { background: var(--accent-soft, rgba(120,170,255,.12)); }
 .sp-meta { font-size: 11px; flex: 0 0 auto; }
 .sp-hot-tip { font-size: 11px; margin: 2px 0 6px; }
-/* ★ 2026-09-29（用户要求）：左列 = 搜索历史；右列 = 热搜排名榜 */
+/* 左列 = 搜索历史；右列 = 热搜排名榜 */
 .sp-cols { display: flex; gap: 14px; margin-top: 10px; align-items: flex-start; }
 .sp-hist { flex: 1 1 54%; min-width: 0; }
 .sp-rank { flex: 1 1 46%; min-width: 0; border-left: 1px solid var(--border-soft); padding-left: 14px; }
@@ -334,7 +334,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 }
 .sp-rank-no.top { color: #fff; font-weight: 700; border-radius: 4px; background: linear-gradient(135deg, #4f86ff, #6a5cff); }
 h2, h3, h4 { font-weight: 650; letter-spacing: .2px; }
-/* ★ 2026-10-08：标题与卡片文字统一走排版级差令牌（各皮肤仍可按需覆盖） */
+/* 标题与卡片文字统一走排版级差令牌（各皮肤仍可按需覆盖） */
 h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text); }
 
 /* ---- 通用组件 ---- */
@@ -388,16 +388,16 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
 .tag.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
 /**
- * ★ 2026-10-16：「已保存配置」芯片里的行内按钮（改名 / 删）。
+ * 「已保存配置」芯片里的行内按钮（改名 / 删）。
  *   各皮肤 `.tag.active` 的底色多为浅色或主题色（netflix 白底、bilibili/apple/douban 主题色底），
- *   而 `.linkbtn` 用的是各自的主题色 → 白字白底 / 蓝字蓝底，按钮**看不见也点不到**（用户要求「生效档案
- *   也要能删」，按钮必须先看得见）。这里用 `:root[data-theme][data-theme]` 双前缀（§C54 教训：皮肤
+ * 而 `.linkbtn` 用的是各自的主题色 → 白字白底 / 蓝字蓝底，按钮**看不见也点不到**（按钮必须先看得见）。
+ *   这里用 `:root[data-theme][data-theme]` 双前缀（皮肤
  *   选择器特异度更高）统一收敛：普通按钮跟随芯片文字色、删除按钮保持各皮肤的红。
  */
 :root[data-theme][data-theme] .tag.active .linkbtn { color: inherit; }
 :root[data-theme][data-theme] .tag.active .linkbtn.danger { color: var(--danger); }
 
-/* ---- 级联分类条（★ 2026-10-15：逐级点击才展开下级；豆风走 .db-filters 组，其余皮肤走这里） ---- */
+/* ---- 级联分类条（逐级点击才展开下级；豆风走 .db-filters 组，其余皮肤走这里） ---- */
 .cascade { display: flex; flex-direction: column; gap: 2px; margin-bottom: 14px; }
 .cascade-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 22px; }
 .cascade-label { flex: 0 0 auto; color: var(--text-dim); font-size: 11px; margin-right: 6px; }
@@ -406,10 +406,18 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
 
 /* ---- 点播网格 ---- */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 14px; }
-/* ★ 2026-09-30（瀑布模式，防卡顿）：离开视口的卡片**跳过渲染与布局**（Chromium content-visibility）——
-   瀑布连翻十几页时 DOM 里会有上千张卡，这一条让滚动/追加的开销只花在可视区上。
-   contain-intrinsic-size 是「未渲染时的占位尺寸」（≈ 138 宽列下的卡高 240），只影响滚动条长度估算。 */
-.grid .card-media { content-visibility: auto; contain-intrinsic-size: 138px 240px; }
+/* （DOM 真虚拟化取代了这里的老对策）：原先这一条是
+   `.grid .card-media { content-visibility: auto; contain-intrinsic-size: 138px 240px }` ——
+   让离屏卡「跳过渲染与布局」。实测它有两个问题，现在由 components/VirtualGrid.tsx 真正卸载离屏卡后已无必要：
+     ① 它靠 `contain-intrinsic-size` 的**估算高度**撑行，估算值与真实卡高不一致（网飝皮肤实测：
+        声明 240px vs 真实 329px，列宽 192）⇒ 整行都是离屏卡时行高被低估，滚动时行高来回变、内容跟着漂；
+     ② 它只省绘制，节点与 `<img>`（连同解码位图）仍常驻 —— 正是"内存降不下来"的那部分。 */
+/* （DOM 真虚拟化，见 components/VirtualGrid.tsx）：
+   离屏卡片已被**移出 DOM**，原位置由这个等高占位块撑住 —— 高度由组件实测的卡片高内联给出，
+   因此网格行高、总滚动高度、瀑布哨兵位置与"真实布局"**逐像素一致**（含换皮肤后的卡高）。
+   自带一点背景色是给「快速滚动时刚露头的格子」一个加载态观感（而非空洞）；
+   `pointer-events: none` 保证它不吃点击（露出的一瞬间也不该点中）。 */
+.grid > .vg-ph { pointer-events: none; background: var(--surface-3); border-radius: var(--radius); }
 /* 站级 style=list 的列表式布局 */
 .list { display: flex; flex-direction: column; gap: 8px; }
 .list-item { display: flex; align-items: center; gap: 10px; background: linear-gradient(180deg, var(--surface-2), var(--surface-1)); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 6px 10px; cursor: pointer; position: relative; }
@@ -422,7 +430,7 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
   transition: transform var(--dur-state) var(--ease-spring), border-color var(--dur-state) var(--ease-standard), box-shadow var(--dur-state) var(--ease-standard); }
 .card-media:hover .card { transform: translateY(-3px); border-color: rgba(91,140,255,.6); box-shadow: 0 10px 28px rgba(0,0,0,.45); }
 .card-media img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: var(--surface-3); }
-/* ★ 2026-09-24：无封面占位（搜索未命中 + 源图坏 → 不留坏图图标/灰影） */
+/* 无封面占位（搜索未命中 + 源图坏 → 不留坏图图标/灰影） */
 .no-cover { width: 100%; aspect-ratio: 2/3; display: flex; align-items: center; justify-content: center;
   color: var(--text-dim); font-size: 11px; background: var(--surface-3); }
 .card-media .badge { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.55); color: var(--accent-2);
@@ -431,7 +439,7 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
 .card-media .name { font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-media .remarks { font-size: var(--fs-xs); color: var(--accent-2); opacity: .9; }
 
-/* ---- ★ 2026-09-24：相关推荐横条（详情页）—— 封面尺寸强约束统一（此前个别图会被撑大） ---- */
+/* ---- 相关推荐横条（详情页）—— 封面尺寸强约束统一（此前个别图会被撑大） ---- */
 .rec-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; align-items: flex-start; }
 .rec-row > .card-media { flex: 0 0 132px; width: 132px; max-width: 132px; }
 .rec-row > .card-media img { width: 132px; height: 198px; aspect-ratio: 2 / 3; object-fit: cover; }
@@ -487,13 +495,13 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
 .hist-undo .linkbtn { margin-left: auto; }
 .hist-undo .muted-btn { margin-left: 0; color: var(--text-dim); }
 
-/* ---- ★ 2026-10-16（用户要求）：点播页「筛选」开关（右上角）----
-   ★ 2026-10-16 二次调整（用户要求）：「**分类那一列始终显示**，并与「筛选」按钮**同一水平线**；
+/* ---- 点播页「筛选」开关（右上角）----
+二次调整：「**分类那一列始终显示**，并与「筛选」按钮**同一水平线**；
      点「筛选」后**下面**再弹出其余全部筛选组」—— 所以
      · `.home-filter-row` = 一行 flex：左「分类」级（占满剩余宽度，chips 内部换行）+ 右「筛选」按钮（靠 `margin-left:auto`）；
      · `.home-filters-more` = 下面弹出的其余筛选组（带轻微上浮淡入）。
-   ★ 开启态按钮**右下角带一个对号**角标（`.hf-check`），样式与「收藏」按钮同款口径
-     （`:root[data-theme]` 前缀压过各皮肤 button 规则，§C54 教训）。 */
+   开启态按钮**右下角带一个对号**角标（`.hf-check`），样式与「收藏」按钮同款口径
+     （`:root[data-theme]` 前缀压过各皮肤 button 规则）。 */
 .home-filter-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
 /* 「分类」那一级撑满剩余宽度；按钮靠右且始终停在第一行 */
 .home-filter-row .cascade { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
@@ -516,12 +524,12 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
   background: var(--accent); color: #fff; font-size: 10px; line-height: 1; font-weight: 700;
 }
 
-/* ---- ★ 2026-10-16（用户要求「瀑布模式下增加回到顶部按钮」「翻页增加输入页码快速跳页」）----
+/* ---- （瀑布模式增加回到顶部按钮、翻页增加输入页码快速跳页）----
    模式切换已挪到「配置 → 外观」（点播页不再放切换按钮）：
    · 瀑布模式：右下角「回到顶部」浮钮（下滚一定距离才出现，见 HomePage 的 scroll 监听）；
    · 翻页模式：翻页行内的窄输入框 + 「跳页」（复用既有的整页 replace 路径与页码语义）。 */
-/* ★ 特异度：各皮肤有 `:root[data-theme='X'] button {…}`（0,2,1）、`…:hover`（0,3,1）——
-   这里带 `:root[data-theme]` 前缀（0,3,0 / hover 0,4,0）稳压它们（§C54 教训）。 */
+/* 特异度：各皮肤有 `:root[data-theme='X'] button {…}`（0,2,1）、`…:hover`（0,3,1）——
+   这里带 `:root[data-theme]` 前缀（0,3,0 / hover 0,4,0）稳压它们。 */
 .btn-to-top, :root[data-theme] .btn-to-top {
   position: fixed; right: 22px; bottom: 22px; z-index: 45;
   display: inline-flex; align-items: center; justify-content: center;
@@ -535,10 +543,10 @@ h3 { font-size: var(--fs-xl); } h4 { font-size: var(--fs-lg); color: var(--text)
 /* 跳页输入框：窄、数字居中（其余输入框样式沿用 global 的 input 规则） */
 .pg-jump, :root[data-theme] .pg-jump { width: 64px; text-align: center; padding: 7px 8px; }
 
-/* ---- ★ 2026-10-17（用户要求「详情页加收藏按钮 + 收藏列表」）---- */
+/* ---- ---- */
 /* 详情页操作区的收藏按钮（与「▶ 播放选中」同一行） */
 .fav-btn { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
-/* 皮肤里针对 button / .tag 的选择器特异度更高 → 带 `:root[data-theme]` 前缀保证「已收藏」态生效（§C54 教训） */
+/* 皮肤里针对 button / .tag 的选择器特异度更高 → 带 `:root[data-theme]` 前缀保证「已收藏」态生效 */
 :root[data-theme] .fav-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 :root[data-theme] .fav-btn.active:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 /* 收藏页：备注行（点击即编辑）与卡片内行内编辑面板 */
@@ -558,7 +566,7 @@ tr.selectable:hover { background: var(--surface-2); }
 tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rgba(91,140,255,.45); outline-offset: -1px; }
 
 /* ---- 播放器（现代化） ---- */
-/* ★ 2026-10-15（用户要求「大豆/大果的播放器被改成圆角，做回正常的直角播放器」→ 四套皮肤一起）：
+/* 播放器回归直角（四套皮肤一起）：
    舞台 `.vplayer` 必须是**直角**。它带 `overflow:hidden`，一旦有圆角就会**把视频画面自身的四角切掉**
    （画面满铺时肉眼可见）；浅色外壳的皮肤（大豆 / 大果）还会在黑色舞台四周露出圆角缺口。
    故圆角在**基类**统一置 0 —— 各皮肤不得再给 `.vplayer` 加圆角（原值 10px 为开源初始口径）。 */
@@ -566,7 +574,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
   font-family: inherit; border-radius: 0; }
 .vplayer video { width: 100%; height: 100%; object-fit: contain; outline: none; }
 
-/* ★ 2026-09-26（用户报「部分比例的视频会让播放器底部 UI 消失」）——
+/* ——
    ① 高度链：flex item 默认 `min-height: auto` 会按内容（视频固有比例）撑高，
       竖屏/超宽视频会把 .vplayer 顶到视口之外，绝对定位在底部的 .vp-controls 随之下沉不可见。
       播放器窗口链 = .main → .pwin-body → .pwin-stage → .vplayer，**每一层都必须允许收缩**。
@@ -601,7 +609,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vp-big:hover { background: rgba(0,0,0,.62); transform: translate(-50%,-50%) scale(1.06); }
 .vp-err { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px;
   align-items: center; justify-content: center; color: #fff; background: rgba(0,0,0,.72); font-size: 14px; padding: 20px; text-align: center; }
-/* ★ 网盘资源未绑定 cookie 提示卡片：覆盖于加载/错误之上（z-index 最高，优先可操作） */
+/* 网盘资源未绑定 cookie 提示卡片：覆盖于加载/错误之上（z-index 最高，优先可操作） */
 .vp-drive-bind { position: absolute; inset: 0; z-index: 7; display: flex; flex-direction: column; gap: 16px;
   align-items: center; justify-content: center; color: #fff; background: rgba(0,0,0,.78);
   font-size: 14px; line-height: 1.7; padding: 24px; text-align: center; }
@@ -618,11 +626,11 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vp-buffer { position: absolute; left: 0; height: 4px; border-radius: 2px; background: rgba(255,255,255,.32); }
 .vp-played { position: absolute; left: 0; height: 4px; border-radius: 2px;
   background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
-/* ★ 2026-09-26（用户要求）：进度点缩小（12px → 9px）；★ 2026-09-28 再缩（9px → 7px）
+/* 进度点缩小（12px → 9px）；再缩（9px → 7px）
    并用 translate(-50%) 居中定位 —— 主题皮肤可各自覆盖尺寸，无需再在 JSX 里写半宽偏移 */
 .vp-thumb { position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%); width: 7px; height: 7px; border-radius: 50%;
   background: #fff; box-shadow: 0 0 5px rgba(0,0,0,.5); }
-/* ★ 2026-09-28（用户要求）：进度条悬停 —— 定位细线 + 指向时间气泡 */
+/* 进度条悬停 —— 定位细线 + 指向时间气泡 */
 .vp-hline { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.75); pointer-events: none; }
 .vp-htip { position: absolute; bottom: calc(100% + 6px); transform: translateX(-50%); pointer-events: none;
   padding: 1px 6px; border-radius: 4px; font-size: 11px; color: #fff; white-space: nowrap;
@@ -635,18 +643,18 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
   width: 26px; height: 26px; color: #eee; border-radius: 5px; }
 .vp-ctl:hover { color: #fff; background: rgba(255,255,255,.14); }
 .vp-ctl:disabled { color: rgba(238,238,238,.28); cursor: default; background: none; }
-/* ★ 2026-09-30（用户要求）：播放器「置顶」按钮的**已开启态**——高亮色 + 亮底 + 实心图标，与未开启明显区分。
-   ★ 皮肤样式（netflix/bilibili/apple）里的 `:root[data-theme='X'] .vp-ctl` 特异度 (0,3,0) 更高，
+/* 播放器「置顶」按钮的**已开启态**——高亮色 + 亮底 + 实心图标，与未开启明显区分。
+   皮肤样式（netflix/bilibili/apple）里的 `:root[data-theme='X'] .vp-ctl` 特异度 (0,3,0) 更高，
      故这里带 `:root[data-theme]` 前缀（(0,4,0)）压过它们 —— 否则默认皮肤下置顶态仍是白色，看不出开没开。 */
 .vp-ctl.vp-on,
 :root[data-theme] .vp-ctl.vp-on { color: var(--accent); background: rgba(255,255,255,.16); }
 :root[data-theme] .vp-ctl.vp-on:hover { color: var(--accent); background: rgba(255,255,255,.24); }
-/* ★ 2026-10-17（阶段3）：**MPV 内核专属**技术信息条 —— 位于控制条内部、进度条之上，随 `.vui` 一起显隐。
-   （只在非小窗分支渲染；皮肤若要覆盖，按 §C54 用 `:root[data-theme]` 前缀压特异度。） */
+/* （阶段3）：**MPV 内核专属**技术信息条 —— 位于控制条内部、进度条之上，随 `.vui` 一起显隐。
+   （只在非小窗分支渲染；皮肤若要覆盖，用 `:root[data-theme]` 前缀压特异度。） */
 .vp-tech { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; color: rgba(255,255,255,.82); }
 .vp-tech-chip { font-size: 11px; line-height: 1; padding: 3px 6px; border-radius: 4px;
   background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.08); white-space: nowrap; }
-/* ★ 2026-10-17（阶段3）：**MPV 内核专属**起播格式标签（画面右上角，加载后短暂显示 4s） */
+/* （阶段3）：**MPV 内核专属**起播格式标签（画面右上角，加载后短暂显示 4s） */
 .vp-fmtbadges { position: absolute; top: 14px; right: 14px; z-index: 6; display: flex; gap: 6px;
   pointer-events: none; animation: vpBadgeIn .28s ease-out both; }
 .vp-fmtbadge { font-size: 11px; font-weight: 600; letter-spacing: .02em; padding: 4px 8px; border-radius: 5px;
@@ -656,13 +664,13 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vp-time { font-size: 12px; color: #e6e8ee; font-variant-numeric: tabular-nums; }
 .vp-live { color: var(--danger); font-size: 12px; font-weight: 700; letter-spacing: .5px; }
 
-/* ===== ★ 2026-10-16（用户要求）：播放器「选集」=====
+/* ===== 播放器「选集」=====
    · 入口 = 底部控制条里「画面比例」与「全屏」之间的一个 `.vp-ctl`（用户指定位置；开启态沿用 `.vp-on`）；
    · 点开 → 选集抽屉从画面**右侧**丝滑滑出：**上下贯通**（top→bottom）、只占画面 **1/4~1/3**、
      半透明 + 毛玻璃、列表为该资源当前线路的集排列；点某集 → 切集并**自动关闭**；再点入口同样关闭。
    · 打开期间控制层被锁住（鼠标不动底部播放条也不消失）；面板存在时不展示中央暂停键（见 VideoPlayer）。
-   ★ 面板一律带 `:root[data-theme]` 前缀：皮肤里 `button` 规则特异度更高（netflix/bilibili 等会把
-     background/border/padding 全写掉），不加前缀毛玻璃与描边会被吃（§C54 教训，同 `.vp-ctl.vp-on` 口径）。 */
+   面板一律带 `:root[data-theme]` 前缀：皮肤里 `button` 规则特异度更高（netflix/bilibili 等会把
+     background/border/padding 全写掉），不加前缀毛玻璃与描边会被吃（同 `.vp-ctl.vp-on` 口径）。 */
 :root[data-theme] .vp-eppanel {
   position: absolute; top: 0; bottom: 0; right: 0; z-index: 7;
   /* 只占画面 1/4~1/3（`clamp` 保证宽屏不低于 1/4、窄屏不超过 1/3；极窄屏兜底 240px） */
@@ -702,7 +710,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 :root[data-theme] .vp-epitem.cur { background: var(--accent-soft); color: #fff; }
 :root[data-theme] .vp-epitem.cur .vp-epno { color: var(--accent); font-weight: 700; }
 
-/* ===== ★ 2026-09-30 图片浏览器（图集源：每「集」= 一张图）===== */
+/* ===== 图片浏览器（图集源：每「集」= 一张图）===== */
 .ivi { display: flex; align-items: center; justify-content: center; touch-action: none; }
 .ivi-img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none;
   transition: transform .08s linear; will-change: transform; }
@@ -722,7 +730,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .ivi-nav-btn:hover { background: rgba(0,0,0,.62); }
 .ivi-nav-btn:disabled { opacity: .25; cursor: default; }
 
-/* ===== ★ 2026-09-30 音乐播放器（音频源：mp3/flac/m4a…）===== */
+/* ===== 音乐播放器（音频源：mp3/flac/m4a…）===== */
 .aud { display: flex; align-items: center; justify-content: center;
   background: radial-gradient(120% 120% at 50% 0%, #1d2230 0%, #0b0d12 70%); }
 .aud audio { display: none; }
@@ -756,16 +764,16 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vp-rate { background: rgba(255,255,255,.12); color: #fff; border: none; border-radius: 5px; font-size: 11px;
   padding: 2px 4px; cursor: pointer; }
 .vp-rate option { color: #111; }
-/* ★ 2026-10-08（用户拍板「内置官方构建」）MPV 内核切换按钮：小标（激活态复用 .vp-ctl.vp-on 的 accent 高亮） */
+/* MPV 内核切换按钮：小标（激活态复用 .vp-ctl.vp-on 的 accent 高亮） */
 .vp-kernel-tag { font-size: 10px; font-weight: 700; letter-spacing: .5px; }
 
-/* ★★ 2026-10-08 MPV 高兼容内核：播放器窗口 transparent=true + 播放区页面透明 ——
+/* MPV 高兼容内核：播放器窗口 transparent=true + 播放区页面透明 ——
    mpv 子窗口从透明处透出，HTML 覆盖层（控制条/弹幕/设置面板）仍在其上绘制且点击归 HTML（PoC 实测）。
    普通（HTML5）内核下这些规则不生效（整页仍不透明绘制，视觉与旧版一致）。
-   ★ 透明链必须一路到 .vplayer/.vp-stage（中间任何一层不透明都会整块盖住 mpv 画面）。
-   ★★ 特异度（勿改回 html[data-mpv]）：皮肤包（netflix/bilibili/apple.css）用
+   透明链必须一路到 .vplayer/.vp-stage（中间任何一层不透明都会整块盖住 mpv 画面）。
+   特异度（勿改回 html[data-mpv]）：皮肤包（netflix/bilibili/apple.css）用
    `:root[data-theme=X] .app.pwin .main`（0,5,0）等规则把播放器壳画成不透明黑 ——
-   本组选择器必须挂 `:root[data-theme][data-mpv]`（0,6,0）才能压过皮肤（同 §C54 置顶按钮那次教训）。 */
+   本组选择器必须挂 `:root[data-theme][data-mpv]`（0,6,0）才能压过皮肤。 */
 :root[data-theme][data-mpv] body,
 :root[data-theme][data-mpv] .app.pwin,
 :root[data-theme][data-mpv] .app.pwin .main,
@@ -773,7 +781,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 :root[data-theme][data-mpv] .pwin-stage,
 :root[data-theme][data-mpv] .vplayer { background: transparent; }
 :root[data-theme][data-mpv] .vplayer video { visibility: hidden; }
-/* ★ mpv 子窗口按父窗口**客户区**渲染（无法只占播放区）→ 标题栏 / mini 条改**浮层**（顶栏渐隐），
+/* mpv 子窗口按父窗口**客户区**渲染（无法只占播放区）→ 标题栏 / mini 条改**浮层**（顶栏渐隐），
    让出顶部 38px 给画面：否则标题栏会把视频上缘盖掉（竖屏 / 4:3 内容尤其明显）。 */
 :root[data-theme][data-mpv] .app.pwin .main { position: relative; }
 :root[data-theme][data-mpv] .app.pwin .titlebar { position: relative; z-index: 6; background: #0a0c10; border-bottom: none; }
@@ -784,7 +792,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 
 /* ---- 播放器音量控件：竖向条状音量条（悬浮面板） ---- */
 .vp-vol { position: relative; display: inline-flex; align-items: center; }
-/* ★ 2026-09-29 DLNA 投屏：控制条按钮 + 设备弹层（与音量面板同款玻璃材质/展开动效） */
+/* DLNA 投屏：控制条按钮 + 设备弹层（与音量面板同款玻璃材质/展开动效） */
 .vp-cast { position: relative; display: inline-flex; align-items: center; }
 .vp-cpanel { position: absolute; bottom: calc(100% + 8px); left: 50%; z-index: 7;
   transform: translateX(-50%) translateY(6px) scale(.98); transform-origin: bottom center;
@@ -809,7 +817,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
   background: rgba(10, 12, 16, .8); border: 1px solid rgba(255, 255, 255, .1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .45); backdrop-filter: blur(8px);
   opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
-/* ★ 打开条件：悬停到音量控件或面板（CSS :hover 会因后代溢出而保持）→ 悬停开/移开收；
+/* 打开条件：悬停到音量控件或面板（CSS :hover 会因后代溢出而保持）→ 悬停开/移开收；
      拖拽/键盘闪烁（.open）也保持打开。 */
 .vp-vol.open .vp-vpanel { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); pointer-events: auto; }
 .vp-vpanel::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 10px; }
@@ -832,7 +840,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vplayer video { width: 100%; height: 100%; object-fit: contain; outline: none; }
 /*
    全屏光标跟随操作栏状态：移动时显示，播放中静止后隐藏。
-   ★ 2026-10-17：播放器窗口两种内核全屏都用原生窗口全屏 → `.vfull`；主窗口（直播/WebDAV）
+播放器窗口两种内核全屏都用原生窗口全屏 → `.vfull`；主窗口（直播/WebDAV）
      仍是元素全屏 → `:fullscreen`。边缘缩放由主进程 setResizable 管理，
    不在整个窗口上强制 cursor:none，以免视频区域只有碰到按钮才显示光标。
 */
@@ -840,9 +848,9 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vplayer.vfull { cursor: default; }
 .vplayer:fullscreen:not(.vui),
 .vplayer.vfull:not(.vui) { cursor: none; }
-/* ★ 2026-09-28（用户要求）：说明页（详细免责声明 + 开源/赞助入口） */
+/* 说明页（详细免责声明 + 开源/赞助入口） */
 /* ---- 说明页（免责声明）----
-   ★ 2026-09-29（用户报「文本只占半边、还要下滑」）：① **整块居中**；② 宽屏**两列平铺**（左右都铺开、
+① **整块居中**；② 宽屏**两列平铺**（左右都铺开、
    高度近乎减半，1080p 基本一屏放下）；③ 窄屏自动回单列，条款不被跨列断开。 */
 .about { max-width: min(1180px, 94vw); margin: 0 auto; line-height: 1.75; font-size: 13px; padding-bottom: 20px; }
 @media (min-width: 1080px) {
@@ -867,17 +875,17 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 :root[data-theme][data-theme] button:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================================
-   ★★ 2026-10-16（用户要求）：播放器窗口**顶部标题栏** —— 去掉 38px 实心「边框」，改为
+播放器窗口**顶部标题栏** —— 去掉 38px 实心「边框」，改为
    **无边框浮层**（视频铺满到顶，标题栏浮在画面上），窗口按钮做成与底部控制条同款的
    **半透明毛玻璃**样式，并与底部控制条**同一份显隐状态**（`ui` 由 VideoPlayer 镜像到
    `:root[data-pwin-ui]`）——播放中鼠标静止后一起淡出，鼠标移到顶部即显形。
-   ★ 只在真正的播放器窗口生效（`.app.pvwin`）；详情/搜索辅助窗口（`.app.pwin` 无 `pvwin`）不受影响。
-   ★ 用 `:not([data-mpv])` 排除 MPV 内核（其透明链敏感、已有自己的顶层浮层规则），零回归。
-   ★ 全屏：播放器窗口的两种内核都用**主进程原生窗口全屏**（HTML5 亦然，2026-10-17 起，见
+   只在真正的播放器窗口生效（`.app.pvwin`）；详情/搜索辅助窗口（`.app.pwin` 无 `pvwin`）不受影响。
+   用 `:not([data-mpv])` 排除 MPV 内核（其透明链敏感、已有自己的顶层浮层规则），零回归。
+   全屏：播放器窗口的两种内核都用**主进程原生窗口全屏**（HTML5 亦然，起，见
      VideoPlayer `nativeFs`）——标题栏由 `[data-player-fullscreen]` 规则 `display:none` 隐藏；
      `:fullscreen` 规则仍保留，仅供主窗口（直播 / WebDAV）的元素全屏使用。
    ============================================================================ */
-/* ★★ 特异度：四皮肤在 2026-10-16 大改里各自写了
+/* 特异度：四皮肤在 大改里各自写了
    `:root[data-theme='X']:not([data-mpv]) .app.pwin.pvwin .titlebar {...}`（(0,7,0)，浅色白顶栏）
    —— 本组必须用 `:root[data-theme][data-theme]` + `.app.pwin.pvwin` 提到 (0,8,0)+ 才能压过它们
    （同本文件既有的 `:root[data-theme][data-theme]` 提权手法）。 */
@@ -936,31 +944,31 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vsp-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 .vsp-btn.primary { background: linear-gradient(135deg,#4f86ff,#6a5cff); color: #fff; border-color: transparent; padding: 3px 12px; }
 .vsp-btn:disabled { opacity: .45; cursor: not-allowed; }
-/* ★ 2026-09-26：画面比例面板（比字幕/弹幕面板窄，选项两列排布）
-   ★ 2026-09-28（用户要求）：改「悬停开 / 鼠标离开即收」（与音量条一致）——
+/* 画面比例面板（比字幕/弹幕面板窄，选项两列排布）
+改「悬停开 / 鼠标离开即收」（与音量条一致）——
    host 常驻并承担 8px 间隙的悬停桥接（直接给 .vp-subpanel 加 ::after 会被它的 overflow:auto 裁掉） */
 .vp-fithost { position: absolute; bottom: 100%; right: 0; padding-bottom: 8px; z-index: 20;
   opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .16s ease, transform .16s ease; }
 .vp-fithost.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
 .vp-subpanel.vp-fitpanel { position: static; width: 268px; }
-/* ★ 2026-09-28（用户要求）：弹幕面板加宽（原本 340px，长剧名读不全）；候选名最多两行 */
+/* 弹幕面板加宽（原本 340px，长剧名读不全）；候选名最多两行 */
 .vp-subpanel.vp-dmpanel { width: 438px; max-height: 380px; }
-/* ★ 2026-10-08（用户要求）：跳过片头片尾面板 / 进度条右键菜单 / 跳过提示 */
+/* 跳过片头片尾面板 / 跳过提示
+跳过点的「进度条右键菜单」已移除（改由面板里的两个打点按钮，
+   见 VideoPlayer 的 markSkipIntro / markSkipOutro）；下面 .vp-skipmenu* 这组规则**保留下来只服务
+   播放器右键菜单**（.vp-ctxmenu 复用它），不要跟着一起删。 */
 .vp-subpanel.vp-skippanel { width: 320px; }
 .vp-skipmenu { position: fixed; z-index: 40; width: 236px; padding: 6px;
   background: var(--surface-glass, rgba(18,20,26,.96)); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 12px 40px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 2px; }
-.vp-skipmenu-title { font-size: 11px; color: var(--muted, #9aa3b2); padding: 2px 6px 6px; border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 4px; }
 .vp-skipmenu-item { all: unset; cursor: pointer; font-size: 12px; padding: 6px 8px; border-radius: 6px; color: var(--text); }
 .vp-skipmenu-item:hover { background: rgba(255,255,255,.10); }
 .vp-skipmenu-item:disabled { opacity: .45; cursor: not-allowed; }
 .vp-skipmenu-item:disabled:hover { background: none; }
-.vp-skipmenu-cancel { color: var(--muted, #9aa3b2); }
-/* ★ 2026-10-15（用户要求）：播放器右键菜单（复用 .vp-skipmenu 观感，宽度自适应内容） */
+/* 播放器右键菜单（复用 .vp-skipmenu 观感，宽度自适应内容） */
 .vp-ctxmenu { width: auto; min-width: 132px; }
-/* ★ 2026-10-15（用户要求）：右键「详情信息」→ 画面右上角浮层（紧凑、不拦截鼠标）
-   ★ 2026-10-15 二次修改（用户要求「不要背景框，字号稍微再大点」）：去掉底色/模糊/内边距那一层框，
+/* 右键「详情信息」→ 画面右上角浮层（紧凑、不拦截鼠标）
+二次修改：去掉底色/模糊/内边距那一层框，
      直接压在画面上，靠描边（text-shadow）保证在亮画面下也能读；字号 12 → 13.5。 */
 .vp-info { position: absolute; top: 12px; right: 12px; z-index: 27; pointer-events: none;
   max-width: min(52%, 300px); text-align: right; color: #fff;
@@ -968,7 +976,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
   text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 8px rgba(0,0,0,.65); }
 .vp-info-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vp-info-row { opacity: .92; }
-/* ★ 2026-10-17（阶段3b，用户要求）：**MPV 内核专属**信息浮层 —— 「播放统计」（左上角，技术详情）
+/* （阶段3b）：**MPV 内核专属**信息浮层 —— 「播放统计」（左上角，技术详情）
    与「快捷键」（左下角，中文一览）。二者皆为可钉住的只读浮层（关闭键为自绘，不受皮肤 button 规则影响）。 */
 .vp-stats, .vp-keys {
   position: absolute; left: 12px; z-index: 27;
@@ -1012,7 +1020,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .vsp-item:hover { border-color: var(--accent); }
 .vsp-item-name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vsp-item .muted { font-size: 11px; }
-/* ★ 2026-09-26：弹幕源面板（接口开关清单 + 自定义接口输入） */
+/* 弹幕源面板（接口开关清单 + 自定义接口输入） */
 .vsp-dmsrc { margin: 2px 0 6px; }
 .vsp-dmsrc-list { display: flex; flex-wrap: wrap; gap: 2px 10px; max-height: 132px; overflow: auto;
   border: 1px solid var(--border-soft); border-radius: 6px; padding: 6px 8px; }
@@ -1028,11 +1036,11 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .layout-2 { display: flex; gap: 14px; height: 100%; min-height: 0; }
 .layout-2 .left { width: 216px; overflow: auto; border-right: 1px solid var(--border-soft); padding-right: 6px; flex-shrink: 0; }
 .layout-2 .right { flex: 1; overflow: auto; min-width: 0; }
-/* ★ 2026-09-27（用户报「直播界面播放器消失」）：播放器的 `.vplayer` 高度只来自 flex 父级（flex:1），
+/* 播放器的 `.vplayer` 高度只来自 flex 父级（flex:1），
    直播页此前把它直接放进 block 容器 `.right` → flex 失效 + 子元素全为绝对定位 → 高度折成 0。
    这里给出「定比 + 视口上限」的 flex 宿主，`.vplayer` 的 flex:1 重新生效（宽度显式取 min 以同时满足两约束）。 */
 .live-player { width: min(100%, calc(62vh * 16 / 9)); aspect-ratio: 16 / 9; display: flex; }
-/* ★ 2026-09-29 WebDAV 存储页：面包屑 / 目录行 / 播放器宿主（与直播页同「定比 + 视口上限」口径） */
+/* WebDAV 存储页：面包屑 / 目录行 / 播放器宿主（与直播页同「定比 + 视口上限」口径） */
 .dav-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-bottom: 8px; font-size: 12.5px; }
 .dav-crumb-item { cursor: pointer; }
 .dav-crumb-item:hover { color: var(--accent); }
@@ -1046,7 +1054,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .dav-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dav-size { flex: none; width: 76px; text-align: right; }
 .dav-time { flex: none; width: 124px; text-align: right; }
-/* ★ 2026-09-29 EPG：当前 / 下一档一行（仅当该频道有节目单时渲染） */
+/* EPG：当前 / 下一档一行（仅当该频道有节目单时渲染） */
 .live-epg { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 8px; font-size: 12.5px; }
 .live-epg > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .live-epg b { font-weight: 600; color: var(--text-dim); margin-right: 4px; }
@@ -1058,7 +1066,7 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 .ep:hover { border-color: var(--accent); color: var(--text); }
 .ep.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 
-/* ★ 2026-10-13 启动更新提示：发现新版本时展示说明与「立即更新 / 暂不更新」选项 */
+/* 启动更新提示：发现新版本时展示说明与「立即更新 / 暂不更新」选项 */
 .upd-blur { pointer-events: none; filter: blur(2px); opacity: .35; }
 .upd-overlay { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, .72); backdrop-filter: blur(8px); }
@@ -1098,13 +1106,13 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 
 .tb-ico { width: 18px; height: 18px; border-radius: 5px; object-fit: contain; flex: none; }
 
-/* ★★ 2026-10-08（用户要求「所有风格里的选项开关全部改成这种」）：**全皮肤统一的「药丸开关」**。
+/* **全皮肤统一的「药丸开关」**。
    外观：胶囊轨道 + 白色圆钮；开启 = 皮肤强调色轨道（网飝红 / 哔哔粉 / 大果蓝 / 大豆豆绿），
    关闭 = 半透明中性轨道（color-mix 跟随各皮肤文字色，深浅皮肤都能看清）。
    实现：`appearance:none` 自绘；Chromium 不给 input 渲染伪元素 → 圆钮用**背景层**（radial-gradient）画，
    `background-origin: content-box` + 2px padding 让圆钮内缩；0%↔100% 两端位置可平滑过渡（滑钮动画）。
-   ★★ 特异度（勿改回单写）：各皮肤有 `:root[data-theme='X'] input { background/border… }`（0,3,1），
-     这里**双写 [data-theme]** 取 (0,4,1) 才压得住（同 §C54/§C60 教训：底样式压不过皮肤就双写拉特异度）。 */
+   特异度（勿改回单写）：各皮肤有 `:root[data-theme='X'] input { background/border… }`（0,3,1），
+     这里**双写 [data-theme]** 取 (0,4,1) 才压得住（底样式压不过皮肤就双写拉特异度）。 */
 :root[data-theme][data-theme] input[type='checkbox'] {
   appearance: none; -webkit-appearance: none; flex: none;
   width: 40px; height: 22px; margin: 0; padding: 2px; border: none; border-radius: 999px;
@@ -1126,20 +1134,20 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
 :root[data-theme][data-theme] .tag input[type='checkbox'] {
   appearance: auto; -webkit-appearance: auto; width: auto; height: auto; padding: 0; background: none;
 }
-/* 例外②：**列表里的「选择 / 多选」是勾选框语义，不是开关** —— ★ 2026-10-14 用户指令：
-   「配置-订阅与源-我的源列表，前面应该是选择框，而我们现在的样式是胶囊开关，胶囊开关应该用在
-     开关类的设置中，而不是这里」。故该表（表头全选 + 每行选择）保持原生小方框；
+/* 例外②：**列表里的「选择 / 多选」是勾选框语义，不是开关**：
+   列表选择处（如「配置-订阅与源-我的源列表」）应为选择框，而非胶囊开关（胶囊开关只用在
+     开关类设置中）。故该表（表头全选 + 每行选择）保持原生小方框；
    用 `.sel-box` **显式标记**（不依赖表格结构，任何列表里的多选都能复用）。 */
 :root[data-theme][data-theme] input[type='checkbox'].sel-box {
   appearance: auto; -webkit-appearance: auto; width: auto; height: auto; padding: 0; background: none;
 }
 
 /* ============================================================================
-   ★★ 2026-10-08（用户要求「整体重做界面视觉与动效交互」）：全皮肤**交互态 / 动效 / 载入态**系统。
+全皮肤**交互态 / 动效 / 载入态**系统。
    规划口径（参考开源规范 Material 3 + Expressive 的动效令牌，见 :root 里的 --ease-* / --dur-*）：
      ① 焦点可见（无障碍）② 路由进场 ③ 弹层进场 ④ 对话框进场 ⑤ 按压反馈 ⑥ 载入/空态 ⑦ 数字等宽 ⑧ 减弱动效。
    每一条都要"有理由"：要么补上缺失的反馈（按压/进场），要么修掉可读性/无障碍缺口。
-   ★ 特异度：按压反馈要压过各皮肤的 `:hover`（0,3,0~0,4,0），故沿用双写 `[data-theme][data-theme]`（§C54 教训）。
+   特异度：按压反馈要压过各皮肤的 `:hover`（0,3,0~0,4,0），故沿用双写 `[data-theme][data-theme]`。
    ============================================================================ */
 
 /* ① 键盘可见焦点：全站统一焦点环（鼠标点击不出现，键盘 Tab 才亮 —— 不影响鼠标观感） */
@@ -1153,15 +1161,15 @@ tr.active-row { background: var(--accent-soft) !important; outline: 1px solid rg
   to { opacity: 1; transform: none; }
 }
 
-/* ③ 弹层进场（搜索面板 / 换源弹层 / 歌单类浮层）：挂载即播放；★ 2026-10-16：换源弹层按用户要求
+/* ③ 弹层进场（搜索面板 / 换源弹层 / 歌单类浮层）：挂载即播放；换源弹层
      另补了「常驻 3s → 回缩」的**出场**动画（见下方 popOut / popDown），其余弹层仍是即时卸载。 */
 .sp-panel, .srcpick-pop { animation: popIn var(--dur-panel) var(--ease-enter) both; transform-origin: top center; }
 .srcpick-side .srcpick-pop { transform-origin: bottom center; animation-name: popUp; }
 @keyframes popIn { from { opacity: 0; transform: translateY(-7px) scale(.97); } to { opacity: 1; transform: none; } }
 @keyframes popUp { from { opacity: 0; transform: translateY(7px) scale(.97); } to { opacity: 1; transform: none; } }
-/* ★ 2026-10-16（用户要求「换源下拉框常驻 3s 后动画回缩」）：换源弹层的**出场**动画 ——
+/* 换源弹层的**出场**动画 ——
    朝锚点缩放淡出（`transform-origin` 沿用上面进场那条：顶栏入口 = top center、侧栏入口 = bottom center，
-   视觉上就是「缩回按钮里」）。★ 必须写在第 1030 行那条之后：`.srcpick-side .srcpick-pop` 也是 (0,2,0)，
+   视觉上就是「缩回按钮里」）。必须写在第 1030 行那条之后：`.srcpick-side .srcpick-pop` 也是 (0,2,0)，
    同特异度靠后加载者胜。时长与 SourcePicker 的 `CLOSE_ANIM_MS`(280ms) 对齐 —— JS 等动画播完才卸载。 */
 .srcpick-pop.srcpick-closing { animation: popOut var(--dur-panel) var(--ease-exit) both; }
 @keyframes popOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.96) translateY(-4px); } }
@@ -1204,7 +1212,7 @@ button:active { transition-duration: var(--dur-instant); }
 .vp-time, .vp-htip, .aud-time, .upd-speed, .vp-vpct, .vp-load-speed, .hist-time, .dav-size, .dav-time { font-variant-numeric: tabular-nums; }
 
 /* ⑧ 减弱动效：默认**跟随系统**（`prefers-reduced-motion`），载入转圈保留但放慢（信息性动画不消失）。
-   ★ 2026-10-08 实测：本机 Windows「动画效果」是关的 → 系统偏好 = reduce → 一切动效被折叠（用户看不到任何动画）。
+实测：本机 Windows「动画效果」是关的 → 系统偏好 = reduce → 一切动效被折叠（用户看不到任何动画）。
      故加应用内三态偏好（配置 → 外观 → 界面动效）：`<html data-motion>`：
        · 无属性（auto，默认）→ 跟随系统（下面这段生效）
        · data-motion="on"    → 无视系统、始终开启（选择器写 :not([data-motion='on'])，此段自然不生效）
@@ -1231,7 +1239,7 @@ html[data-motion='off'] .spinner { animation: spin 2.4s linear infinite !importa
 html[data-motion='off'] .vp-spin { animation: vspin 2.4s linear infinite !important; }
 
 /* ============================================================================
-   ★★ 2026-10-16（用户要求「四套皮肤绝对大改」）：**环境光背景场**（全站最底层氛围层）。
+**环境光背景场**（全站最底层氛围层）。
    四套外壳**共用同一份 DOM 与同一套漂移动作**（3 个光斑 + 1 张噪点），各皮肤只覆盖
    「配色 / 强度 / 噪点浓度」——于是「一套动作语言 × 四套材质」，协调性来自结构而非巧合。
    实现要点（踩坑记录）：
@@ -1272,7 +1280,7 @@ html[data-motion='off'] .vp-spin { animation: vspin 2.4s linear infinite !import
   position: absolute; inset: 0; background-size: cover; background-position: center 22%;
   transform: scale(1.22); transition: opacity 900ms var(--ease-standard);
 }
-/* ★ 2026-10-16：没有横版剧照时的回退 —— 竖版海报（2:3）直接铺宽幅简报板会只剩一团生硬裁切，
+/* 没有横版剧照时的回退 —— 竖版海报（2:3）直接铺宽幅简报板会只剩一团生硬裁切，
    故模糊成「色场」当氛围底（.spot-art-blur 由 DiscoverSpotlight 在无 backdrop 时挂上）。 */
 .spot-art-layer.spot-art-blur { filter: blur(30px) saturate(1.5) brightness(.72); transform: scale(1.4); }
 .spot-veil { position: absolute; inset: 0; z-index: 1; }
@@ -1307,7 +1315,7 @@ html[data-motion='off'] .vp-spin { animation: vspin 2.4s linear infinite !import
 }
 
 /* ============================================================================
-   ★ 2026-10-18（用户要求「统一皮肤标准」）：宿主结构层 —— 外壳 / 详情 / 发现 / 筛选
+宿主结构层 —— 外壳 / 详情 / 发现 / 筛选
    ----------------------------------------------------------------------------
    皮肤文件只声明**令牌 + layout**；一切结构样式都在这里，按宿主属性 `data-shell` 限定作用域：
      topbar   = 单行顶栏（网飝 / 缺省）        dualbar = 双行头（哔哔）
@@ -1340,11 +1348,11 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] h3,
 :root[data-shell='pillbar'] h4 { font-weight: 800; letter-spacing: -.015em; }
 
-/* ================= 外壳结构：topbar · 单行顶栏（网飝 / 缺省外壳） —— 迁移自 netflix.css（2026-10-18） ================= */
-/* .tmp/skin-extract/netflix.css — 由 src/renderer/styles/netflix.css 迁出的**结构规则**（2026-10-18 统一皮肤迁移）。
+/* ================= 外壳结构：topbar · 单行顶栏（网飝 / 缺省外壳） —— 迁移自 netflix.css ================= */
+/* .tmp/skin-extract/netflix.css — 由 src/renderer/styles/netflix.css 迁出的**结构规则**（统一皮肤迁移）。
    本文件只承载「结构 / 间距 / 动效 / 颜色」规则：作用域由皮肤主题属性改写为宿主枚举属性
    （data-shell / data-detail / data-discover），颜色一律走 global.css 的词表令牌。
-   原文件的中文注释与 ★ 日期标注按原文保留；令牌声明见 src/renderer/styles/netflix.css。 */
+   原文件的中文注释按原文保留；令牌声明见 src/renderer/styles/netflix.css。 */
 
 /* ---- 全局：纯黑舞台（宿主结构层已统一 body / a；此处仅保留网飝特有的静音灰） ---- */
 :root[data-shell='topbar'] .muted { color: var(--text-faint); }
@@ -1355,8 +1363,8 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .main { background: var(--surface-glass); }
 
 /* 标题栏：**并进导航条同一行**（一体化）—— 只保留窗口控制按钮，LOGO 在导航条里 */
-/* ★ 2026-09-24：整条顶栏是可拖拽区，且**两套 TopNav 皮肤共用**（netflix + bilibili）。
-   此前只给 netflix 设了 drag → B 站皮肤整条顶栏拖不动（用户实测：主窗口无法拖拽移动）。
+/* 整条顶栏是可拖拽区，且**两套 TopNav 皮肤共用**（netflix + bilibili）。
+   此前只给 netflix 设了 drag → B 站皮肤整条顶栏拖不动（主窗口无法拖拽移动）。
    交互元素必须 no-drag：导航链接、搜索按钮/换源入口（.srcpick）。标题栏自身的按钮区已在组件内联 no-drag。 */
 :root[data-shell='topbar'] .nf-nav { -webkit-app-region: drag; }
 :root[data-shell='topbar'] .nf-nav .nf-link, :root[data-shell='topbar'] .nf-nav .srcpick { -webkit-app-region: no-drag; }
@@ -1379,7 +1387,7 @@ body { font-family: var(--font-ui); }
   padding: 10px 26px 14px; z-index: 40;
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface-glass) 98%, transparent), color-mix(in srgb, var(--surface-glass) 72%, transparent) 60%, transparent);
 }
-/* ★ 2026-09-29 缺陷修复（用户报「Netflix / B 站主题下，历史页与搜索结果页的搜索输入框被挡住无法点击」）：
+/* 缺陷修复：
    真因 = 层序打平。页面自己的 `.topbar` 也是 `position: relative; z-index: 30`（见 global.css，
    为修「换源列表被封面遮挡」而设），而 `.nf-nav` 此前同为 30 —— 同为 30 时按 DOM 顺序靠后者胜出，
    页面在导航之后 ⇒ 页面顶栏稳定压在导航整棵子树之上；搜索面板（.sp-panel，向下展开 520px）
@@ -1406,7 +1414,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .nf-link.active::after { transform: scaleX(1); }
 :root[data-shell='topbar'] .nf-nav .nf-spacer { flex: 1; }
 
-/* ---- 顶栏（页面内工具栏）：融进黑底；按钮一律**低调小号**（★ 2026-09-24 用户：太大太突兀） ---- */
+/* ---- 顶栏（页面内工具栏）：融进黑底；按钮一律**低调小号**（太大太突兀） ---- */
 :root[data-shell='topbar'] .topbar { background: var(--surface-glass); border-bottom: none; backdrop-filter: none; min-height: 44px; }
 :root[data-shell='topbar'] .topbar button {
   background: rgba(255, 255, 255, .07); color: #c9c9c9; padding: 5px 12px; font-size: 12.5px; font-weight: 500;
@@ -1472,7 +1480,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .card-media img { border-radius: 6px; transition: transform .55s var(--ease-standard); }
 :root[data-shell='topbar'] .card-media:hover img { transform: scale(1.05); }
 /* 海报墙逐个错开入场（前 12 张；与全局 pageIn 同节奏，列表现身为列表） */
-:root[data-shell='topbar'] .grid > * { animation: nfCardIn var(--dur-page) var(--ease-enter) both; }
+:root[data-shell='topbar'] .grid > *:not(.vg-ph) { animation: nfCardIn var(--dur-page) var(--ease-enter) both; }
 :root[data-shell='topbar'] .grid > :nth-child(1) { animation-delay: 0ms; }
 :root[data-shell='topbar'] .grid > :nth-child(2) { animation-delay: 26ms; }
 :root[data-shell='topbar'] .grid > :nth-child(3) { animation-delay: 52ms; }
@@ -1506,7 +1514,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---- 发现页：Hero（横版剧照轮播 + 文字处高斯模糊层）+ 内容行 ---- */
-/* ★ 2026-09-25（用户定稿）：Hero **满屏** —— 高度 = 视口 − 顶部导航（--nav-h），下方不再留空，
+/* Hero **满屏** —— 高度 = 视口 − 顶部导航（--nav-h），下方不再留空，
    内容行用滚轮往下滑；剧照保持比例**完整显示**（contain），比例之外的区域用同一张图放大模糊填充
    （见 HeroBackdrop 的 fit="contain"：`.nf-hero-fill` 模糊铺底 + `.nf-hero-fg` 清晰居中）。 */
 :root[data-shell='topbar'] .nf-hero {
@@ -1518,7 +1526,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .nf-hero-bg {
   position: absolute; inset: 0; background-size: cover; background-position: center 28%;
   filter: saturate(1.05);
-  /* ★ 2026-09-24：剧照切换 = 交叉淡入淡出（前一张淡出、后一张淡入同时进行，无中间空帧） */
+  /* 剧照切换 = 交叉淡入淡出（前一张淡出、后一张淡入同时进行，无中间空帧） */
   transition: opacity .9s ease;
   will-change: opacity;
 }
@@ -1536,7 +1544,7 @@ body { font-family: var(--font-ui); }
   /* 下方接内容区 + 底部压暗（文字可读性主要由 .nf-hero-body 的模糊层负责，这里只做过渡） */
   background: linear-gradient(to top, var(--surface-glass) 0%, color-mix(in srgb, var(--surface-glass) 55%, transparent) 24%, color-mix(in srgb, var(--surface-glass) 10%, transparent) 62%, transparent 100%);
 }
-/* ★ 2026-09-24（用户定稿）：**在有字的位置做高斯模糊处理** —— 文字块自身是一层毛玻璃（backdrop-filter） */
+/* **在有字的位置做高斯模糊处理** —— 文字块自身是一层毛玻璃（backdrop-filter） */
 :root[data-shell='topbar'] .nf-hero-body {
   position: relative; z-index: 2; max-width: 62%;
   margin: 26px 34px 28px; padding: 20px 24px 22px;
@@ -1557,7 +1565,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .nf-hero-meta { color: #d2d2d2; font-size: 13px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 :root[data-shell='topbar'] .nf-hero-match { color: var(--success); font-weight: 700; }
 :root[data-shell='topbar'] .nf-hero-actions { display: flex; gap: 8px; align-items: center; }
-/* ★ 用户反馈「按钮太大太突兀」→ 收敛为小号、低饱和，融进画面 */
+/* 按钮太大太突兀 → 收敛为小号、低饱和，融进画面 */
 :root[data-shell='topbar'] .nf-hero-actions button { padding: 6px 16px; font-size: var(--fs-md); border-radius: var(--radius-sm); }
 :root[data-shell='topbar'] .nf-hero-actions button:not(.nf-play-btn) { background: rgba(255, 255, 255, .12); }
 :root[data-shell='topbar'] .nf-hero-actions button:not(.nf-play-btn):hover { background: rgba(255, 255, 255, .2); }
@@ -1565,15 +1573,15 @@ body { font-family: var(--font-ui); }
 :root[data-discover='shelf'] .nf-row-title { font-size: 20px; font-weight: 700; margin: 0 0 10px; color: #e5e5e5; }
 :root[data-discover='shelf'] .nf-row-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 2px 14px; }
 :root[data-discover='shelf'] .nf-row-scroll > * { flex: 0 0 var(--card-w); }
-/* ★ 2026-09-29：行项 min-width:0（缺陷修复）—— 超长片名（`.name` 是 nowrap）会经 flex 项
+/* 行项 min-width:0（缺陷修复）—— 超长片名（`.name` 是 nowrap）会经 flex 项
    `min-width:auto` 把卡片撑宽（实测 176 → 267px），封面随 2:3 撑高，整行被拉到 455px 留白。
    经典皮肤同行同因，已在 DiscoverPage 内联 minWidth:0 修掉。 */
 :root[data-discover='shelf'] .nf-row-scroll > * { min-width: 0; }
 :root[data-shell='topbar'] .nf-hero h3 { letter-spacing: 0; }
 :root[data-discover='shelf'] .nf-row-title { letter-spacing: 0; }
 
-/* ★ 2026-09-24：详情页「相关推荐」横条 —— 悬停**只做轻微上浮**（不做 scale），
-   保证一排封面视觉尺寸完全一致（用户反馈「部分封面特别大」）。 */
+/* 详情页「相关推荐」横条 —— 悬停**只做轻微上浮**（不做 scale），
+   保证一排封面视觉尺寸完全一致。 */
 :root[data-shell='topbar'] .rec-row > .card-media:hover { transform: translateY(-2px); }
 
 /* ---- 详情页：**横版剧照轮播**当全宽背景（与首页 Hero 同一套图与交互）+ 渐变，标题巨大化 ---- */
@@ -1609,8 +1617,8 @@ body { font-family: var(--font-ui); }
   display: flex; align-items: center; justify-content: center;
   transition: transform .18s ease, background .18s ease;
 }
-/* ★ hover 必须保留 translate(-50%,-50%)：少了它 transform 被整体替换，
-   按钮（left/top:50% 定位）会瞬间跳到右下半个身位 —— 用户报「鼠标挪到按钮上按钮会移动」 */
+/* hover 必须保留 translate(-50%,-50%)：少了它 transform 被整体替换，
+   按钮（left/top:50% 定位）会瞬间跳到右下半个身位 —— 鼠标挪到按钮上按钮会移动 */
 :root[data-shell='topbar'] .vp-big:hover { transform: translate(-50%, -50%) scale(1.06); background: color-mix(in srgb, var(--accent) 85%, transparent); border-color: transparent; }
 :root[data-shell='topbar'] .vplayer.vui .vp-big { opacity: 1; }
 :root[data-shell='topbar'] .vp-progress { height: 6px; background: rgba(255, 255, 255, .28); border-radius: 3px; }
@@ -1621,7 +1629,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .vp-ctl:hover { color: var(--accent); }
 :root[data-shell='topbar'] .vp-ctl:disabled { color: #6b6b6b; }
 /**
- * ★★ 2026-10-15（用户报「Netflix 播放器按钮太大，功能变多已挤占文字空间」）★★
+ * 
  *   本皮肤上面的通用 `button` 规则（`:root[data-shell='topbar'] button`：灰底 + `padding: 6px 14px`）
  *   特异度 (0,2,1) 高于基类 `.vp-ctl` 的 `all: unset` (0,1,0) ⇒ 误伤控制条图标按钮：
  *   实测被撑成 **54×38**（大豆皮肤同位置是 26×26），一条控制条 12 个按钮就多吃掉约 340px。
@@ -1653,21 +1661,21 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .app.pwin .titlebar { background: var(--surface-0); }
 
 /* ============================================================================
-   ★★ 2026-10-16 第二代外观（**结构级重做**；用户口径：「绝对的好看，绝对的大改」）
+第二代外观（**结构级重做**）
    ----------------------------------------------------------------------------
    为什么要有第二代：第一代只改了 hover / 选中色 / 滚动条这类**微观交互态** ——
-   它们在截图与整体观感里几乎为零，用户评价「没看出来变化在哪」。这一代改的是**宏观视觉层**：
+   它们在截图与整体观感里几乎为零。这一代改的是**宏观视觉层**：
      ① 环境 → 全站**环境光背景场**（红/青余光 + 胶片颗粒；骨架见 global.css）+ 影院幕布纵深；
      ② 首屏 → 发现页**聚光卡**（.spot：海报环境色底 + 清晰海报主体 + 大字号标题）；
      ③ 形态 → 顶栏「一条黑带」→ **悬浮玻璃岛**（圆角 + 玻璃 + 内高光 + 品牌红方块标）；
               导航项「下划线」→ **红胶囊 + 弹跳**；分类条「散装 chips」→ **玻璃分段容器**；
      ④ 卡片 → 「裸图」→ **玻璃卡**（描边 + 双层阴影 + shine 扫光 + 悬停浮出红色播放钮）；
      ⑤ 排版 → 章节标题 → **带红色光条的大字号标题**。
-   ★ 历史守卫全部保留：`.vp-ctl` 26×26 重置、`.vp-big:active` 位移守卫、pvwin 黑壳、导航 z-index 40。
+   历史守卫全部保留：`.vp-ctl` 26×26 重置、`.vp-big:active` 位移守卫、pvwin 黑壳、导航 z-index 40。
    ============================================================================ */
 
 /* ---- ① 环境：**本皮肤不用环境光**（Netflix 的品牌基因就是纯黑影院；加彩色光斑反而不像它） ----
-   ★ 这是四套皮肤「结构性差异」的第一处：同一份 `.app-ambient` DOM，在 netflix 下**整体不显示**。
+   这是四套皮肤「结构性差异」的第一处：同一份 `.app-ambient` DOM，在 netflix 下**整体不显示**。
      于是四套皮肤一眼能分出「影院黑 / 柔光浅色」两种世界，而不是同一套光斑换四色。 */
 :root[data-shell='topbar'] .app-ambient { display: none; }
 /* 纯黑舞台 + 极淡的红/青角光（只用静态打底光，不要漂浮光斑） */
@@ -1683,7 +1691,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .content { background: transparent; padding: 0 30px 36px; }
 
 /* ---- ② 顶栏：**文档流内的满幅渐变条**（第三代皮肤：方块标 + 纯文字链接 + 发光下划线） ----
-   ★ 2026-10-16 修正（实测 bug）：此前改 `position:absolute` 让顶栏压在首屏之上，
+修正（实测 bug）：此前改 `position:absolute` 让顶栏压在首屏之上，
      但它带 46px 透明下内边距 —— **元素盒仍在命中测试里**，于是所有页面（配置/历史/直播…）
      顶部约 100px 区域被整块拦住、控件点不到，而且那块区域还是拖拽区。
      现回归**文档流**：顶栏正常占位、首屏 billboard 紧贴其下并按「视口高 − 导航高」计算高度
@@ -1746,7 +1754,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ④ 分类条：**裸胶囊行**（Netflix 的类型条直接铺在内容上，不装容器） ----
-   ★ 结构性差异之三：其余三套皮肤都把分类条装进「玻璃 / 白色容器」，netflix 保持裸铺，
+   结构性差异之三：其余三套皮肤都把分类条装进「玻璃 / 白色容器」，netflix 保持裸铺，
      且 chip 用**小圆角矩形**（4px）而非其余皮肤的 999px 药丸 —— 形态一眼可辨。 */
 :root[data-shell='topbar'] .cascade {
   padding: 0; margin-bottom: 24px; border-radius: 0;
@@ -1781,10 +1789,10 @@ body { font-family: var(--font-ui); }
 :root[data-discover='shelf'] .nf-row-scroll { padding: 10px 4px 20px; gap: 12px; }
 
 /* ---- ⑥ 卡片：**裸海报 + 悬停展开**（Netflix 的核心交互：放大 + 压暗 + 浮出播放钮） ----
-   ★ 结构性差异之四：其余三套皮肤都是「常驻的玻璃/白色卡片容器」，netflix 回到**无容器裸图**，
+   结构性差异之四：其余三套皮肤都是「常驻的玻璃/白色卡片容器」，netflix 回到**无容器裸图**，
      靠 hover 时的放大、四周压暗与浮层信息制造层次 —— 而不是靠常驻的描边与玻璃。
-   ★ 也**不做 shine 扫光**（扫光是哔哔皮肤的语言），改用「放大 + 底部压暗 + 红色播放钮」这套 Netflix 语言。 */
-/* ★ 2026-10-16 修正（用户报「hover 放大后一部分被排出屏幕外」）：
+   也**不做 shine 扫光**（扫光是哔哔皮肤的语言），改用「放大 + 底部压暗 + 红色播放钮」这套 Netflix 语言。 */
+/* 修正：
    真因 = 行的横滚容器 `.nf-row-scroll` 是 `overflow-x: auto`，而 `overflow-x` 非 visible 会把
    `overflow-y` 也**强制算成 auto**（CSS 规范行为）⇒ 卡片一旦整体 scale/translate，越界部分直接被裁掉。
    故 netflix 卡片不再整体变换，改**内部变焦**：外框不动，封面图缓慢推近 + 底部压暗 + 浮出播放钮 ——
@@ -1828,8 +1836,8 @@ body { font-family: var(--font-ui); }
   color: var(--text-faint); border-radius: 0;
 }
 
-/* ---- ⑦ 按钮：方角小圆角（**药丸是过度设计，已按用户口径撤销**）+ 白底主行动 ---- */
-/* ★ 2026-10-16 用户口径：「配置页的标签卡，我不懂你为什么要用弧形半球，原版方的不比这个样式好看吗，丑死了」——
+/* ---- ⑦ 按钮：方角小圆角（**药丸是过度设计，已撤销**）+ 白底主行动 ---- */
+/* 配置页的标签卡采用方角（不用弧形半球/药丸）——
    此前把通用 `button` 改成 `border-radius: 999px` 药丸，在配置页这种**高密度表单**里确实难看。
    现回归全局基座的 `--radius-sm`（=4px，见 global.css 的 button 基类）；药丸仅保留给首屏 CTA（.spot-go）。 */
 :root[data-shell='topbar'] button {
@@ -1849,17 +1857,17 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .spot-next { border-radius: 999px; }
 
 /* ---- ⑧ 首屏：**满幅 billboard**（全出血、无圆角、文字压底 —— 与其余三套的「卡片式聚光」完全不同） ----
-   ★ 结构性差异之五：其余三套都是「圆角卡片里放聚光内容」，netflix 是**无边框全出血剧场**：
+   结构性差异之五：其余三套都是「圆角卡片里放聚光内容」，netflix 是**无边框全出血剧场**：
      背景是海报放大模糊的「景」+ 双层暗幕，文字块压在左下角，右侧海报卡在此模式下**整个不出现**。 */
 :root[data-shell='topbar'] .spot {
   display: flex; align-items: flex-end; justify-content: flex-start;
   margin: 0 -30px 28px; padding: 0 44px 56px; box-sizing: border-box;
-  /* ★ 老 Hero 的既定纪律：满屏 = 视口高 − 导航高（导航已回归文档流，不再需要负上边距） */
+  /* 老 Hero 的既定纪律：满屏 = 视口高 − 导航高（导航已回归文档流，不再需要负上边距） */
   height: calc(100vh - var(--nav-h)); min-height: 420px;
   border: none; border-radius: 0; background: #050506;
   box-shadow: none;
 }
-/* ★ 常驻氛围底：剧照/海报还在路上时，景层**也不是纯黑死区** ——
+/* 常驻氛围底：剧照/海报还在路上时，景层**也不是纯黑死区** ——
    品牌红余光 + 暖黑渐变先铺底（剧照加载完成后经 opacity 交叉淡入盖上来）。 */
 :root[data-shell='topbar'] .spot-art {
   background:
@@ -1868,7 +1876,7 @@ body { font-family: var(--font-ui); }
     linear-gradient(115deg, #191920 0%, #0a0a0b 72%);
 }
 /* 景 = **横版剧照 / backdrop**（不再是竖版海报放大成色糊）：锐利铺满，只做轻微降亮。
-   ★ 用户报「封面加载不出来」的根因就是拿 2:3 竖版海报铺宽幅 billboard —— 竖图放大后只剩一团色糊。
+   封面加载不出来的根因就是拿 2:3 竖版海报铺宽幅 billboard —— 竖图放大后只剩一团色糊。
    现改走横版图链路（见 DiscoverSpotlight：discoverImages → 360 图搜兜底），取不到才回退竖版。 */
 :root[data-shell='topbar'] .spot-art-layer {
   filter: saturate(1.12) brightness(.88);
@@ -1903,7 +1911,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .spot-dot.active { background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 90%, transparent); }
 
 /* ---- ⑨ 播放器：**Netflix 影院控制条**（贴底渐隐长条 + 红色细进度 + 大号白色播放键） ----
-   ★ 四套皮肤的控制条**架构各不相同**（见各自文件）：
+   四套皮肤的控制条**架构各不相同**（见各自文件）：
      netflix = 贴底渐隐长条（本条）；哔哔 = 悬浮药丸玻璃 dock；大果 = 悬浮圆角玻璃控制卡；
      大豆 = M3 大圆钮 + 状态层。这是「大改」在播放器上的差异化落点。 */
 :root[data-shell='topbar'] .vplayer { background: var(--surface-0); }
@@ -1911,7 +1919,7 @@ body { font-family: var(--font-ui); }
   padding: 52px 22px 16px;
   background: linear-gradient(to top, rgba(0, 0, 0, .96) 0%, rgba(0, 0, 0, .6) 46%, transparent 100%);
 }
-/* ★ 2026-10-17（用户报「进度条后面那层半透明包裹」）：旧规则（见本文件 §播放器 早期块）给
+/* 旧规则（见本文件 §播放器 早期块）给
    `.vp-progress` 上了 `background: rgba(255,255,255,.28)` + `border-radius: 3px`，而本块又把高度
    拉到 16px ⇒ 红色已播线与细轨道**外面**多出一整条 16px 高的半透明「包裹底」。
    这里显式置空：16px 高度只作拖拽/悬停热区保留，视觉上只剩 `::before` 细轨道 + 红色已播线。 */
@@ -1946,15 +1954,15 @@ body { font-family: var(--font-ui); }
 :root[data-shell='topbar'] .vp-next { background: rgba(10, 10, 11, .93); border-radius: 6px; }
 :root[data-shell='topbar'] .vp-next button { background: var(--accent); }
 
-/* ================= 外壳结构：dualbar · 双行头（哔哔） —— 迁移自 bilibili.css（2026-10-18） ================= */
+/* ================= 外壳结构：dualbar · 双行头（哔哔） —— 迁移自 bilibili.css ================= */
 /* bilibili.css（结构层）— 从 src/renderer/styles/bilibili.css 迁出的**非令牌规则**
    ================================================================================
-   ★ 2026-10-18 迁移（统一皮肤标准）：作用域由原皮肤前缀改写为宿主属性 ——
+迁移（统一皮肤标准）：作用域由原皮肤前缀改写为宿主属性 ——
      哔哔外壳 = :root[data-shell='dualbar']；发现页类（`nf-row*`）按 layout 枚举 data-discover 限定。
-   ★ 全部规则限定在 `[data-shell='dualbar']`（及 `data-discover`）下，其余主题不受影响。
+   全部规则限定在 `[data-shell='dualbar']`（及 `data-discover`）下，其余主题不受影响。
    颜色全部改走统一词表令牌（原皮肤私有令牌与硬编码品牌色已并入词表）；
    中性的黑色遮罩 / 阴影 / 玻璃高光按口径**保留字面值**。
-   ★ 原文件里 `nf-nav*` / `.sidebar` 一类「照抄 netflix 模板」的旧规则**按迁移口径保留**
+   原文件里 `nf-nav*` / `.sidebar` 一类「照抄 netflix 模板」的旧规则**按迁移口径保留**
      （只改写作用域，不自行删除）。
    ================================================================================ */
 
@@ -2005,7 +2013,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='dualbar'] .card-media img { border-radius: var(--radius) var(--radius) 0 0; transition: transform .55s var(--ease-standard); }
 :root[data-shell='dualbar'] .card-media:hover img { transform: scale(1.05); }
 /* 海报墙逐个错开入场（前 12 张；与全局 pageIn 同节奏，列表现身为列表） */
-:root[data-shell='dualbar'] .grid > * { animation: bCardIn var(--dur-page) var(--ease-enter) both; }
+:root[data-shell='dualbar'] .grid > *:not(.vg-ph) { animation: bCardIn var(--dur-page) var(--ease-enter) both; }
 :root[data-shell='dualbar'] .grid > :nth-child(1) { animation-delay: 0ms; }
 :root[data-shell='dualbar'] .grid > :nth-child(2) { animation-delay: 26ms; }
 :root[data-shell='dualbar'] .grid > :nth-child(3) { animation-delay: 52ms; }
@@ -2099,7 +2107,7 @@ body { font-family: var(--font-ui); }
   background: color-mix(in srgb, var(--accent) 18%, transparent); border: 2px solid rgba(255, 255, 255, .9); color: #fff;
   transition: transform var(--dur-state) var(--ease-spring), background var(--dur-state) var(--ease-standard);
 }
-/* ★ hover 必须保留 translate(-50%,-50%)（同 netflix 主题：缺了会跳走半个身位） */
+/* hover 必须保留 translate(-50%,-50%)（同 netflix 主题：缺了会跳走半个身位） */
 :root[data-shell='dualbar'] .vp-big:hover { transform: translate(-50%, -50%) scale(1.06); background: var(--accent); border-color: transparent; }
 :root[data-shell='dualbar'] .vp-progress { height: 5px; background: rgba(255, 255, 255, .25); border-radius: 3px; }
 :root[data-shell='dualbar'] .vp-buffer { background: rgba(255, 255, 255, .4); }
@@ -2120,7 +2128,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='dualbar'] .app.pwin .titlebar { background: #000; border-bottom: none; }
 :root[data-shell='dualbar'] .app.pwin .tb-title { color: #e5e5e5; }
 
-/* ★ 2026-10-14（用户要求）：哔哔皮肤里**播放器窗口的边框应为白色而非黑色** ——
+/* 哔哔皮肤里**播放器窗口的边框应为白色而非黑色** ——
    仅针对独立播放器窗口（`.app.pwin.pvwin`，含标题栏/小窗条/窗口壳；mpv 内核的浮层除外）；
    视频舞台 `.vplayer` 仍是纯黑（观看时需要），详情窗口等其它 `.app.pwin` 不受影响。 */
 :root[data-shell='dualbar']:not([data-mpv]) .app.pwin.pvwin,
@@ -2136,19 +2144,19 @@ body { font-family: var(--font-ui); }
 :root[data-shell='dualbar'] .app.pwin.pvwin .mini-strip-close:hover { background: var(--accent-2); color: var(--on-accent); }
 
 /* ============================================================================
-   ★★ 2026-10-16 第二代外观（**结构级重做**；用户口径：「绝对的好看，绝对的大改」）
+第二代外观（**结构级重做**）
    ----------------------------------------------------------------------------
    为什么要有第二代：第一代只改了 hover / 选中色 / 滚动条这类**微观交互态** ——
-   它们在截图与整体观感里几乎为零，用户评价「没看出来变化在哪」。这一代改的是**宏观视觉层**：
+   它们在截图与整体观感里几乎为零。这一代改的是**宏观视觉层**：
      ① 环境 → 全站**环境光背景场**（B站蓝 / B站粉双色柔光 + 中性光 + 胶片颗粒；骨架见 global.css）+ 浅色幕布纵深；
      ② 首屏 → 发现页**聚光卡**（.spot：海报环境色底 + 清晰海报主体 + 大字号标题）；
      ③ 形态 → 顶栏「一条白带」→ **悬浮白玻璃岛**（圆角 + 玻璃 + 内高光 + 品牌蓝方块标）；
               导航项「下划线」→ **蓝底白字胶囊 + 弹跳**；分类条「散装 chips」→ **玻璃分段容器**；
      ④ 卡片 → 「白卡」→ **白玻璃卡**（描边 + 双层阴影 + shine 扫光 + 悬停浮出蓝色播放钮）；
      ⑤ 排版 → 章节标题 → **带蓝色光条的大字号标题**。
-   ★ 浅色皮肤专属：聚光卡用**浅色纱幕**（白 / 浅灰高 alpha 渐变）压在模糊海报上，
+   浅色皮肤专属：聚光卡用**浅色纱幕**（白 / 浅灰高 alpha 渐变）压在模糊海报上，
      让深色标题（--text #18191c）依然可读 —— 即「浅色聚光卡」，绝不用黑幕。
-   ★ 历史守卫全部保留：`.vp-ctl` 重置 (0,3,0) 仍压过通用 button (0,2,1)、`.vp-big:active` 位移守卫、
+   历史守卫全部保留：`.vp-ctl` 重置 (0,3,0) 仍压过通用 button (0,2,1)、`.vp-big:active` 位移守卫、
      pvwin 白壳（(0,5,0) 压过本块 .main 透明）、播放器舞台 `.vplayer` 黑底不动、导航 z-index 40。
    ============================================================================ */
 
@@ -2175,9 +2183,9 @@ body { font-family: var(--font-ui); }
 :root[data-shell='dualbar'] .content { background: transparent; padding: 18px 26px 34px; }
 
 /* ---- ② 双行头外壳（哔哔专属；netflix=满幅浮层 / 大果=侧栏 / 大豆=顶栏+胶囊条，形态互不相同） ----
-   ★ 为什么改结构：原「哔哔与 netflix 共用 .nf-nav 单行顶栏」正是四套皮肤长得像的根源 ——
+   为什么改结构：原「哔哔与 netflix 共用 .nf-nav 单行顶栏」正是四套皮肤长得像的根源 ——
      现在哔哔换成**两行**：上 = 品牌 + 居中搜索 + 换源 + 窗口控制；下 = 分类 tab 条。
-   ★ 整条头仍是可拖拽（先例：B 站皮肤曾因漏设 drag 而整窗拖不动）；交互件显式 no-drag。 */
+   整条头仍是可拖拽（先例：B 站皮肤曾因漏设 drag 而整窗拖不动）；交互件显式 no-drag。 */
 :root[data-shell='dualbar'] .bb-head {
   flex: none; position: relative; z-index: 30;
   background: rgba(255, 255, 255, .88);
@@ -2188,7 +2196,7 @@ body { font-family: var(--font-ui); }
   -webkit-app-region: drag;
 }
 :root[data-shell='dualbar'] .bb-top { display: flex; align-items: center; gap: 14px; height: 54px; padding: 0 18px; }
-/* ★★ 2026-10-16 修复（用户报「哔哔皮肤大部分区域点击后无反应」）★★
+/* 修复
    真因 = 下面的 no-drag 豁免清单**漏了导航 tab** —— `.bb-tab` 是 `<a>`（不是 button/.srcpick/input），
    而整条 `.bb-head` 是 `-webkit-app-region: drag`：**拖拽区内的鼠标按下被当成"拖动窗口"吞掉，不进渲染进程**
    ⇒ 哔哔的**整个主导航**（发现/点播/历史/收藏/直播/存储/配置/说明）真鼠标点击全部无反应，
@@ -2288,7 +2296,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑤ 章节标题：带蓝色光条的大字号（原「一行 20px 灰字」） ----
-   ★ 发现页内容行类（`nf-row*`）按 layout 枚举限定：只在 `discoverStyle='shelf'` 一系渲染。 */
+   发现页内容行类（`nf-row*`）按 layout 枚举限定：只在 `discoverStyle='shelf'` 一系渲染。 */
 :root[data-discover='shelf'] .nf-row,
 :root[data-discover='shelfWide'] .nf-row,
 :root[data-discover='wall'] .nf-row { margin-bottom: 30px; }
@@ -2353,7 +2361,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑦ 按钮：蓝胶囊主行动（B 站的主行动语言）+ 白玻璃次要胶囊 ----
-   ★ 本块不重写 `button:active`：文件上方 `(0,3,1) button:active { transform: scale(.96) }`
+   本块不重写 `button:active`：文件上方 `(0,3,1) button:active { transform: scale(.96) }`
      与其后 `(0,3,1) .vp-big:active { transform: translate(-50%,-50%) scale(.95) }` 守卫仍在，
      且本块 `button` 只 (0,2,1) —— 按压态与中央播放键位移不受影响。 */
 :root[data-shell='dualbar'] button {
@@ -2371,10 +2379,10 @@ body { font-family: var(--font-ui); }
   background: linear-gradient(180deg, #28b8ea, var(--accent-strong)); color: var(--on-accent); box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--accent) 80%, transparent);
 }
 
-/* ★ 2026-10-16（用户要求）：**配置页选项卡改为「圆角长方形」**（参考 Netflix 的页签形态），不要半圆药丸。
+/* **配置页选项卡改为「圆角长方形」**（参考 Netflix 的页签形态），不要半圆药丸。
    `.cfg-tab` 是 ConfigPage 的 `<button>`，其**内联样式只把下两角压成 0**，上两角仍吃通用
    `button { border-radius: 999px }`(0,2,1) ⇒ 顶上是半圆。这里上两角收成皮肤小圆角令牌、下两角平齐于
-   分类行底边线（内联已是 0）→ 与 netflix 的页签同形。特异度 (0,3,0) > (0,2,1)（§C54 教训）。 */
+   分类行底边线（内联已是 0）→ 与 netflix 的页签同形。特异度 (0,3,0) > (0,2,1)。 */
 :root[data-shell='dualbar'] .cfg-tab {
   border-top-left-radius: var(--radius-sm);
   border-top-right-radius: var(--radius-sm);
@@ -2390,7 +2398,7 @@ body { font-family: var(--font-ui); }
 }
 /* 模糊海报当环境色底：浅色皮肤提亮（不是压暗），只留颜色不留形象 */
 :root[data-shell='dualbar'] .spot-art-layer { filter: blur(52px) saturate(1.5) brightness(1.08); }
-/* ★ 浅色纱幕：白 / 浅灰高 alpha 渐变 + 两处品牌色柔光，压住模糊海报，深色标题依然可读 */
+/* 浅色纱幕：白 / 浅灰高 alpha 渐变 + 两处品牌色柔光，压住模糊海报，深色标题依然可读 */
 :root[data-shell='dualbar'] .spot-veil {
   background:
     radial-gradient(760px 360px at 8% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 66%),
@@ -2424,7 +2432,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='dualbar'] .spot-dot.active { background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 80%, transparent); }
 
 /* ============================================================================
-   ★★ 2026-10-16 第三代（**哔哔差异化**）：把「照抄 netflix 模板换色」的部分逐项换掉 ——
+第三代（**哔哔差异化**）：把「照抄 netflix 模板换色」的部分逐项换掉 ——
    哔哔要的是「彩色横幅 + 扁平白卡 + 悬浮药丸控制条」，而不是另一套玻璃卡。
    ============================================================================ */
 
@@ -2435,7 +2443,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 20px 46px -26px rgba(24, 25, 28, .4), inset 0 0 0 1px rgba(24, 25, 28, .05);
 }
 :root[data-shell='dualbar'] .spot-art-layer { filter: blur(36px) saturate(2.2) brightness(1.12); }
-/* ★ 右半幅氛围（上一版全幅铺底：深色海报的模糊色铺满浅色卡必然变泥）——
+/* 右半幅氛围（上一版全幅铺底：深色海报的模糊色铺满浅色卡必然变泥）——
    模糊海报只在**右半边**（海报身后）晕开，左侧文字区保持干净的品牌渐变；左缘用 mask 羽化衔接。 */
 :root[data-shell='dualbar'] .spot-art {
   inset: 0 0 0 44%;
@@ -2469,7 +2477,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑪ 卡片：**扁平白卡**（细边 + 几乎无阴影）+ uiverse 式 **skew 扫光** ----
-   ★ 与 netflix（裸图放大）、大果（大圆角玻璃）、大豆（M3 色调容器）三套**卡片解剖**互不相同。 */
+   与 netflix（裸图放大）、大果（大圆角玻璃）、大豆（M3 色调容器）三套**卡片解剖**互不相同。 */
 :root[data-shell='dualbar'] .card-media .card {
   border: 1px solid var(--border); border-radius: var(--radius);
   background: #fff;
@@ -2492,7 +2500,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑫ 播放器：**悬浮药丸玻璃控制条**（哔哔专属架构；netflix 是贴底渐隐长条） ----
-   ★ 用 left/right:0 + width + margin:auto 居中，**不用 transform** ——
+   用 left/right:0 + width + margin:auto 居中，**不用 transform** ——
      避免 transform 成为内部弹层（字幕/音轨/倍速面板）的包含块而改变其定位。 */
 :root[data-shell='dualbar'] .vplayer { background: #000; }
 :root[data-shell='dualbar'] .vp-controls {
@@ -2505,7 +2513,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 22px 54px -20px rgba(0, 0, 0, .95);
 }
 :root[data-shell='dualbar'] .vplayer.vp-mini .vp-controls { width: auto; right: auto; left: 50%; transform: translateX(-50%); }
-/* ★ 2026-10-17（用户报「进度条后面那层半透明包裹」，哔哔皮肤同病）：早期块（本文件 §播放器·早期）
+/* （进度条后面那层半透明包裹，哔哔皮肤同病）：早期块（本文件 §播放器·早期）
    给 `.vp-progress` 上了 `background: rgba(255,255,255,.25)` + `border-radius: 3px`，本大改块只覆盖了
    `::before`/`played`/`thumb` ⇒ 父元素那层半透明底仍在（已播线/细轨道外面多一条）。显式置空；
    高度保留仅作拖拽热区。 */
@@ -2534,19 +2542,19 @@ body { font-family: var(--font-ui); }
   background: color-mix(in srgb, var(--accent-2) 95%, transparent);
 }
 
-/* ================= 外壳结构：sidebar · 玻璃侧边栏（大果） —— 迁移自 apple.css（2026-10-18） ================= */
+/* ================= 外壳结构：sidebar · 玻璃侧边栏（大果） —— 迁移自 apple.css ================= */
 /* apple.css — Win-Box 皮肤：Apple（macOS · Liquid Glass）风格 —— 结构规则抽取（迁移归档）
-   ★ 2026-10-18（统一皮肤标准）：本文件收纳原 skin 文件里「令牌声明以外」的全部规则，
+（统一皮肤标准）：本文件收纳原 skin 文件里「令牌声明以外」的全部规则，
      仅供结构合并 / 比对（宿主结构层见 global.css）；令牌声明已迁回 src/renderer/styles/apple.css。
-   ★ 2026-10-16 现代化打磨（impeccable 口径：配色 / 动效 / 风格协调统一）：
+现代化打磨（impeccable 口径：配色 / 动效 / 风格协调统一）：
      · Liquid Glass 再提纯：工具栏/侧边栏玻璃折射高光 + 内容上浮「浮在玻璃下」的层次；
      · 侧边栏选中弹跳、卡片弹簧上浮 + 封面慢推变焦 + 逐个错开入场、按钮按压回弹；
      · 控件统一走全站动效令牌（全局 ease/dur 令牌），四皮肤同一手感（只换配色）。
    原规范：Liquid Glass（macOS Tahoe）半透明材质 + Apple TV app 布局 + HIG 侧边栏。
-   ★ 本皮肤**不复用**经典/Netflix 骨架：布局为「全宽统一工具栏（交通灯左置）＋ 玻璃侧边栏 ＋ 内容区」。
-   ★ 作用域：外壳规则限定在 data-shell='sidebar'；详情排版类限定在 data-detail='glass'；
+   本皮肤**不复用**经典/Netflix 骨架：布局为「全宽统一工具栏（交通灯左置）＋ 玻璃侧边栏 ＋ 内容区」。
+   作用域：外壳规则限定在 data-shell='sidebar'；详情排版类限定在 data-detail='glass'；
      发现页内容栏类限定在 data-discover='shelfWide'；其余主题 / 外壳不受影响。
-   ★ 宿主已统一的 body / a / .muted / h2-h4 规则保留在下方仅供比对（现行以 global.css 为准）。 */
+   宿主已统一的 body / a / .muted / h2-h4 规则保留在下方仅供比对（现行以 global.css 为准）。 */
 
 /* ---- 全局：桌面底 + SF 字体栈 ---- */
 :root[data-shell='sidebar'] body {
@@ -2738,7 +2746,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .srcpick-item:hover,
 :root[data-shell='sidebar'] .sp-item:hover { background: var(--accent-soft); }
 :root[data-shell='sidebar'] .srcpick-item.active { color: var(--accent); font-weight: 600; }
-/* ★ 2026-09-29：热搜排名徽标 / 搜索历史删除按钮（Apple 皮肤配色对齐 HIG） */
+/* 热搜排名徽标 / 搜索历史删除按钮（Apple 皮肤配色对齐 HIG） */
 :root[data-shell='sidebar'] .sp-rank-no.top { background: var(--accent); }
 :root[data-shell='sidebar'] .sp-clear { border-color: var(--hairline); color: var(--text-faint); }
 /* 侧边栏底部「当前源」：低调的玻璃行 */
@@ -2855,7 +2863,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .card-media img { transition: transform .55s var(--ease-standard); }
 :root[data-shell='sidebar'] .card-media:hover img { transform: scale(1.05); }
 /* 海报墙逐个错开入场（前 12 张；与全局 pageIn 同节奏，列表现身为列表） */
-:root[data-shell='sidebar'] .grid > * { animation: apCardIn var(--dur-page) var(--ease-enter) both; }
+:root[data-shell='sidebar'] .grid > *:not(.vg-ph) { animation: apCardIn var(--dur-page) var(--ease-enter) both; }
 :root[data-shell='sidebar'] .grid > :nth-child(1) { animation-delay: 0ms; }
 :root[data-shell='sidebar'] .grid > :nth-child(2) { animation-delay: 26ms; }
 :root[data-shell='sidebar'] .grid > :nth-child(3) { animation-delay: 52ms; }
@@ -2976,7 +2984,7 @@ body { font-family: var(--font-ui); }
   backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow: 0 8px 28px rgba(0, 0, 0, .4), inset 0 .5px 0 rgba(255, 255, 255, .28);
 }
-/* ★ hover 必须保留 translate(-50%,-50%)（元素是 left/top:50% 定位；缺了会跳走半个身位） */
+/* hover 必须保留 translate(-50%,-50%)（元素是 left/top:50% 定位；缺了会跳走半个身位） */
 :root[data-shell='sidebar'] .vp-big:hover { transform: translate(-50%, -50%) scale(1.05); background: rgba(28, 28, 30, .62); }
 :root[data-shell='sidebar'] .vplayer.vui .vp-big { opacity: 1; }
 :root[data-shell='sidebar'] .vp-progress { height: 6px; background: rgba(255, 255, 255, .26); border-radius: 3px; }
@@ -2990,7 +2998,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .vp-ctl:hover { color: var(--accent); background: rgba(255, 255, 255, .14); }
 :root[data-shell='sidebar'] .vp-ctl:disabled { color: rgba(255, 255, 255, .3); }
 /**
- * ★★ 2026-10-15（用户报「大果播放器按钮太大，功能变多已挤占文字空间」）★★
+ * 
  *   同 Netflix 那条：本皮肤通用 `button` 规则（`:root[data-shell='sidebar'] button`：灰胶囊底 + `padding: 6px 14px`
  *   ＋ 0.67px 边框，特异度 (0,2,1)）压过基类 `.vp-ctl` 的 `all: unset`，实测按钮被撑成 **55×39**
  *   （大豆皮肤同位置 26×26）。这里恢复图标按钮「无底无框无内边距」→ 26×26。
@@ -3006,7 +3014,7 @@ body { font-family: var(--font-ui); }
   backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 :root[data-shell='sidebar'] .vp-vfill { background: var(--accent); }
-/* 播放器窗口（独立 BrowserWindow）：★ 2026-10-15（用户要求「大果的播放器外壳也应该是白色的」）——
+/* 播放器窗口（独立 BrowserWindow）：——
    与大豆 / 哔哔**同口径**：外壳（窗口壳 / 标题栏 / 小窗条）用浅色，只有视频舞台 `.vplayer` 保持暗色。
    此前这里写成 `.app.pwin`（无 `pvwin` 限定）⇒ 连**独立详情窗口**也被涂黑，且与另两套浅色皮肤不一致。
    `pvwin` 只挂在真正的播放器窗口上（App.tsx 的 isPlayerWin 分支），详情窗口是 `app pwin`。 */
@@ -3062,10 +3070,10 @@ body { font-family: var(--font-ui); }
 }
 
 /* ============================================================================
-   ★★ 2026-10-16 第二代外观（**结构级重做**；用户口径：「绝对的好看，绝对的大改」）
+第二代外观（**结构级重做**）
    ----------------------------------------------------------------------------
    为什么要有第二代：第一代只改了 hover / 选中色 / 滚动条这类**微观交互态** ——
-   它们在截图与整体观感里几乎为零，用户评价「没看出来变化在哪」。这一代改的是**宏观视觉层**：
+   它们在截图与整体观感里几乎为零。这一代改的是**宏观视觉层**：
      ① 环境 → 全站**环境光背景场**（系统蓝 / 靛蓝柔光 + 极淡中性光；骨架见 global.css）＋ 浅色打底光；
      ② 层序 → 外壳（.ap-body / .ap-main / .content）**背景透明并抬到 z-index:1**，
               氛围（z-index:0 的 fixed 层）才透得出来、内容才盖得住氛围（否则整页被氛围层盖住）；
@@ -3075,7 +3083,7 @@ body { font-family: var(--font-ui); }
      ⑥ 卡片 → 「裸图」→ **白玻璃卡**（描边 + 双层阴影 + shine 扫光 + 悬停浮出的蓝色播放钮）；
      ⑦ 按钮 → 主行动系统蓝胶囊 + 次要按钮玻璃胶囊（增量收敛既有规则）；
      ⑧ 首屏 → 发现页**浅色聚光卡**（.spot：模糊海报环境色底 + 浅色纱幕 + 清晰海报主体 + 大字标题）。
-   ★ 历史守卫全部保留：`.vp-ctl` 26×26 重置、`.vp-big:active` 位移守卫、pvwin 白壳 / mpv 例外、
+   历史守卫全部保留：`.vp-ctl` 26×26 重置、`.vp-big:active` 位移守卫、pvwin 白壳 / mpv 例外、
      交通灯 .ap-light*、`.titlebar.ap-titlebar` 的 all:unset —— 本块**只追加**，不改任何既有规则。
    ============================================================================ */
 
@@ -3102,7 +3110,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .ap-body { background: transparent; position: relative; z-index: 1; }
 :root[data-shell='sidebar'] .ap-main { background: transparent; position: relative; z-index: 1; }
 :root[data-shell='sidebar'] .ap-main .content { background: transparent; }
-/* ★ .ap-toolbar 仍是 z-index:40（见文件上方），稳压在 z-index:1 的 .ap-body 之上 —— 工具栏玻璃不被内容遮挡 */
+/* .ap-toolbar 仍是 z-index:40（见文件上方），稳压在 z-index:1 的 .ap-body 之上 —— 工具栏玻璃不被内容遮挡 */
 
 /* ---- ③ 工具栏 / 侧栏：玻璃再提纯（内高光 + 发丝分隔线）+ 品牌渐变方块标 + 导航玻璃悬停 ---- */
 :root[data-shell='sidebar'] .ap-toolbar {
@@ -3220,7 +3228,7 @@ body { font-family: var(--font-ui); }
   box-shadow: inset 0 .5px 0 rgba(255, 255, 255, .55);
 }
 :root[data-shell='sidebar'] button:active { transform: scale(.96); opacity: .92; }
-/* ★ 中央大播放键是 translate(-50%,-50%) 定位：任何通用 button 规则之后都必须重申位移，否则按下会跳半个身位 */
+/* 中央大播放键是 translate(-50%,-50%) 定位：任何通用 button 规则之后都必须重申位移，否则按下会跳半个身位 */
 :root[data-shell='sidebar'] .vp-big:active { transform: translate(-50%, -50%) scale(.94); }
 :root[data-shell='sidebar'] button.primary {
   background: var(--accent); border-color: transparent; color: var(--on-accent); font-weight: 600;
@@ -3230,15 +3238,15 @@ body { font-family: var(--font-ui); }
   background: var(--accent-strong); color: var(--on-accent);
   box-shadow: 0 6px 18px -4px color-mix(in srgb, var(--accent) 50%, transparent), inset 0 .5px 0 rgba(255, 255, 255, .3);
 }
-/* ★ 历史守卫重申：通用 button 规则特异度 (0,2,1) 本就压不过 `.vp-ctl` (0,3,0)；此处再断言一次，
-   确保图标按钮仍是 26×26「无底无框无内边距」（2026-10-15 实测曾被撑成 55×39）。 */
+/* 历史守卫重申：通用 button 规则特异度 (0,2,1) 本就压不过 `.vp-ctl` (0,3,0)；此处再断言一次，
+   确保图标按钮仍是 26×26「无底无框无内边距」（实测曾被撑成 55×39）。 */
 :root[data-shell='sidebar'] .vp-ctl,
 :root[data-shell='sidebar'] .mini-btn { background: none; border: none; padding: 0; box-shadow: none; }
 
-/* ★ 2026-10-16（用户要求）：**配置页选项卡改为「圆角长方形」**（参考 Netflix 的页签形态），不要半圆药丸。
+/* **配置页选项卡改为「圆角长方形」**（参考 Netflix 的页签形态），不要半圆药丸。
    `.cfg-tab` 是 ConfigPage 的 `<button>`，其**内联样式只把下两角压成 0**，上两角仍吃通用
    `button { border-radius: 999px }`(0,2,1) ⇒ 顶上是半圆。这里上两角收成皮肤小圆角令牌、下两角平齐于
-   分类行底边线（内联已是 0）→ 与 netflix 的页签同形。特异度 (0,3,0) > (0,2,1)（§C54 教训）。 */
+   分类行底边线（内联已是 0）→ 与 netflix 的页签同形。特异度 (0,3,0) > (0,2,1)。 */
 :root[data-shell='sidebar'] .cfg-tab {
   border-top-left-radius: var(--radius-sm);
   border-top-right-radius: var(--radius-sm);
@@ -3255,7 +3263,7 @@ body { font-family: var(--font-ui); }
 }
 /* 模糊海报只当环境色底：**提亮去饱和**（浅色皮肤不做暗底） */
 :root[data-shell='sidebar'] .spot-art-layer { filter: blur(52px) saturate(1.35) brightness(1.55); }
-/* ★ 浅色纱幕：**默认必须有** —— 白/浅灰高 alpha 渐变压在模糊海报上，深色标题才读得清（左白、右略透出花色） */
+/* 浅色纱幕：**默认必须有** —— 白/浅灰高 alpha 渐变压在模糊海报上，深色标题才读得清（左白、右略透出花色） */
 :root[data-shell='sidebar'] .spot-veil {
   background: linear-gradient(100deg, rgba(252, 252, 254, .9) 0%, rgba(250, 250, 253, .8) 40%,
     rgba(245, 246, 250, .52) 70%, rgba(252, 252, 254, .74) 100%);
@@ -3287,14 +3295,14 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .spot-dot.active { background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent); }
 
 /* ============================================================================
-   ★★ 2026-10-16 第三代（**大果差异化**）：把「同一套结构换四色」的残留逐项换成
+第三代（**大果差异化**）：把「同一套结构换四色」的残留逐项换成
    Apple TV app / App Store「Today」卡片的**材质与解剖** —— 克制、大留白、大圆角、Liquid Glass。
-   ★ 四套皮肤的结构级差异点（互不相同，不再「换色」）：
+   四套皮肤的结构级差异点（互不相同，不再「换色」）：
      netflix = 满幅 billboard + 裸海报放大 + 贴底渐隐长条；
      哔哔    = 双行专属头 + 扁平白卡 + 悬浮药丸 dock；
      大豆    = M3 色调容器 + 大圆钮；
      大果    = **保留玻璃侧栏** + **Today 大卡首屏** + **mac 原生贴底发丝玻璃条**（本条）。
-   ★ 历史守卫全部保留：`.vp-ctl` 无底无框无内边距（2026-10-15 实测曾被撑成 55×39）、
+   历史守卫全部保留：`.vp-ctl` 无底无框无内边距（实测曾被撑成 55×39）、
      `.vp-big` 的 translate(-50%,-50%) 位移守卫、pvwin 白壳 / mpv 例外、交通灯 .ap-light*、
      `.titlebar.ap-titlebar` 的 all:unset —— 本块**只追加**，不改任何既有规则。
    ============================================================================ */
@@ -3321,7 +3329,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .ap-body { background: transparent; position: relative; z-index: 1; }
 :root[data-shell='sidebar'] .ap-main { background: transparent; position: relative; z-index: 1; }
 :root[data-shell='sidebar'] .ap-main .content { background: transparent; position: relative; z-index: 1; }
-/* ★ .ap-toolbar 仍是 z-index:40（见文件上方），稳压在 z-index:1 的 .ap-body 之上 */
+/* .ap-toolbar 仍是 z-index:40（见文件上方），稳压在 z-index:1 的 .ap-body 之上 */
 
 /* ---- ⑪ 工具栏 / 侧栏：玻璃再提纯（玻璃高光 内高光 + 发丝分隔线）+ 品牌渐变方块标 ---- */
 :root[data-shell='sidebar'] .ap-toolbar {
@@ -3388,7 +3396,7 @@ body { font-family: var(--font-ui); }
 
 /* ---- ⑭ 首屏 = App Store「Today」卡片：白玻璃整卡（22px 大圆角 + 大留白）
      左 = kicker + 超大标题 + 元信息 + 蓝色胶囊 CTA；右 = 放大的竖版海报卡（236×354） ----
-   ★ 这是大果**专属**的首屏构图（netflix 全出血 billboard / 哔哔 彩色横幅 / 大豆 M3 容器皆不同）。 */
+   这是大果**专属**的首屏构图（netflix 全出血 billboard / 哔哔 彩色横幅 / 大豆 M3 容器皆不同）。 */
 :root[data-shell='sidebar'] .spot {
   border: 1px solid rgba(255, 255, 255, .8); border-radius: 22px;
   padding: 36px 42px;
@@ -3398,13 +3406,13 @@ body { font-family: var(--font-ui); }
 }
 /* 海报模糊滤镜：恢复饱和 + 明亮 —— 上一版 saturate(.6) 把底洗成了灰泥，玻璃失去「透出色」 */
 :root[data-shell='sidebar'] .spot-art-layer { filter: blur(48px) saturate(1.35) brightness(1.32); }
-/* ★ 右半幅氛围（与哔哔/大豆同一手法）：深色海报的颜色只在海报身后晕开，左侧保持干净玻璃 */
+/* 右半幅氛围（与哔哔/大豆同一手法）：深色海报的颜色只在海报身后晕开，左侧保持干净玻璃 */
 :root[data-shell='sidebar'] .spot-art {
   inset: 0 0 0 44%;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%);
   mask-image: linear-gradient(to right, transparent 0%, #000 38%);
 }
-/* ★ 浅色纱幕：**默认必须覆盖**（基类 .spot-veil 无底色）——只在文字区压薄白，氛围色从右侧透上来 */
+/* 浅色纱幕：**默认必须覆盖**（基类 .spot-veil 无底色）——只在文字区压薄白，氛围色从右侧透上来 */
 :root[data-shell='sidebar'] .spot-veil {
   background: linear-gradient(100deg, rgba(252, 252, 254, .78) 0%, rgba(250, 251, 254, .4) 34%, rgba(250, 251, 254, 0) 60%);
 }
@@ -3443,7 +3451,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='sidebar'] .spot-dot.active { background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent); }
 
 /* ---- ⑮ 卡片：大圆角玻璃卡（18px，极淡发丝边）+ 柔和多层阴影；hover 轻微上浮 + 浮出蓝色播放钮
-     ★ 不做 shine 扫光（第二代给封面加的 ::after 扫光在此**明确关闭**，大果不是扫光风） ---- */
+     不做 shine 扫光（第二代给封面加的 ::after 扫光在此**明确关闭**，大果不是扫光风） ---- */
 :root[data-shell='sidebar'] .card-media { transition: transform var(--dur-state) var(--ease-spring); }
 :root[data-shell='sidebar'] .card-media:hover { transform: translateY(-4px) scale(1.02); z-index: 5; }
 :root[data-shell='sidebar'] .card-media .card {
@@ -3469,7 +3477,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑯ 播放器 = macOS 原生风控制条：**贴底全宽细发丝玻璃条**（无圆角，像 macOS 窗口底栏）
-     ★ 与另三套架构互不相同：netflix 贴底渐隐长条 / 哔哔 悬浮药丸 dock / 大豆 M3 状态层。 ---- */
+     与另三套架构互不相同：netflix 贴底渐隐长条 / 哔哔 悬浮药丸 dock / 大豆 M3 状态层。 ---- */
 :root[data-shell='sidebar'] .vplayer { background: #000; }
 :root[data-shell='sidebar'] .vp-controls {
   left: 0; right: 0; bottom: 0; border-radius: 0;
@@ -3480,7 +3488,7 @@ body { font-family: var(--font-ui); }
   box-shadow: none;
 }
 /* 进度条做成**极细**（track 2px / 播放段 2px 系统蓝）+ 小圆点（10px 白点，悬停 14px） */
-/* ★ 2026-10-17（同 netflix/哔哔）：早期块给 `.vp-progress` 上了 `background: rgba(255,255,255,.26)`
+/* （同 netflix/哔哔）：早期块给 `.vp-progress` 上了 `background: rgba(255,255,255,.26)`
    （apple.css §播放器·早期），本块把高度拉到 12px ⇒ 已播线/细轨道外面多一条半透明包裹底。显式置空。 */
 :root[data-shell='sidebar'] .vp-progress { height: 12px; margin-bottom: 2px; background: none; }
 :root[data-shell='sidebar'] .vp-progress::before { height: 2px; border-radius: 999px; background: rgba(255, 255, 255, .22); }
@@ -3507,7 +3515,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 14px 40px -14px rgba(0, 0, 0, .7), inset 0 .5px 0 rgba(255, 255, 255, .5);
   transition: transform var(--dur-state) var(--ease-spring), background var(--dur-state) var(--ease-standard);
 }
-/* ★ hover / active **必须**保留 translate(-50%,-50%)（元素 left/top:50% 定位；缺了会跳半个身位） */
+/* hover / active **必须**保留 translate(-50%,-50%)（元素 left/top:50% 定位；缺了会跳半个身位） */
 :root[data-shell='sidebar'] .vp-big:hover { transform: translate(-50%, -50%) scale(1.05); background: rgba(255, 255, 255, .24); }
 :root[data-shell='sidebar'] .vp-big:active { transform: translate(-50%, -50%) scale(.94); }
 
@@ -3517,9 +3525,9 @@ body { font-family: var(--font-ui); }
   :root[data-shell='sidebar'] .spot-stage { width: 150px; height: 225px; }
 }
 
-/* ================= 外壳结构：pillbar · 胶囊导航 + 浮动圆钮（大豆） —— 迁移自 douban.css（2026-10-18） ================= */
+/* ================= 外壳结构：pillbar · 胶囊导航 + 浮动圆钮（大豆） —— 迁移自 douban.css ================= */
 /* ============================================================================
-   douban（大豆）· 结构层 —— 由 src/renderer/styles/douban.css 迁移（2026-10-18）
+   douban（大豆）· 结构层 —— 由 src/renderer/styles/douban.css 迁移
    ----------------------------------------------------------------------------
    原皮肤文件里的**令牌声明**已抽回 src/renderer/styles/douban.css，本文件只保留
    结构 / 交互 / 动效规则。作用域由「按皮肤 id 限定」改写为**按宿主 layout 枚举属性限定**：
@@ -3530,17 +3538,17 @@ body { font-family: var(--font-ui); }
      · 筛选条类      → `:root[data-filter='card']`（db-filters / db-filter-row / db-filter-label）
    颜色一律走统一词表令牌（豆绿 = --accent / 豆瓣橙 = --accent-2 / 暖纸白 = --surface-0）。
    ============================================================================
-   ★★ 2026-10-09 整体重做（用户口径：皮肤改叫「大豆」，风格重做、务必大改、参考更多开源 UI）：
+整体重做（皮肤改叫「大豆」，风格重做、务必大改、参考更多开源 UI）：
      · 设计语言 = **Material 3 Expressive**（2025 Google：大圆角 / 鲜明容器色 / 弹性动效 /
        强排版对比）× **豆瓣品牌**（豆绿 #2E9629 主色 / 豆瓣橙 #F0641E 点缀 / 暖纸白底）。
-   ★★ 2026-10-16 现代化打磨（impeccable 口径）：
+现代化打磨（impeccable 口径）：
      · 全控件选中弹跳（chips/tag/ep/FAB）、卡片封面慢推变焦、选中色/插入符品牌化、
        节标题色条生长动画；动效统一走全站令牌（--ease-* / --dur-*），四皮肤同一手感。
      · 结构类名/功能口径全部保留（App.tsx 外壳、db-wall/db-hero/搜索条宽度挂 .srcpick 等），
-       本文件只做「视觉层」重写 —— 勿回退口径见 MEMORY §C62（普通搜索条宽度、pvwin 深色、弹窗底兜底）。
+       本文件只做「视觉层」重写 —— 勿回退口径：（普通搜索条宽度、pvwin 深色、弹窗底兜底）。
    ============================================================================
-   ★ 全部规则限定在 `[data-shell='pillbar']`（详情 / 发现 / 筛选各见对应枚举属性）下，其余主题不受影响。
-   ★ 特异度口径（§C54/§C60 教训）：本文件用 `:root[data-shell='pillbar'] .x`（0,3,0 起）压过
+   全部规则限定在 `[data-shell='pillbar']`（详情 / 发现 / 筛选各见对应枚举属性）下，其余主题不受影响。
+   特异度口径：本文件用 `:root[data-shell='pillbar'] .x`（0,3,0 起）压过
      global.css 基础规则（0,1,0/0,2,0）；组件级开启态另加 `.a.b` 组合，避免被皮肤的 hover 反压。 */
 
 /* ================== 外壳：悬浮毛玻璃顶栏 + 分段导航 + 内容 + 浮动圆钮 ================== */
@@ -3583,7 +3591,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] .db-topbar .titlebar .tb-btn:hover { background: var(--accent-soft); color: var(--text); box-shadow: none; }
 :root[data-shell='pillbar'] .db-topbar .titlebar .tb-btn.tb-close:hover { background: var(--danger); color: var(--on-accent); }
 
-/* ★ 分段控制器导航（重做）：浅底容器 + 选中白底浮起 + 豆绿字 —— 替代初版的「描边胶囊行」 */
+/* 分段控制器导航（重做）：浅底容器 + 选中白底浮起 + 豆绿字 —— 替代初版的「描边胶囊行」 */
 :root[data-shell='pillbar'] .db-nav {
   display: flex; align-items: center; gap: 2px; width: fit-content; max-width: calc(100% - 32px);
   margin: 0 16px 10px; padding: 3px; box-sizing: border-box;
@@ -3614,7 +3622,7 @@ body { font-family: var(--font-ui); }
 /* 无悬浮导航遮挡，内容区使用正常底部留白。 */
 :root[data-shell='pillbar'] .db-main .content { padding: 18px 22px 24px; }
 
-/* ★ 右下角浮动圆钮（重做）：squircle（圆角方）+ 白色玻璃（未选中）/ 豆绿渐变（选中） */
+/* 右下角浮动圆钮（重做）：squircle（圆角方）+ 白色玻璃（未选中）/ 豆绿渐变（选中） */
 :root[data-shell='pillbar'] .db-fabs { position: fixed; right: 22px; bottom: 22px; z-index: 40; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 :root[data-shell='pillbar'] .db-fab {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -3650,7 +3658,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] .tb-sub { color: var(--text-dim); }
 :root[data-shell='pillbar'] .tb-dot { background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: none; }
 /* 窗口按钮：无底无框圆角块（基础 button 规则会误给白底描边 + padding，
-   见 §C62：必须显式 padding: 0; box-sizing: border-box，否则窗口按钮散位） */
+   必须显式 padding: 0; box-sizing: border-box，否则窗口按钮散位） */
 :root[data-shell='pillbar'] .titlebar .tb-controls { gap: 4px; }
 :root[data-shell='pillbar'] .titlebar .tb-btn {
   background: none; border: none; box-shadow: none; padding: 0; box-sizing: border-box;
@@ -3662,7 +3670,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] .tb-btn.tb-pin-on { color: var(--accent); background: var(--accent-soft); }
 :root[data-shell='pillbar'] .tb-btn.tb-pin-on:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, transparent); }
 
-/* ★ 2026-10-14（用户要求）：大豆皮肤里**播放器窗口的边框应为白色而非黑色** ——
+/* 大豆皮肤里**播放器窗口的边框应为白色而非黑色** ——
    仅针对独立播放器窗口（`.app.pwin.pvwin`，含标题栏/小窗条/窗口壳）；
    视频舞台 `.vplayer` 仍保持深色（观看时需要）；详情窗口同用 .app.pwin 但保持浅色页面。 */
 :root[data-shell='pillbar']:not([data-mpv]) .app.pwin.pvwin,
@@ -3729,7 +3737,7 @@ body { font-family: var(--font-ui); }
 /* 图片浏览器左右翻页键（压在图片上）：深色玻璃块，不做白底胶囊 */
 :root[data-shell='pillbar'] .ivi-nav-btn { background: rgba(24, 22, 28, .46); border: none; border-radius: var(--radius-sm); padding: 0; color: var(--on-accent); }
 :root[data-shell='pillbar'] .ivi-nav-btn:hover { background: rgba(24, 22, 28, .66); color: var(--on-accent); box-shadow: none; }
-/* 跳过片头片尾的进度条右键菜单：列表行（透明底、悬停淡绿） */
+/* 播放器右键菜单：列表行（透明底、悬停淡绿）—— .vp-skipmenu* 这组规则现只服务右键菜单（跳过点已改按钮打点） */
 :root[data-shell='pillbar'] .vp-skipmenu-item { background: none; border: none; border-radius: 8px; padding: 6px 8px; color: var(--text); }
 :root[data-shell='pillbar'] .vp-skipmenu-item:hover { background: var(--accent-soft); color: var(--text); box-shadow: none; }
 
@@ -3740,7 +3748,7 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] select:focus,
 :root[data-shell='pillbar'] textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 :root[data-shell='pillbar'] ::placeholder { color: var(--text-faint); }
-/* 开关样式见 global.css 的「全皮肤药丸开关」（★ 2026-10-08 用户要求统一到全皮肤，不再在皮肤里各写一份） */
+/* 开关样式见 global.css 的「全皮肤药丸开关」（统一到全皮肤，不再在皮肤里各写一份） */
 :root[data-shell='pillbar'] input[type='radio'],
 :root[data-shell='pillbar'] input[type='range'],
 :root[data-shell='pillbar'] progress { accent-color: var(--accent); }
@@ -3772,7 +3780,7 @@ body { font-family: var(--font-ui); }
 /* ================== 卡片 / 网格 / 列表 ================== */
 :root[data-shell='pillbar'] .grid { gap: 20px 18px; }
 /* 通用海报网格逐个错开入场（前 12 张；与全局 pageIn 同节奏，列表现身为列表） */
-:root[data-shell='pillbar'] .grid > * { animation: dbCardIn var(--dur-page) var(--ease-enter) both; }
+:root[data-shell='pillbar'] .grid > *:not(.vg-ph) { animation: dbCardIn var(--dur-page) var(--ease-enter) both; }
 :root[data-shell='pillbar'] .grid > :nth-child(1) { animation-delay: 0ms; }
 :root[data-shell='pillbar'] .grid > :nth-child(2) { animation-delay: 26ms; }
 :root[data-shell='pillbar'] .grid > :nth-child(3) { animation-delay: 52ms; }
@@ -3908,7 +3916,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ============================================================
-   ★★ 大改布局四件（2026-10-08 立项 / 2026-10-09 随「大豆」重做皮肤色与形态）：
+   大改布局四件（立项 / 随「大豆」重做皮肤色与形态）：
    ① 顶栏 M3 搜索条；② 海报墙（分区 pill + 网格 + 悬停播放钮）；
    ③ 详情页品牌渐变头图（大海报 + 信息区）；④ 全套 M3 Expressive 运动。
    ============================================================ */
@@ -4053,10 +4061,10 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] .list-item { transition: box-shadow var(--dur-state) var(--ease-standard), border-color var(--dur-state) var(--ease-standard), transform var(--dur-state) var(--ease-spring); }
 :root[data-shell='pillbar'] .list-item:hover { transform: translateY(-1px); }
 
-/* ---- ⑦ 细节修正（2026-10-09 真机截图复验发现）---- */
+/* ---- ⑦ 细节修正（复验发现）---- */
 /* 配置页二级 tab（内联样式驱动，跨皮肤共用）：大豆里改成 M3 tonal 片 —— 选中浅绿底 + 豆绿字
    （内联样式优先级高于类选择器，必须 !important 压过；.cfg-tab 类名由 ConfigPage 提供）
-   ★ 2026-10-16（用户要求）：**圆角改成「圆角长方形」**（参考 Netflix 页签 = 上角圆、下角平齐于分类行
+**圆角改成「圆角长方形」**（参考 Netflix 页签 = 上角圆、下角平齐于分类行
    底边线），不再是四角全圆的芯片形态 —— 只保留上两角 10px，下两角 0（压过 ConfigPage 内联的 0 亦是同值）。 */
 :root[data-shell='pillbar'] .cfg-tab {
   background: transparent !important; border: none !important; border-radius: 10px 10px 0 0 !important;
@@ -4081,10 +4089,10 @@ body { font-family: var(--font-ui); }
 }
 
 /* ============================================================================
-   ★★ 2026-10-16 第二代外观（**结构级重做**；用户口径：「绝对的好看，绝对的大改」）
+第二代外观（**结构级重做**）
    ----------------------------------------------------------------------------
    为什么要有第二代：第一代只改了 hover / 选中色 / 滚动条这类**微观交互态** ——
-   它们在截图与整体观感里几乎为零，用户评价「没看出来变化在哪」。这一代改的是**宏观视觉层**：
+   它们在截图与整体观感里几乎为零。这一代改的是**宏观视觉层**：
      ① 环境 → 全站**环境光背景场**（豆绿 / 豆瓣橙双色暖光 + 极淡胶片颗粒；骨架见 global.css）；
      ② 外壳 → 背景**透明化 + 抬层**（氛围层是 z-index:0 的 fixed 元素，内容不抬到 1 会被整片盖住）；
      ③ 形态 → 顶栏毛玻璃再提纯；导航「浅底白胶囊」→ **豆绿实心胶囊 + 弹跳**；浮动圆钮收敛；
@@ -4092,8 +4100,8 @@ body { font-family: var(--font-ui); }
      ⑤ 排版 → 海报墙 chips / 节标题 → **带品牌光条的大字号标题**（与 netflix「大字号 + 光条」对位）；
      ⑥ 卡片 → 「白卡」→ **白玻璃卡**（描边 + 双层阴影 + shine 扫光 + 悬停浮出豆绿播放钮）；
      ⑧ 首屏 → 发现页**浅色聚光卡**（.spot：模糊海报做环境色 + 浅色纱幕 + 深色大字号标题）。
-   ★ 历史守卫全部保留：`.vp-ctl` 重置、`.vp-big:active` 位移守卫、pvwin 白壳、普通搜索条宽度、弹窗底兜底。
-   ★ M3 克制口径：大豆是**浅色**皮肤，光斑与纱幕都要**柔和**，只给极淡的色温偏移，不花哨。
+   历史守卫全部保留：`.vp-ctl` 重置、`.vp-big:active` 位移守卫、pvwin 白壳、普通搜索条宽度、弹窗底兜底。
+   M3 克制口径：大豆是**浅色**皮肤，光斑与纱幕都要**柔和**，只给极淡的色温偏移，不花哨。
    ============================================================================ */
 
 /* ---- ① 环境：暖纸白打底 + 豆绿 / 豆瓣橙双色柔光 + 极淡胶片颗粒 ---- */
@@ -4157,7 +4165,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .26);
   animation: dbPop var(--dur-state) var(--ease-spring);
 }
-/* 开启态 × hover 组合：避免 hover 反压选中色（§C54/§C60） */
+/* 开启态 × hover 组合：避免 hover 反压选中色 */
 :root[data-shell='pillbar'] .db-chip.active:hover {
   background: linear-gradient(135deg, #38A932, var(--accent-strong)); color: var(--on-accent);
 }
@@ -4198,7 +4206,7 @@ body { font-family: var(--font-ui); }
   color: var(--on-accent); border-color: transparent;
   box-shadow: 0 3px 12px -3px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .24);
 }
-/* 开启态 × hover 组合：避免 hover 反压选中色（§C54/§C60） */
+/* 开启态 × hover 组合：避免 hover 反压选中色 */
 :root[data-shell='pillbar'] .tag.active:hover {
   background: linear-gradient(135deg, #3AAE33, var(--accent-strong)); color: var(--on-accent); border-color: transparent;
 }
@@ -4221,7 +4229,7 @@ body { font-family: var(--font-ui); }
 :root[data-discover='wall'] .db-wall-chip.active {
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .24);
 }
-/* 开启态 × hover 组合：避免 hover 反压选中色（§C54/§C60） */
+/* 开启态 × hover 组合：避免 hover 反压选中色 */
 :root[data-discover='wall'] .db-wall-chip.active:hover {
   background: linear-gradient(135deg, #3AAE33, var(--accent-strong)); color: var(--on-accent); border-color: transparent;
 }
@@ -4232,7 +4240,7 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑥ 卡片：白玻璃卡 + shine 扫光 + 悬停浮出豆绿播放钮 ----
-   ★ 豆风卡片已有 `.db-card-play` 元素（悬停浮出的圆钮），与模板的 `::before` 会**双重播放钮**冲突 ——
+   豆风卡片已有 `.db-card-play` 元素（悬停浮出的圆钮），与模板的 `::before` 会**双重播放钮**冲突 ——
      按口径**保留并样式化 `.db-card-play`**，不再另加 `::before`。 */
 :root[data-shell='pillbar'] .card-media:hover { z-index: 5; }
 :root[data-shell='pillbar'] .card-media .card {
@@ -4275,11 +4283,11 @@ body { font-family: var(--font-ui); }
 /* 次要按钮（页面顶栏 / 返回）：统一胶囊，与导航同语言 */
 :root[data-shell='pillbar'] .topbar button,
 :root[data-shell='pillbar'] .back-btn { border-radius: 999px; }
-/* 中央播放键是 translate(-50%,-50%) 定位：重申位移守卫（generic button 规则之后，§C62） */
+/* 中央播放键是 translate(-50%,-50%) 定位：重申位移守卫（generic button 规则之后） */
 :root[data-shell='pillbar'] .vp-big:active { transform: translate(-50%, -50%) scale(.95); }
 
 /* ---- ⑧ 首屏聚光卡：浅色聚光卡（暖白纱幕 + 豆绿 / 豆瓣橙强调 + 深色大标题） ----
-   ★ 大豆是浅色皮肤：模糊海报必须被提亮（brightness>1）+ 浅色纱幕压住，深色标题才读得清。 */
+   大豆是浅色皮肤：模糊海报必须被提亮（brightness>1）+ 浅色纱幕压住，深色标题才读得清。 */
 :root[data-shell='pillbar'] .spot {
   border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
   background: linear-gradient(135deg, #F3FAF0 0%, #FBFDF8 55%, #FFF4EC 100%);
@@ -4319,10 +4327,10 @@ body { font-family: var(--font-ui); }
 :root[data-shell='pillbar'] .spot-dot.active { background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent); }
 
 /* ============================================================================
-   ★★ 2026-10-16 第三代外观（**大豆差异化 · Material 3 Expressive 杂志编辑风**）
+第三代外观（**大豆差异化 · Material 3 Expressive 杂志编辑风**）
    ----------------------------------------------------------------------------
    为什么要有第三代：第二代与其余三套**结构趋同**（都停在「玻璃容器 + 扫光 + 白胶囊」的语言），
-   用户口径「四套成了一模一样仅换色，还不如以前各有特色」。这一代把大豆推到**独一份**的形态：
+   四套曾做成了一模一样仅换色，还不如以前各有特色。这一代把大豆推到**独一份**的形态：
      ① 环境 → 豆绿 / 豆瓣橙**克制**暖光 + 极淡颗粒（暖纸白打底，不做花哨）；
      ② 外壳 → 内容抬层（氛围层是 z-index:0 的 fixed 元素，不抬 z-index 会被整片盖住）；
      ③ 顶栏 → 毛玻璃提纯；导航 = **M3 分段容器**（浅色 track）＋ 豆绿实心选中胶囊；
@@ -4332,7 +4340,7 @@ body { font-family: var(--font-ui); }
         与 netflix「全出血 billboard」/ 哔哔「彩色横幅」/ 大果「Today 玻璃卡」都不重叠；
      ⑦ 卡片 → **M3 tonal 卡**：圆角 20px + 状态层（**去掉 shine 扫光**，那是哔哔的语言）；
      ⑨ 播放器 → **M3 bottom-app-bar dock**：近实心 tonal 圆角条 + 厚圆进度 + 40px 圆钮 + 80px 大键。
-   ★ 历史守卫全部保留：`.vp-ctl` 重置、`.vp-big:active` 位移守卫、pvwin 白壳、普通搜索条宽度、弹窗底兜底。
+   历史守卫全部保留：`.vp-ctl` 重置、`.vp-big:active` 位移守卫、pvwin 白壳、普通搜索条宽度、弹窗底兜底。
    ============================================================================ */
 
 /* ---- ① 环境：暖纸白打底 + 豆绿 / 豆瓣橙 / 极淡中性光（克制） + 极淡颗粒 ---- */
@@ -4395,7 +4403,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, .26);
   animation: dbPop var(--dur-state) var(--ease-spring);
 }
-/* 开启态 × hover 组合：避免 hover 反压选中色（§C54/§C60） */
+/* 开启态 × hover 组合：避免 hover 反压选中色 */
 :root[data-shell='pillbar'] .db-chip.active:hover {
   background: linear-gradient(135deg, #38A932, var(--accent-strong)); color: var(--on-accent);
 }
@@ -4425,7 +4433,7 @@ body { font-family: var(--font-ui); }
   box-shadow: 0 3px 12px -3px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .24);
   animation: dbPop var(--dur-state) var(--ease-spring);
 }
-/* 开启态 × hover 组合：避免 hover 反压选中色（§C54/§C60） */
+/* 开启态 × hover 组合：避免 hover 反压选中色 */
 :root[data-shell='pillbar'] .tag.active:hover {
   background: linear-gradient(135deg, #3AAE33, var(--accent-strong)); color: var(--on-accent); border-color: transparent;
 }
@@ -4458,11 +4466,11 @@ body { font-family: var(--font-ui); }
 }
 
 /* ---- ⑥ 首屏 = M3 杂志块：主色容器底（**不用玻璃/不用模糊海报当主体**）+ 轻微旋转的封面海报 ----
-   ★ 浅色皮肤：右上海报走「杂志封面」——rotate(-3deg) + 20px 大圆角 + 长阴影。 */
+   浅色皮肤：右上海报走「杂志封面」——rotate(-3deg) + 20px 大圆角 + 长阴影。 */
 :root[data-shell='pillbar'] .spot {
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 28px;
   padding: 30px 32px;
-  /* ★ 明快的容器渐变（上一版纯色 #DCF2D8 + 灰海报 = 浑浊 sage）：
+  /* 明快的容器渐变（上一版纯色 #DCF2D8 + 灰海报 = 浑浊 sage）：
      豆绿容器 → 暖纸白的方向渐变 + 右上豆瓣橙角光，M3 的「鲜明容器色」 */
   background:
     radial-gradient(680px 320px at 92% 8%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 64%),
@@ -4471,13 +4479,13 @@ body { font-family: var(--font-ui); }
 }
 /* 模糊海报做环境色纹理：提饱和、提不透明度（上一版 saturate(1.1)+opacity(.26) 只剩一层灰） */
 :root[data-shell='pillbar'] .spot-art-layer { filter: blur(44px) saturate(1.6) brightness(1.26) opacity(.55); }
-/* ★ 右半幅氛围（深色海报全幅铺底会让容器变泥）——只在海报身后晕开，左侧文字区保持干净的容器色 */
+/* 右半幅氛围（深色海报全幅铺底会让容器变泥）——只在海报身后晕开，左侧文字区保持干净的容器色 */
 :root[data-shell='pillbar'] .spot-art {
   inset: 0 0 0 44%;
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%);
   mask-image: linear-gradient(to right, transparent 0%, #000 38%);
 }
-/* ★ 默认**完全透明**（主色容器底直接透出，不再用暗幕） */
+/* 默认**完全透明**（主色容器底直接透出，不再用暗幕） */
 :root[data-shell='pillbar'] .spot-veil { background: transparent; }
 :root[data-shell='pillbar'] .spot-kicker { color: var(--accent-strong); font-size: 12px; letter-spacing: .22em; }
 :root[data-shell='pillbar'] .spot-kicker-dot { width: 7px; height: 7px; background: var(--accent); box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 75%, transparent); }
@@ -4579,12 +4587,76 @@ body { font-family: var(--font-ui); }
   background: linear-gradient(150deg, #3AAE33, var(--accent-strong));
   box-shadow: 0 22px 50px -16px color-mix(in srgb, var(--accent-strong) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, .3);
 }
-/* ★ hover 必须带 translate(-50%,-50%)（元素 left/top:50% 定位，缺位移会跳走半个身位） */
+/* hover 必须带 translate(-50%,-50%)（元素 left/top:50% 定位，缺位移会跳走半个身位） */
 :root[data-shell='pillbar'] .vp-big:hover {
   transform: translate(-50%, -50%) scale(1.06);
   background: linear-gradient(150deg, #33A02D, #1B7018);
 }
-/* ★ 重申按下位移守卫（generic button 规则之后，§C62） */
+/* 重申按下位移守卫（generic button 规则之后） */
 :root[data-shell='pillbar'] .vp-big:active { transform: translate(-50%, -50%) scale(.95); }
 /* 小窗模式：dock 收敛（避免大内边距挤占小窗空间） */
 :root[data-shell='pillbar'] .vplayer.vp-mini .vp-controls { padding: 10px 14px 12px; border-radius: 22px; }
+
+/* ================= 详情页「相关推荐 / 豆瓣影评」tab 区块（豆瓣 API） =================
+   口径：两者**共用一块区域**，顶部**文字 tab** 切换，选中项下划线取**当前皮肤主色** `var(--accent)`
+   （四套内置皮肤与插件皮肤都只改令牌 ⇒ 自动跟随，**不按皮肤 id 分支**）。
+   布局：竖版列表；推荐 = 固定尺寸封面（56×84）+ 右侧标题/豆瓣副标题行/梗概；列表限高可滚动（限制尺寸）。
+   皮肤通用 `button` 规则特异度 (0,2,1) 会压过 `.dx-tab`(0,1,0) ⇒ 一律用 `:root[data-theme]` 前缀重置。 */
+.dx-wrap { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; }
+.dx-loading { font-size: 12px; padding: 4px 0; }
+.dx-empty { font-size: 12px; padding: 6px 0; }
+
+.dx-tabs { display: flex; gap: 18px; align-items: center; margin-bottom: 10px; }
+.dx-tab,
+:root[data-theme] .dx-tab {
+  position: relative; background: none; border: none; box-shadow: none;
+  padding: 0 0 7px; margin: 0; border-radius: 0; min-width: 0;
+  font-size: 14px; font-weight: 600; color: var(--text-dim); cursor: pointer;
+  transition: color var(--dur-state) var(--ease-standard);
+}
+.dx-tab:hover,
+:root[data-theme] .dx-tab:hover {
+  color: var(--text); background: none; border: none; box-shadow: none;
+}
+/* 下划线（选中态 = 皮肤主色） */
+.dx-tab::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px;
+  background: transparent; transition: background var(--dur-state) var(--ease-standard);
+}
+.dx-tab.active,
+:root[data-theme] .dx-tab.active { color: var(--text); }
+.dx-tab.active::after { background: var(--accent); }
+
+.dx-list { display: flex; flex-direction: column; gap: 10px; max-height: 430px; overflow: auto; padding-right: 4px; }
+
+.dx-rec {
+  display: flex; gap: 10px; align-items: flex-start; padding: 6px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: background var(--dur-state) var(--ease-standard);
+}
+.dx-rec:hover { background: var(--surface-2); }
+.dx-poster { width: 56px; height: 84px; flex: none; object-fit: cover; border-radius: 6px; background: var(--surface-3); }
+.dx-poster-none { display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-dim); }
+.dx-body { flex: 1; min-width: 0; }
+.dx-title { display: flex; align-items: baseline; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.dx-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-year { color: var(--text-dim); font-weight: 400; font-size: 12px; flex: none; }
+.dx-rating { margin-left: auto; flex: none; color: var(--accent-2); font-size: 12px; font-weight: 700; }
+.dx-sub { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-overview {
+  font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-top: 4px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.dx-review {
+  padding: 7px 6px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: background var(--dur-state) var(--ease-standard);
+}
+.dx-review:hover { background: var(--surface-2); }
+.dx-abstract {
+  font-size: 12px; line-height: 1.65; color: var(--text-dim); margin-top: 4px;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.dx-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+
+/* 影评全文窗口（`components/ReviewModal.tsx`）里的正文图片：撑满卡片宽、等比、圆角 */
+.rv-img { display: block; width: 100%; height: auto; max-width: 100%; border-radius: 8px; background: var(--surface-3); }

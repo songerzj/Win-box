@@ -1,5 +1,5 @@
 // src/main/index.ts — Electron 主进程入口
-// ★★ 第一条 import（import 即执行，勿挪位置）：把数据目录切到**安装目录/data**，
+// 第一条 import（import 即执行，勿挪位置）：把数据目录切到**安装目录/data**，
 //   并在老用户首次启动时自动迁移 %APPDATA%\win-box（见 dataDirBootstrap.ts 头注释）。
 //   必须早于 logger / 各 Store 的模块求值，否则它们会把路径解析到旧位置。
 import { dataDirReport } from './util/dataDirBootstrap';
@@ -10,9 +10,11 @@ import { registerIpc } from './ipc';
 import { SpiderHost } from './spider/SpiderHost';
 import { LocalProxyServer } from './server/LocalProxyServer';
 import { fileLogger } from './util/logger';
-// ★ 2026-10-16（用户报「播放时画面突然消失、只剩声音」）：播放诊断上报的收集器（见下方 child-process-gone）
+// 播放诊断上报的收集器（见下方 child-process-gone）
 import { lastMediaSummary, lastMediaWcId } from './util/mediaDiag';
 import { applyUiScale, registerUiWindow, scaledWindowFor, setMainWindowProvider } from './ui/uiScale';
+// 主窗口（与播放器窗口，见 player/PlayerWindow）的位置/尺寸/最大化态落盘并恢复
+import { watchWindowState, windowStateWriter } from './ui/windowState';
 import { BASE_WINDOW } from '../shared/uiScale';
 import { applyWindowCorner } from './util/windowCorner';
 import { bossKey } from './bossKey';
@@ -115,28 +117,28 @@ setSoftRestartHandler(() => {
   }
 });
 /**
- * ★ 2026-09-29：磁力（BT）引擎（用户选定方案 B）—— aria2c sidecar + 本机中继 `/bt` + 外部播放器接力。
+ * 磁力（BT）引擎（方案 B）—— aria2c sidecar + 本机中继 `/bt` + 外部播放器接力。
  * 懒启动（首次磁力播放才拉起 aria2c），退出时 dispose（另有 `--stop-with-process` 兜底防孤儿）。
  */
 const torrent = new TorrentPlay(fileLogger, () => playerSettings.settings.btExternalPlayer);
 host.torrentPlay = torrent;
 /**
- * ★ 2026-09-29 WebDAV 存储（用户选定「WebDAV 直连」）：服务器与凭据加密落盘，
+ * WebDAV 存储：服务器与凭据加密落盘，
  * 浏览走 PROPFIND、播放走 `/play?dav=<id>` 由中继注入 Authorization（凭据绝不进 URL）。
  */
 const dav = new DavService(
   new DavStore(new JsonStore(join(userDataDir(), 'webdav-servers.json')), fileLogger, safeStorageDriveCodec()),
   fileLogger,
 );
-/** ★ 2026-09-29 DLNA 投屏（SSDP 发现 + AVTransport 三动作；对位 CatClaw Dlna.cs = TVBox osc/dlna） */
+/** DLNA 投屏（SSDP 发现 + AVTransport 三动作；对位 CatClaw Dlna.cs = TVBox osc/dlna） */
 const dlna = new DlnaService(fileLogger);
 /**
- * ★ 2026-09-29 启动更新检查：本地版本低于 GitHub 最新 Release 时提示用户选择——
+ * 启动更新检查：本地版本低于 GitHub 最新 Release 时提示用户选择——
  *   查 `api.github.com`（失败不锁死）→ 代理加速下载 Setup → 拉起安装程序并退出本程序。
  */
 const updater = new UpdateService(fileLogger);
 /**
- * ★ 2026-09-29（用户要求）本地包（影视壳/影视仓 目录包）：登记表 + `/pkg` 资源路由 + py 就地运行。
+ * 本地包（壳类目录包）：登记表 + `/pkg` 资源路由 + py 就地运行。
  *   导入安装目录下的 imports 副本，原始包可移动/删除，不影响已导入订阅。
  */
 const localPkgs = new LocalPkgStore(
@@ -146,22 +148,22 @@ const localPkgs = new LocalPkgStore(
   legacyLocalImportsDir(),
 );
 /**
- * ★ 2026-10-16 插件系统（M1，用户拍板「方案 A」）：宿主聚合——
+ * 插件系统（M1，方案 A）：宿主聚合——
  *   随包官方插件启动时**物化**（`resources/plugins/*.winbox` → `<userData>/plugins/<id>.winbox/` + 侧签）
  *   → 与用户安装**同构**；用户插件安装/启停；超分档位 → mpv 着色器**绝对路径**解析。
  */
-/** ★ R10：L4 沙箱用的 HTTP（独立实例；与 SpiderHost 内部实例同实现，无共享状态） */
+/** R10：L4 沙箱用的 HTTP（独立实例；与 SpiderHost 内部实例同实现，无共享状态） */
 const pluginHttp = new HttpClient();
 const plugins = new PluginHost({
   pluginsDir: pluginsDir(),
   builtinDir: builtinPluginsDir(),
   statePath: join(userDataDir(), 'plugins-state.json'),
-  // ★ 2026-10-18 插件设置面板（`contributes.settings.panel`）：宿主**代插件持久化**字段值（读取面留给 L4）
+  // 插件设置面板（`contributes.settings.panel`）：宿主**代插件持久化**字段值（读取面留给 L4）
   settingsPath: join(userDataDir(), 'plugin-settings.json'),
-  // ★ 2026-10-18（R11）第三方播放内核：`local-path` 来源的本机程序路径由用户在配置页填写
+  // （R11）第三方播放内核：`local-path` 来源的本机程序路径由用户在配置页填写
   enginePaths: () => playerSettings.settings.enginePaths,
 });
-// ★ 2026-10-18（R10）L4 沙箱（`kind:"code"`）：**每插件独立 worker**；宿主能力经 API 面回主进程。
+// （R10）L4 沙箱（`kind:"code"`）：**每插件独立 worker**；宿主能力经 API 面回主进程。
 //   权限门禁在 worker 侧 globals 构造（未授权的 `winbox.*` 根本不存在）；沙箱内无 require/process/fs。
 //   kv 走独立 `<userData>/plugin-kv.json`（键前缀 `plugin:<id>:` 由宿主拼接）；
 //   settings 与设置面板**同一份存储**（`plugin-settings.json`）；
@@ -212,7 +214,7 @@ plugins.attachSandbox({
 // 退出时释放全部 L4 沙箱 worker（避免残留线程）
 app.on('will-quit', () => plugins.dispose());
 /**
- * ★ 2026-10-18（R11）第三方播放内核（`contributes.player.engine`）：宿主托管的引擎**单会话控制器**
+ * （R11）第三方播放内核（`contributes.player.engine`）：宿主托管的引擎**单会话控制器**
  *   （插件永不拉进程 —— `spawn` 是规范 §6.2 永久禁止项）。与内置 `MpvController` 实例分离，零回归。
  */
 const playerEngines = new PlayerEngineController(fileLogger);
@@ -223,47 +225,47 @@ app.on('will-quit', () => {
     /* ignore */
   }
 });
-// ★ 2026-10-18 插件字幕源（`contributes.subtitle.provider`）：宿主按插件声明取数 →
+// 插件字幕源（`contributes.subtitle.provider`）：宿主按插件声明取数 →
 //   与内置源（assrt / subtitlecat）合并进同一套字幕检索/下载链路（见 SpiderHost.allSubtitleProviders）。
 host.pluginSubtitleProviders = () => plugins.subtitleProviders();
-// ★ 2026-10-18 插件元数据源（`contributes.meta.provider`）：作为**兜底**接进 metaSearch
+// 插件元数据源（`contributes.meta.provider`）：作为**兜底**接进 metaSearch
 //   （内置 TMDB / 豆瓣都未命中时才轮到它；见 SpiderHost.pluginMetaLookup）。
 host.pluginMetaProviders = () => plugins.metaProviders();
-// ★ 2026-10-18 插件发现页数据源（`contributes.discover.source`）：作为**增补**接进发现页
+// 插件发现页数据源（`contributes.discover.source`）：作为**增补**接进发现页
 //   （插件分区追加在内置榜单之后；见 SpiderHost.pluginDiscoverSections）。
 host.pluginDiscoverSources = () => plugins.discoverSources();
-// ★ 2026-10-18 插件弹幕源（`contributes.danmaku.source`）：与内置外部接口**并列**接进三步弹幕链路
+// 插件弹幕源（`contributes.danmaku.source`）：与内置外部接口**并列**接进三步弹幕链路
 //   （搜索番剧 → 剧集列表 → 弹幕 XML；见 SpiderHost.danmakuSearch / danmakuEpisodes / danmakuFetch）。
 host.pluginDanmakuSources = () => plugins.danmakuSources();
-// ★ 2026-10-18 插件直播输出模板（`contributes.live.template`）：接进「导出直播线路」
-//   （宿主把**已解析**的 LiveGroup[] 按模板格式化输出 TXT / M3U；★ 本类型不发请求、不解析）。
+// 插件直播输出模板（`contributes.live.template`）：接进「导出直播线路」
+//   （宿主把**已解析**的 LiveGroup[] 按模板格式化输出 TXT / M3U；本类型不发请求、不解析）。
 host.pluginLiveTemplates = () => plugins.liveTemplates();
 const proxy = new LocalProxyServer(
   fileLogger,
   () => host.driveList(),
-  // ★ 2026-09-29 m3u8 去广告注入（默认关，配置页「播放」可开）：
+  // m3u8 去广告注入（默认关，配置页「播放」可开）：
   //   开关每轮清单回源时现读（改后即时生效）；规则用当前订阅的 rules[].regex 按 host 匹配。
   {
     enabled: () => playerSettings.settings.m3u8Purify,
     rulesFor: (url) => hostRegexFor(url, host.siteConfig?.rules),
   },
-  // ★ 2026-09-29 WebDAV 取流认证（凭据只在主进程加密存储里）
+  // WebDAV 取流认证（凭据只在主进程加密存储里）
   (id) => dav.authHeader(id),
 );
-// ★ 2026-09-29（用户要求）本地包：包内资源路由（/pkg/<i>/<rel>）+ 订阅 pkg:// 读取
+// 本地包：包内资源路由（/pkg/<i>/<rel>）+ 订阅 pkg:// 读取
 proxy.pkgRoot = (i) => localPkgs.rootOf(i);
 host.localPkgs = localPkgs;
 host.initializeLocalImports();
-// ★ 把 /play 中继的真实转发字节速率推给渲染层（播放器「缓存中」实时网速）
+// 把 /play 中继的真实转发字节速率推给渲染层（播放器「缓存中」实时网速）
 const pushSpeed = (kbs: number): void => {
   for (const w of BrowserWindow.getAllWindows()) {
     if (!w.isDestroyed()) w.webContents.send('net:speed', kbs);
   }
 };
 proxy.onSpeed = pushSpeed;
-// ★ 2026-09-29：BT 下载速率走同一条通道（/bt 中继写回字节 + aria2 下载速率）→ 播放器「缓存中 x MB/s」
+// BT 下载速率走同一条通道（/bt 中继写回字节 + aria2 下载速率）→ 播放器「缓存中 x MB/s」
 torrent.onSpeed = pushSpeed;
-// ★ 2026-09-26：壳/蜘蛛的宿主代理（`/proxy/<jvmPort>?do=proxy&key=…`）被访问 → 钉住那个 JVM
+// 壳/蜘蛛的宿主代理（`/proxy/<jvmPort>?do=proxy&key=…`）被访问 → 钉住那个 JVM
 proxy.onSpiderProxy = (port) => host.pinSpiderProxy(port);
 proxy.onPythonProxy = (key, params) => host.pythonProxy(key, params);
 /**
@@ -277,7 +279,7 @@ proxy.onPythonProxy = (key, params) => host.pythonProxy(key, params);
  * 两条路先到者生效，另一路被 `restartApp` 的 20s 抑制窗挡掉，不会重复重启。
  */
 proxy.onSpiderConfigRestored = (hint) => restartApp(`源侧恢复配置（${hint}）`);
-// ★ 2026-09-29：`/bt/<hash>/<idx>` 取流口（Range + piece 门控 + 本地读盘）
+// `/bt/<hash>/<idx>` 取流口（Range + piece 门控 + 本地读盘）
 proxy.bt = torrent;
 
 function isDev(): boolean {
@@ -286,7 +288,7 @@ function isDev(): boolean {
 
 // 渲染策略：**不再强制禁用 GPU/硬件加速**。
 //   过往为"无 GPU/驱动异常环境"加了 disableHardwareAcceleration + disable-gpu + disable-software-rasterizer，
-//   但用户实测（本机有正常 GPU）强禁后无边框窗口在最大化/resize 时合成器不刷新，
+// 但实测（本机有正常 GPU）强禁后无边框窗口在最大化/resize 时合成器不刷新，
 //   网页只渲染在左上角原尺寸、右侧/下方直接露出 backgroundColor（"最大化异形"）。
 //   交由 Electron/Chromium 按环境自选：有 GPU 走硬件合成（最大化正常），无 GPU 时自动回退软件。
 // no-sandbox / disable-dev-shm-usage 仍保留（子进程沙箱相关，与渲染无关）。
@@ -301,9 +303,7 @@ app.on('web-contents-created', (_event, contents) => {
   contents.on('unresponsive', () => fileLogger.w(`renderer-unresponsive wc=${contents.id}`));
 });
 /**
- * ★ 2026-10-16（用户报「播放时画面突然消失、软件只剩声音」）★★
- *
- * 证据：10-16 日志里唯一非 jvm 异常 = `child-process-gone type=GPU reason=crashed exitCode=34`；
+ * 证据：日志里唯一非 jvm 异常 = `child-process-gone type=GPU reason=crashed exitCode=34`；
  *   症状完全吻合 —— GPU 子进程（合成器）死掉后整窗内容不再刷新（连进度条都不动），
  *   音频走另一条通道继续 ⇒ 用户看到的就是「画面消失、只剩声音」。Chromium 不会自愈（不会自动补拉 GPU 进程）。
  *
@@ -364,20 +364,26 @@ app.on('child-process-gone', (_event, details) => {
 
 function createWindow(): void {
   /**
-   * ★ 2026-10-16（用户要求「自适应屏幕分辨率调节窗口大小、字体大小」）：
    *   默认窗口尺寸与最小尺寸都按**当前显示器工作区**推出来的倍率等比放大（见 `ui/uiScale`），
    *   并用 `setZoomFactor` 把整套 UI（含字号）一起放大 —— 1K 下仍是 1280×800（回归不变），
    *   4K 下窗口与字体同步变大，不再「UI 特别小」。
    */
   const size = scaledWindowFor(BASE_WINDOW);
+  /**
+   *   有「上次的位置/尺寸/最大化态」就按它开窗（已按当前显示器工作区夹好，见 shared/windowState）；
+   *   没有记忆或是脏数据 → 回落到按屏幕推出的大小（= 首启行为不变）。
+   */
+  const remembered = windowStateWriter('main').load({ width: size.minWidth, height: size.minHeight });
   const winOpts: Electron.BrowserWindowConstructorOptions = {
-    width: size.width,
-    height: size.height,
+    width: remembered?.width ?? size.width,
+    height: remembered?.height ?? size.height,
+    // 位置也记（用户摆过的位置别再给他弹回屏幕中间）；没记过则由系统决定
+    ...(remembered?.x !== undefined && remembered?.y !== undefined ? { x: remembered.x, y: remembered.y } : {}),
     minWidth: size.minWidth,
     minHeight: size.minHeight,
     // 默认跟随系统亮暗（Mica 背景会随之切换深浅）
     // backgroundMaterial: 'mica' 仅 Win11 有效；旧版本自动降级无副作用
-    // ★ 用不透明底色：无边框窗口若背景全透明，放大/最大化时未渲染区域会显示黑色残影/形状异常
+    // 用不透明底色：无边框窗口若背景全透明，放大/最大化时未渲染区域会显示黑色残影/形状异常
     //   （--surface-glass 本身约 90% 不透明，视觉几乎无差异，Mica 磨砂不受影响）
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a0c10' : '#dce4ec',
     title: 'Win-Box',
@@ -394,16 +400,18 @@ function createWindow(): void {
     },
   };
   mainWindow = new BrowserWindow(winOpts);
-  // ★ 2026-10-16：登记为主窗口（界面缩放要按倍率重排它的尺寸）+ 立刻套用当前倍率
+  // 接着记住它 —— resize/move（防抖）/ 最大化切换 / 关闭时落盘（见 ui/windowState）
+  watchWindowState('main', mainWindow);
+  // 登记为主窗口（界面缩放要按倍率重排它的尺寸）+ 立刻套用当前倍率
   registerUiWindow(mainWindow);
   setMainWindowProvider(() => mainWindow);
   applyUiScale();
 
-  // ★ Win11 无边框圆角在最大化时露出右上角黑角（关闭钮旁异形）：最大化取消圆角、还原恢复
+  // Win11 无边框圆角在最大化时露出右上角黑角（关闭钮旁异形）：最大化取消圆角、还原恢复
   const setCorner = (round: boolean) => {
     if (mainWindow && !mainWindow.isDestroyed()) applyWindowCorner(mainWindow, round);
   };
-  // ★ 最大化/还原后强制重绘：无边框窗口在最大化动画期间 webContents 视口可能未铺到新尺寸，
+  // 最大化/还原后强制重绘：无边框窗口在最大化动画期间 webContents 视口可能未铺到新尺寸，
   //   未重绘区域会直接显示 backgroundColor（暗色）→ 观感像"小窗贴左上、右侧补背景"。强制重绘兜底。
   const refreshContent = () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -417,6 +425,19 @@ function createWindow(): void {
   };
   mainWindow.on('maximize', () => { setCorner(false); refreshContent(); });
   mainWindow.on('unmaximize', () => { setCorner(true); refreshContent(); });
+
+  /**
+   * 上次退出时是最大化 → 立刻最大化。
+   *   必须放在上面两个监听**之后**（圆角/重绘兜底要先挂上，否则最大化的黑角与「小窗贴左上」都不修）；
+   *   放在加载内容之前 ⇒ 不会看到「先小窗、再弹成大窗」的观感。
+   */
+  if (remembered?.maximized) {
+    try {
+      mainWindow.maximize();
+    } catch {
+      /* 个别环境最大化失败（驱动/窗口管理器）：保持还原尺寸即可 */
+    }
+  }
 
   if (isDev()) {
     mainWindow.loadURL('http://localhost:5173');
@@ -436,7 +457,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
-  // ★ 2026-09-30 数据目录（安装目录/data；老用户自动迁移 + 清理旧 C 盘目录）——排障第一现场
+  // 数据目录（安装目录/data；老用户自动迁移 + 清理旧 C 盘目录）——排障第一现场
   try {
     const m = dataDirReport.migration;
     const migDesc = m
@@ -512,7 +533,7 @@ app.whenReady().then(async () => {
   // ★ 2026-10-09：构建标记 —— 日志排障第一行就能确认「跑的是哪只构建」。
   //   背景：同版本号覆盖安装时用户日志无法区分新旧产物（1.20.0 两轮都叫 1.20.0），
   //   此标记随每轮 main 改动手工递增（含当轮关键词，grep 即证）。
-    fileLogger.i(`build: 20261012.1 release-${app.getVersion()} (macOS T02: platform layer / dataDir no-relocate / darwin lifecycle / app menu / dep probe)`);
+    fileLogger.i(`build: 20261023.1 release-${app.getVersion()} (merge upstream 1.22.1 / macOS T02: platform layer / dataDir no-relocate / darwin lifecycle / app menu / dep probe)`);
 
   // ★ 2026-10-12（macOS 适配 P1-1）：安装 macOS 应用菜单（App / 编辑 / 窗口 / 帮助）。
   //   **非 darwin 内部直接 no-op** —— Windows 完全无感（全应用零菜单的现状保持不变）。
@@ -548,7 +569,8 @@ app.whenReady().then(async () => {
     /* 菜单安装失败不影响启动 */
   }
 
-  // ★ 2026-10-15（用户要求）：**更新后首次启动**清空应用私有缓存（winbox-cache）。
+
+  // **更新后首次启动**清空应用私有缓存（winbox-cache）。
   //   背景：升级下载的安装包落在 `winbox-cache/update/` 且从不删除，逐版累积会让安装目录涨到 GB 级。
   //   判定 = 与 `<userData>/last-run-version.json` 记的「上次运行版本」比较，版本变化即视为更新后首次启动；
   //   **仅打包态生效**（开发态版本抖动不应误清）；标记文件放在 winbox-cache 之外，不会被本次清理删掉。
@@ -575,7 +597,7 @@ app.whenReady().then(async () => {
   } catch {
     fileLogger.w('本地代理启动失败，直播归一化可能受影响');
   }
-  // ★ 网络代理设置（用户可在配置页填 http 代理；用于被 DNS 污染 / SNI 阻断的站点）。
+  // 网络代理设置（用户可在配置页填 http 代理；用于被 DNS 污染 / SNI 阻断的站点）。
   //   初始化后所有出站（本进程请求 / 本地中继 / JVM 与 Python 蜘蛛 / 嗅探窗口）统一生效。
   try {
     const { initProxySettings } = await import('./net/proxy');
@@ -584,7 +606,7 @@ app.whenReady().then(async () => {
   } catch (e) {
     fileLogger.w('代理设置初始化失败：' + (e as Error).message);
   }
-  // ★ 2026-09-28：播放/落盘诊断落盘（`<userData>/logs/play-diag-*.jsonl`）
+  // 播放/落盘诊断落盘（`<userData>/logs/play-diag-*.jsonl`）
   //   注入式（playDiag 不静态依赖 electron），供「落盘/播放成功率」排查取数。
   try {
     const { initPlayDiag } = await import('./util/playDiag');
@@ -596,20 +618,20 @@ app.whenReady().then(async () => {
   } catch (e) {
     fileLogger.w('播放诊断初始化失败：' + (e as Error).message);
   }
-  // ★ 网盘会话必须在蜘蛛预热前准备好：夸克 member 接口会补发新版 __puus，
-  //   而 Pizazz/fty 蜘蛛在 init 时只读一次 cookie。失败时保留旧凭据并继续启动。
+  // 网盘会话必须在蜘蛛预热前准备好：夸克 member 接口会补发新版 __puus，
+  //   而某壳类源的蜘蛛在 init 时只读一次 cookie。失败时保留旧凭据并继续启动。
   try { host.syncDriveFiles(); } catch { /* 同步失败不影响启动 */ }
   try { await host.refreshDriveSessions(); } catch (e) {
     fileLogger.w('网盘会话刷新失败（保留现有绑定）：' + (e as Error).message);
   }
   try { host.syncDriveFiles(); } catch { /* 同步失败不影响启动 */ }
   host.enablePrewarm();
-  // ★ 更新后已清空 winbox-cache（含 jar 转换产物与常驻运行时）→ 立刻在后台重建，
+  // 更新后已清空 winbox-cache（含 jar 转换产物与常驻运行时）→ 立刻在后台重建，
   //   否则用户下次进源要现付「下载 + dex2jar + JVM 冷启动」（实测 37s，会被请求超时顶掉）。
   if (privateCacheReset) {
     try { host.rewarmAfterCacheClear(); } catch { /* 预热失败不影响清理结果 */ }
   }
-  // ★ 2026-10-16 插件宿主：物化随包官方插件 + 刷新登记表（失败不阻塞启动）
+  // 插件宿主：物化随包官方插件 + 刷新登记表（失败不阻塞启动）
   try {
     await plugins.init();
     const items = await plugins.list();
@@ -619,7 +641,7 @@ app.whenReady().then(async () => {
   }
   registerIpc(host, dav, dlna, updater, localPkgs, plugins, playerEngines);
   /**
-   * ★ 2026-10-17：内存基线探针 —— 启动后 15s 采一次「空闲基线」（此时预热常驻池已就绪），
+   * 内存基线探针 —— 启动后 15s 采一次「空闲基线」（此时预热常驻池已就绪），
    *   供与「播放中」的采样对照；播放中的 60s 采样由 ipc 的 `media:state`（播放器窗口）触发。
    *   口径与隐私说明见 util/memProbe（只记内存数字与进程名，不含 URL / 凭据）。
    */
@@ -635,14 +657,14 @@ app.whenReady().then(async () => {
     return ws;
   });
   bossKey.apply();
-  // ★ 关闭播放器窗口 → 删除本次夸克转存落盘文件（观看进度保留在本地历史）
+  // 关闭播放器窗口 → 删除本次夸克转存落盘文件（观看进度保留在本地历史）
   onPlayerWindowClosed(() => {
     void host.quarkDeletePending().catch(() => undefined);
   });
-  // ★ 启动时清理上次遗留的夸克落盘文件（此前关闭/退出未删成功的）
+  // 启动时清理上次遗留的夸克落盘文件（此前关闭/退出未删成功的）
   void host.quarkDeletePending().catch(() => undefined);
   createWindow();
-  // ★ 启动时自动订阅刷新（≥7 天一次，静默后台执行，失败仅记日志）
+  // 启动时自动订阅刷新（≥7 天一次，静默后台执行，失败仅记日志）
   void host.maybeAutoRefreshSubscriptions();
   app.on('activate', () => {
     // ★ 2026-10-12（macOS 适配 P0-10 / P1-3）：Dock 图标点击（以及 Cmd+Tab 切回）时
@@ -673,7 +695,7 @@ app.on('window-all-closed', () => {
   if (shouldQuitOnLastWindowClosed()) app.quit();
 });
 
-// ★ 退出前彻底清理：terminate 所有 JVM 蜘蛛子进程 + 停本地代理 + 断 token 解码，
+// 退出前彻底清理：terminate 所有 JVM 蜘蛛子进程 + 停本地代理 + 断 token 解码，
 //   确保关闭应用后无任何后台残留进程/服务（含 Electron 隐含子进程会在 app.quit 后自行结束）。
 let quitCleanupStarted = false;
 app.on('will-quit', (event) => {
@@ -700,7 +722,7 @@ app.on('will-quit', (event) => {
     );
   }
   try {
-    // ★ 退出前再尝试一次夸克落盘文件清理（失败会持久化到下次启动重试）
+    // 退出前再尝试一次夸克落盘文件清理（失败会持久化到下次启动重试）
     void host.quarkDeletePending();
   } catch {
     /* ignore */
@@ -711,7 +733,7 @@ app.on('will-quit', (event) => {
     /* ignore */
   }
   try {
-    // ★ 2026-09-29：停 BT 引擎（回收到 win-quit 这一步，保证不留 aria2c 孤儿进程）
+    // 停 BT 引擎（回收到 win-quit 这一步，保证不留 aria2c 孤儿进程）
     torrent.dispose();
   } catch {
     /* ignore */
@@ -732,7 +754,6 @@ process.on('beforeExit', () => {
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   /**
-   * ★★ 2026-10-16（用户报「卸载软件 → 重装 → 打开会闪退，排查指向 9978 端口占用中」）★★
    *   真因 = **已有一个实例还在跑，但用户看不到它的窗口** —— 最典型的是老板键
    *   （默认 `Ctrl+Shift+B`，本机 `bosskey.json` 里 `enabled: true`）：它把**所有窗口连同任务栏图标**
    *   一起 `hide()`（见 bossKey.ts），用户就以为「软件已关闭」，而它其实活着，

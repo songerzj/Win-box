@@ -852,8 +852,8 @@ public class JSONObject {
         if (object instanceof String) {
             return (String) object;
         }
-        // ★ 2026-09-16 宽松语义补丁：非字符串值（Number/Boolean/JSONObject 等）
-        //   返回其字符串形式，与影视仓内置 json 库（老版本 json-java）一致。
+        // 宽松语义补丁：非字符串值（Number/Boolean/JSONObject 等）
+        //   返回其字符串形式，与某影视壳内置 json 库（老版本 json-java）一致。
         //   文采(Jpys)/点我切源(DouDou) 等蜘蛛常对 Integer 字段调 getString，
         //   严格版会抛 "not a string" 导致整源不可用。
         return NULL.equals(object) ? null : object.toString();

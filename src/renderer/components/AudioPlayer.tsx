@@ -1,5 +1,4 @@
 // src/renderer/components/AudioPlayer.tsx
-// ★ 2026-09-30（用户要求「音乐需要独立的音乐播放器正确展示」）：
 //   音乐类源（酷我/汽水/音乐库/听书…）的播放地址是 mp3/flac/m4a —— 交给 `<video>` 只会黑屏出声。
 //   这里用音乐播放器接管：封面 + 标题 + 播放/暂停 + 可拖进度 + 上一首/下一首（联动外层剧集）+ 音量 + 单曲循环。
 import { useCallback, useEffect, useRef, useState } from 'react';

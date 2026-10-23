@@ -61,7 +61,7 @@ export async function sniffMediaUrl(
   running++;
 
   const ses = session.fromPartition(SNIFF_PARTITION, { cache: false });
-  // ★ 2026-09-25：用户设了网络代理 → 嗅探窗口同样走代理
+  // 用户设了网络代理 → 嗅探窗口同样走代理
   //   （很多需要网页解析的站点本身就只在代理下可达；本机地址由 proxyBypassRules 排除）
   const proxy = activeProxyUrl();
   try {

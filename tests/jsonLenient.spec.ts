@@ -1,6 +1,6 @@
 // 订阅 JSON「宽容解析」回归测试（对齐安卓 org.json 的容忍度）。
 //
-// 背景（2026-09-28 用户点名三订阅验证时发现）：真实线上订阅会写注释、尾随逗号，
+// 背景（三订阅验证时发现）：真实线上订阅会写注释、尾随逗号，
 // 安卓 org.json 的 JSONTokener 都能容忍，而 JS 的 JSON.parse 一律拒绝
 // —— 同一份订阅安卓能导入、桌面报「配置不是合法 JSON 对象」。
 // 实测：https://700sjro44343.vicp.fun/eggp/0211/tv.json 剥注释后仍挂在 `"",\n ],` 上。
@@ -46,7 +46,7 @@ describe('parseJsonLenient', () => {
   });
 });
 
-// ★ 2026-10-14（用户报「肥猫订阅导入失败」）：实测 `http://肥猫.net/tv` 里站源写成 JS 对象字面量风格
+// 实测 `http://肥猫.net/tv` 里站源写成 JS 对象字面量风格
 //   （键名 `ext` 裸写：`"api":"csp_AppDrama",\n ext: {…}`）→ JSON.parse 报
 //   `Expected double-quoted property name in JSON at position 2795`。安卓 org.json 能容忍。
 describe('quoteUnquotedKeys（裸键名兜底）', () => {

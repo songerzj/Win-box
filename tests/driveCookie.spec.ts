@@ -1,5 +1,5 @@
 // tests/driveCookie.spec.ts — 网盘 Cookie 完整性校验（UC/夸克「两个 cookie」判据）
-// 背景：UC 非会员取流需要 __pus 与 __puus 同时在（用户实测）；fty 系蜘蛛对不含 "pus" 的 cookie 直接置空。
+// 背景：UC 非会员取流需要 __pus 与 __puus 同时在；某第三方源系蜘蛛对不含 "pus" 的 cookie 直接置空。
 import { describe, it, expect } from 'vitest';
 import { checkDriveCookie, cookieHasKey } from '../src/shared/driveCookie';
 
@@ -60,7 +60,7 @@ describe('checkDriveCookie', () => {
     }
   });
 
-  // ★ 2026-09-28：115 的登录态键名带随机后缀（UID_<hash>_<n>），只能前缀匹配、任一命中即通过。
+  // 115 的登录态键名带随机后缀（UID_<hash>_<n>），只能前缀匹配、任一命中即通过。
   it('115：UID_/SEID_ 任一前缀命中 → 通过', () => {
     expect(checkDriveCookie('115', 'UID_1a2b_1=abc; CID_2c3d_1=def').ok).toBe(true);
     expect(checkDriveCookie('115', 'SEID_9f8e_3=xyz').ok).toBe(true);

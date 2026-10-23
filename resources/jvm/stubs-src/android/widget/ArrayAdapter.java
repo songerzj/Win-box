@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * ArrayAdapter stub —— 消除 fty 后台线程加载 android.widget.ArrayAdapter 的
+ * ArrayAdapter stub —— 消除 某第三方源后台线程加载 android.widget.ArrayAdapter 的
  * NoClassDefFoundError 噪声。实现 ListAdapter；方法返回默认值（不抛异常）。
  */
 public class ArrayAdapter<T> implements ListAdapter {

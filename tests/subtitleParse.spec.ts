@@ -130,7 +130,7 @@ describe('parse* 独立函数外部可用', () => {
   });
 });
 
-// ---- ★ 2026-09-24：扩展名不再独占信任（assrt 常见「.srt 里其实是 ASS」/调用方误传视频文件名）----
+// ---- 扩展名不再独占信任（assrt 常见「.srt 里其实是 ASS」/调用方误传视频文件名）----
 describe('parseSubtitleFile — 扩展名与内容不符时的二次尝试', () => {
   it('ASS 文本命名为 .srt → 按扩展名得 0 cue 后按内容嗅探出 ASS', () => {
     const cues = parseSubtitleFile('a.srt', ASS);
@@ -150,7 +150,7 @@ describe('parseSubtitleFile — 扩展名与内容不符时的二次尝试', () 
   });
 });
 
-// ---- ★ 2026-10-08：MPV 内核外挂字幕 —— cue 列表回写 SRT（mpv 走 sub-add 读文件，不认 VTTCue）----
+// ---- MPV 内核外挂字幕 —— cue 列表回写 SRT（mpv 走 sub-add 读文件，不认 VTTCue）----
 describe('cuesToSrt — cue → SRT 文本', () => {
   it('时间戳格式 HH:MM:SS,mmm + 序号 + 文本（CRLF 分隔）', () => {
     const srt = cuesToSrt(parseSrt(SRT));

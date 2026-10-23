@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Intent stub —— 组件启动意图。
  *
- * ★ 2026-09-10 第四轮修复：此前 Intent 只有 4 个成员，导致混淆工具库
+ * 修复：此前 Intent 只有 4 个成员，导致混淆工具库
  *   （com.github.catvod.spider.merge.*）在 `new Intent(Context, Class)` 处
  *   抛 NoSuchMethodError。本次按真实调用面补齐。
  *
@@ -50,7 +50,7 @@ public class Intent implements Parcelable {
     private final ArrayList<String> categories = new ArrayList<String>();
     private String selectorTitle;
 
-    // ---------------- 构造器（★ 混淆库用 Context+Class 那一个，必须有） ----------------
+    // ---------------- 构造器（混淆库用 Context+Class 那一个，必须有） ----------------
 
     public Intent() {
     }

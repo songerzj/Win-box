@@ -3,9 +3,9 @@ package android.content.pm;
 /**
  * Signature stub。
  *
- * ★ 关键：绝不能返回空数组！
+ * 关键：绝不能返回空数组！
  *
- * 大量 TVBox 蜘蛛（如 fty.jar 内的 Auete/Bttwoo/Libvio/LiteApple）会用
+ * 大量 TVBox 蜘蛛（如 某第三方源.jar 内的 Auete/Bttwoo/某源/LiteApple）会用
  * `context.getPackageManager().getPackageInfo(pkg, 64).signatures[0].toByteArray()`
  * 做**签名校验**，并把校验得到的摘要当作**解密密钥**去解自己的字符串常量
  * （URL / 接口地址 / 请求头都在里面）。若 signatures 为空 → 取 [0] 抛

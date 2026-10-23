@@ -1,5 +1,5 @@
 // tests/danmakuEpisodeInput.spec.ts
-// ★ 2026-09-27（用户要求）：弹幕面板把「剧名 / 集」拆成两个独立输入框。
+// 弹幕面板把「剧名 / 集」拆成两个独立输入框。
 //   本测试盯住两个纯函数：① 集号回填初值（episodeFieldFromName，从资源名来）；
 //   ② 用户手改后的解析（parseEpisodeInput，支持 S1E01 / E10 / 第10集 / 10 / 更新至10 / 第2季）。
 import { describe, expect, it } from 'vitest';

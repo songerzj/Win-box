@@ -1,6 +1,6 @@
-// src/main/meta/doubanExplore.ts — 发现页「级联分类」的豆瓣数据层（★ 2026-10-15）
+// src/main/meta/doubanExplore.ts — 发现页「级联分类」的豆瓣数据层
 //
-// 端点（实测 2026-10-15，全部 200）：
+// 端点（实测，全部 200）：
 //   · 浏览：`https://m.douban.com/rexxar/api/v2/{movie|tv}/recommend
 //            ?start=<偏移>&count=<条数>&sort=<T|U|R|S>&tags=<逗号分隔的豆瓣 tag>`
 //     返回 { items, total, start, count, recommend_categories, sorts }；

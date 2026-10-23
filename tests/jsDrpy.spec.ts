@@ -1,7 +1,7 @@
 // tests/jsDrpy.spec.ts
 // drpy2 / ESM 形态 JS 源（type=3，api=引擎脚本 + ext=规则脚本）的装配契约回归。
 //
-// ★ 背景（2026-09-29，对照 CatClawVideo `DrpyJsSpiderRuntime` + 真实 drpy2.min.js 取证）：
+// 背景（对照 CatClawVideo `DrpyJsSpiderRuntime` + 真实 drpy2.min.js 实测）：
 //   drpy2 引擎脚本头部是 **ESM import**（`assets://js/lib/cheerio.min.js` / `./gbk.js` / `../js/模板.js`），
 //   协议方法是 drpy 一套（init/home/category/detail/search/play），ext 交给 `init(ext)` 自行拉取并 eval。
 //   我们的沙箱此前只覆盖 hiker 裸名 require → drpy 源整体落到「桌面端不支持」。
@@ -174,7 +174,7 @@ export default { init, home, getRule };
     expect(home.list[0].vod_id).toBe('EMPTY');
   });
 
-  it('回归：hiker 风格仍把第二参数当默认值（用户授权修复，勿被 drpy 分支带偏）', async () => {
+  it('回归：hiker 风格仍把第二参数当默认值（修复，勿被 drpy 分支带偏）', async () => {
     const { spider } = makeSpider({
       [API]: `export default { homeContent() { return local.get('a', 'fallback'); } };`,
     });

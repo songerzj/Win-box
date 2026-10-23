@@ -5,7 +5,7 @@ import { IPC } from '../src/shared/ipc-channels';
 
 const mocks = vi.hoisted(() => ({ windows: [] as any[] }));
 vi.mock('electron', () => ({
-  // ★ 2026-10-16：主进程新增「界面缩放」后，这些窗口模块的导入链会用到 app.getPath（日志/偏好落盘）
+  // 主进程新增「界面缩放」后，这些窗口模块的导入链会用到 app.getPath（日志/偏好落盘）
   //   与 screen.getPrimaryDisplay（按屏幕推倍率）——桩要如实提供，否则 window 控制器拿不到真实行为。
   app: { isPackaged: true, getPath: (name: string) => join(tmpdir(), 'winbox-vitest', name) },
   screen: { getPrimaryDisplay: () => ({ id: 1, scaleFactor: 1, workAreaSize: { width: 1920, height: 1040 } }) },

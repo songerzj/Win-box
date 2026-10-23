@@ -31,7 +31,7 @@ interface AssrtSub {
 
 interface AssrtSearchJson {
   status: number;
-  /** ★ 实测为小写字段（如 "invalid token"），不是 error.msg */
+  /** 实测为小写字段（如 "invalid token"），不是 error.msg */
   errmsg?: string;
   sub?: { action?: string; keyword?: string; result?: string; subs?: AssrtSub[] };
   error?: { code?: number; msg?: string };
@@ -85,7 +85,7 @@ export async function assrtSearch(token: string, keyword: string, isFile = false
 
 /**
  * 多关键词检索 + 去重合并（同前）。按字幕 ID 去重。
- * ★ S2（修复）：多关键词命中同一字幕时，hitKeyword 不再固定取首个——改取「与该字幕标题
+ * S2（修复）：多关键词命中同一字幕时，hitKeyword 不再固定取首个——改取「与该字幕标题
  *   关联更准确」的关键词（规范化后与 title/subname 精确相等者优先，其次较长的关键词更具体），
  *   避免 UI 上"来源关键词"与实际命中词不符误导用户。
  */
@@ -132,7 +132,7 @@ export async function assrtSearchMulti(
 }
 
 /**
- * ★ S2：评估「关键词 kw 作为字幕 c 的命中来源」的准确度（分数越高越匹配）。
+ * S2：评估「关键词 kw 作为字幕 c 的命中来源」的准确度（分数越高越匹配）。
  *   规范化比较：逐字去空白+小写；完全相等 3 分 > 关键词是标题子串 2 分 > 无关联 0 分。
  *   无 title/subname 时取较长关键词（更具体）作弱区分。
  */
@@ -150,7 +150,7 @@ export function hitKeywordQuality(kw: string, c: SubtitleCandidate): number {
 }
 
 /** 通过 detail 拿字幕下载地址与包内文件清单。
- *  ★ 2026-09-24：返回值从「单个 URL」扩展为结构化信息 —— 渲染层/上游需要**真实字幕文件名**
+ * 返回值从「单个 URL」扩展为结构化信息 —— 渲染层/上游需要**真实字幕文件名**
  *  （包内条目名才是权威扩展名），并且需要 filelist 里的「包内直链」做免解压快路径。 */
 export interface AssrtDetail {
   /** 整包下载地址（assrt 的 sub.url；filelist 直链不可用时用它） */
@@ -227,7 +227,7 @@ export function looksLikeSubtitle(text: string): boolean {
 }
 
 /**
- * ★ 2026-09-24：把一段下载到的字节变成「可用字幕」——
+ * 把一段下载到的字节变成「可用字幕」——
  *   非归档 → 直接解码；归档 → 解压 → 挑最匹配的字幕条目 → 解码。
  *   纯函数式（只看入参字节，不做网络），单测直接喂 zip/gz 字节即可覆盖整条链路。
  */
@@ -294,7 +294,7 @@ export async function assrtFetch(token: string, candidate: SubtitleCandidate): P
   }
 }
 
-/** ★ 判断是否为压缩/归档文件（魔数；与 archive.detectArchiveKind 同一口径） */
+/** 判断是否为压缩/归档文件（魔数；与 archive.detectArchiveKind 同一口径） */
 export function isArchive(buf: Buffer): boolean {
   return detectArchiveKind(buf) !== null;
 }
@@ -307,7 +307,7 @@ export function decodeSubtitle(buf: Buffer): string {
   if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) {
     return iconv.decode(buf.subarray(2), 'utf-16le');
   }
-  // ★ S3（修复）：UTF-8 与 GB18030 各严格解码一次，用「文本合理性得分」选优。
+  // S3（修复）：UTF-8 与 GB18030 各严格解码一次，用「文本合理性得分」选优。
   //   旧实现 `Buffer.from(utf8)==buf` 对「ASCII+GBK 混合」片（ASCII 段往返相等）会误判为
   //   UTF-8，导致 GBK 中文被解成拉丁扩展乱码。双解码打分对「GBK 双字节恰是合法 UTF-8 序列」
   //   的边界也正确：GBK 解出可读汉字得分高，UTF-8 解出怪异拉丁字符得分低 → 选 GBK。
@@ -331,7 +331,7 @@ export function textScore(s: string): number {
   for (const ch of s) {
     const code = ch.codePointAt(0) ?? 0;
     if (ch === '\uFFFD') return -Infinity;
-    // ★ 2026-09-24 修复：「字幕必然含换行」—— 此前 \r\n\t（≤0x1F）一律判 -Infinity，
+    // 修复：「字幕必然含换行」—— 此前 \r\n\t（≤0x1F）一律判 -Infinity，
     //   导致 GBK 字幕（UTF-8 严格解码失败 → 空串）与 GBK 双方都得 -Infinity → 选空串（''）
     //   → 表现为「字幕下载为空 / 挂不上」。空白字符是正常字幕内容，按低分计入。
     if (ch === '\n' || ch === '\r' || ch === '\t') {
@@ -348,7 +348,7 @@ export function textScore(s: string): number {
   return s.length ? score / s.length : -Infinity;
 }
 
-// ---- ★ 2026-09-28：Provider 适配层（多源框架见 provider.ts / index.ts）----
+// ---- Provider 适配层（多源框架见 provider.ts / index.ts）----
 
 /**
  * assrt 的字幕源实现（**保留原有行为**）：主关键词先探一批 → 从结果标题反推同剧别名 →

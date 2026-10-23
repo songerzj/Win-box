@@ -7,7 +7,7 @@ package android.text;
  * 继承自 Paint 的 {@code setColor}/{@code setTextSize}/{@code setAntiAlias} 等，
  * 以及 {@code baselineShift}、{@code bgColor}、{@code linkColor} 字段。
  *
- * <p>★ 桌面端没有 android.graphics.Paint（本 stub 体系也未实现），因此这里
+ * <p>桌面端没有 android.graphics.Paint（本 stub 体系也未实现），因此这里
  * **自带一套字段**而不去继承不存在的父类。蜘蛛只做"属性设置"而不会真的绘制，
  * 所以只要字段存在 + setter 可调用即可。
  */

@@ -23,7 +23,7 @@ import {
   type SpeedSample,
 } from '../src/shared/update';
 
-describe('★ 2026-09-30 更新测速：rankBySpeed / sampleBps', () => {
+describe('更新测速：rankBySpeed / sampleBps', () => {
   const s = (url: string, bytes: number, ms: number, ok = true): SpeedSample => ({ url, bytes, ms, ok });
 
   it('sampleBps：ok=false / 非法耗时 → 0', () => {
@@ -33,7 +33,7 @@ describe('★ 2026-09-30 更新测速：rankBySpeed / sampleBps', () => {
     expect(sampleBps(s('a', 1000, 1000, false))).toBe(0);
   });
 
-  it('★ 有 ttfb 时按「去掉首字节」的段算速率（小样本窗口不被握手时间带偏）', () => {
+  it('有 ttfb 时按「去掉首字节」的段算速率（小样本窗口不被握手时间带偏）', () => {
     // 同一节点：64KB/1.5s 与 2MB/3.5s 两个样本，扣掉首字节后速率才可比
     const small: SpeedSample = { url: 'a', bytes: 64 * 1024, ms: 1500, ok: true, ttfb: 1200 };
     const big: SpeedSample = { url: 'a', bytes: 2 * 1024 * 1024, ms: 3500, ok: true, ttfb: 500 };
@@ -74,7 +74,7 @@ describe('★ 2026-09-30 更新测速：rankBySpeed / sampleBps', () => {
     expect(rankBySpeed([], 1)).toEqual([]);
   });
 
-  it('加速前缀顺序：代理在前、直连垫底（用户要求优先走代理链路）', () => {
+  it('加速前缀顺序：代理在前、直连垫底（优先走代理链路）', () => {
     const urls = buildAccelUrls('https://github.com/o/r/releases/download/x/a.exe');
     expect(urls[0].startsWith(GH_ACCEL_PREFIXES[0])).toBe(true);
     expect(urls[urls.length - 1]).toBe('https://github.com/o/r/releases/download/x/a.exe');

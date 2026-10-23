@@ -1,7 +1,7 @@
 // src/main/store/UcTvStore.ts — UC TV Token（非会员 UC 原画）凭据持久化。
 //
 // 为什么不放 DriveStore：DriveStore 的每个键都会被 `mergeDriveTokens` 注入到**每个**蜘蛛的
-// ext 里（ext.uctv=…），而 UC TV Token 只是 wex 族 SharedPreferences 的一个值（`Wex_ucpan_token`），
+// ext 里（ext.uctv=…），而 UC TV Token 只是某影视壳类源 SharedPreferences 的一个值（`Wex_ucpan_token`），
 // 与 ext 无关 ⇒ 独立存放，避免污染所有源的 ext，也避免解绑后残留键。
 //
 // 落盘：<userData>/uc-tv-token.json，内容 `{ deviceId, token }`；token 经 DriveCodec 加密

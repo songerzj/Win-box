@@ -1,14 +1,14 @@
-param([string]$Root = 'E:\WorkBuddy\tvbox2\tvbox-win')
+param([string]$Root = (Split-Path -Parent $PSScriptRoot))
 # pack-1.11.0.ps1 -- Win-Box 1.11.0 / release1.11.0 packaging helper.
 #   pre-flight -> quality gate -> build-main -> vite build -> electron-builder (nsis + portable)
 #   -> incremental -> copy to Desktop -> self-check
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File "E:\WorkBuddy\tvbox2\tvbox-win\scripts\pack-1.11.0.ps1"
+#   powershell -ExecutionPolicy Bypass -File "<repo>\scripts\pack-1.11.0.ps1"
 #
 # Reused twice:
-#   1) 2026-09-28 first 1.11.0 release (MINOR bump 1.1.0 -> 1.11.0)
-#   2) 2026-09-28 SAME-VERSION repack after the six user-reported fixes
+#  1) first 1.11.0 release (MINOR bump 1.1.0 -> 1.11.0)
+#  2) SAME-VERSION repack after the six user-reported fixes
 #      (multi-source subtitles / netdisk 115 login / search back-stack / play race / history delete /
 #       play diagnostics). No version bump on purpose -> artifacts overwrite the same names.
 #
@@ -94,10 +94,9 @@ node scripts\make-incremental.mjs --old $oldDir --new $newDir --out $incrName
 if ($LASTEXITCODE -ne 0) { Fail "make-incremental failed (exit $LASTEXITCODE)" }
 
 Step 8 'copy artifacts to Desktop (docs 2.2 rule)'
-$desk = 'C:\Users\WXJ2\Desktop'
+$desk = Join-Path $env:USERPROFILE 'Desktop'
 if (-not (Test-Path $desk)) {
-  $desk = Join-Path $env:USERPROFILE 'Desktop'
-  Write-Host "  C:\Users\WXJ2\Desktop not found, using $desk" -ForegroundColor Yellow
+  Write-Host "  Desktop not found, using $desk" -ForegroundColor Yellow
 }
 foreach ($f in @($setup, $portable, $incrExe, $incrZip)) {
   if (Test-Path $f) {
@@ -116,7 +115,7 @@ $txt = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($a
 $hasWd = $txt.Contains('watchdog.cjs')
 Write-Host ("  asar contains watchdog.cjs (must be False, win7-only file): {0}" -f $hasWd) -ForegroundColor $(if ($hasWd) { 'Red' } else { 'Green' })
 if ($hasWd) { Fail 'win7-only dist/watchdog.cjs leaked into the main asar' }
-# this round's markers (2026-09-28 same-version repack): multi-source subtitles +
+# this round's markers (same-version repack): multi-source subtitles +
 # 115 web login + play diagnostics. ASCII only (the asar is read as ASCII bytes).
 # NOTE: use literals that survive minification (string literals / IPC names / URLs),
 #       not function names -- `formatCandidateLabel` got renamed by the renderer minifier once.

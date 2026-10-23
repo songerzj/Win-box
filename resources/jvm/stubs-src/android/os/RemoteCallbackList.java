@@ -47,7 +47,7 @@ public class RemoteCallbackList<E extends IInterface> {
     public void onCallbackDied(E callback, Object cookie) {
     }
 
-    /** ★ 关键：返回 0 表示"没有注册的回调"，调用方会跳过广播循环 */
+    /** 关键：返回 0 表示"没有注册的回调"，调用方会跳过广播循环 */
     public int beginBroadcast() {
         return 0;
     }

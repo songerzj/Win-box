@@ -5,7 +5,7 @@
 //   ③ 落盘：先写 `<id>.winbox.tmp`（全量成功）→ rename 为正式目录；
 //      覆盖安装时旧目录先 rename 到 `.bak`，新目录就位后再删 `.bak`；任一步失败回滚、只删 tmp。
 // 事实源：docs/design/插件系统_设计方案.md §3.1 / §6。
-// ★ 依赖注入（不 import electron）：目录由调用方传入，便于在单测里用临时目录跑真链路。
+// 依赖注入（不 import electron）：目录由调用方传入，便于在单测里用临时目录跑真链路。
 
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
@@ -48,7 +48,7 @@ export class PluginInstaller {
   }
 
   /**
-   * ★ 2026-10-18（R10）**干跑**：解包 + 校验但**不写盘** —— 供安装期「权限确认」两段式。
+   * （R10）**干跑**：解包 + 校验但**不写盘** —— 供安装期「权限确认」两段式。
    * 返回清单（含 `permissions` / `permissionNotes`），由渲染层展示给用户确认后再 `install`。
    */
   async inspect(buf: Buffer): Promise<PluginInstallResult> {

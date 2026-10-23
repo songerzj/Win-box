@@ -1,6 +1,6 @@
 // tests/pluginSandbox.spec.ts
 // R10 L4 沙箱：**权限门禁**（未授权的 winbox.* 不存在）+ 最小全局集 + KV 前缀 + 宿主 API 的 fs 越界。
-//   ★ 全部为**纯函数**测试 —— 不起真 worker（worker 真链路见真机探针）。
+//   全部为**纯函数**测试 —— 不起真 worker（worker 真链路见真机探针）。
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';

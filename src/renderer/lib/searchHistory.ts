@@ -1,5 +1,5 @@
 // src/renderer/lib/searchHistory.ts
-// ★ 2026-09-29（用户要求）：搜索历史 —— 最多 10 条，**第 11 条顶掉第 1 条**（FIFO）；
+// 搜索历史 —— 最多 10 条，**第 11 条顶掉第 1 条**（FIFO）；
 //   支持逐条删除与清空。仅渲染层（localStorage），与弹幕/字幕记忆同处。
 //   纯函数（pushSearchTerm / removeSearchTerm）单独导出，便于单测。
 const KEY = 'winbox-search-history';

@@ -56,15 +56,15 @@ export function javaCandidates(root: string, p: PlatformName = platformName()): 
 }
 
 /**
- * ★★ 应用私有缓存目录的**目录名**（★ 不能叫 `cache` / `Cache`，勿改回）★★
+ * 应用私有缓存目录的**目录名**（不能叫 `cache` / `Cache`，勿改回）
  *
- * 事故（2026-09-27 真机取证）：Windows 路径**大小写不敏感**，而 Electron/Chromium 的磁盘缓存
+ * 事故：Windows 路径**大小写不敏感**，而 Electron/Chromium 的磁盘缓存
  * 目录正好是 `<userData>/Cache` —— 我们若用 `<userData>/cache`，两者会落到**同一个物理目录**
  * （实测 `Get-Item ...\cache` 与 `...\Cache` 返回同一 FullName）。Chromium 启动时会清理这个
- * 由它「拥有」的缓存目录：真机 3.54 秒时段观测到启动 2.5s 后该目录里的内容被删（手动放入的
+ * 由它「拥有」的缓存目录：实测 3.54 秒时段观测到启动 2.5s 后该目录里的内容被删（手动放入的
  * 探针文件 `PROBE.txt`/`PROBE_DIR` 一并消失，只剩 Chromium 自己的 `Cache_Data`）。
  *
- * 后果（用户报「第一次加载完，关闭软件第二次重启，依旧提示首次加载」）：
+ * 后果
  *   - `<cache>/spider`（**jar 转换产物**）每次启动被清 → 每次都重跑 3~4 分钟 dex2jar；
  *   - `<cache>/native`（unidbg 运行时，约 39MB）每次重新下载；
  *   - `<cache>/python`（内嵌 CPython，11MB）每次重新下载；
@@ -85,7 +85,7 @@ export function logsDir(): string {
 }
 
 /**
- * ★ 插件目录（**用户内容**，独立于 `winbox-cache`，`cacheClean` 绝不触碰）。
+ * 插件目录（**用户内容**，独立于 `winbox-cache`，`cacheClean` 绝不触碰）。
  *   已安装插件落 `<plugins>/<id>.winbox/`；见 docs/design/插件系统_设计方案.md §6。
  */
 export function pluginsDir(): string {
@@ -104,7 +104,7 @@ export function jsLibDir(): string {
 }
 
 /**
- * ★ 2026-09-30：主进程产物目录（main.cjs / preload.cjs / **js-worker.cjs** 所在）。
+ * 主进程产物目录（main.cjs / preload.cjs / **js-worker.cjs** 所在）。
  *   开发态 = 源码树 `dist/`（`__dirname` 即它，esbuild 打成 CJS）；打包态 = `app.asar/dist/`
  *   —— `js-worker` 用 `readFileSync` 取码 + `new Worker(code,{eval:true})` 启动，asar 内可直接读。
  */
@@ -131,7 +131,7 @@ function ctx(): ResolveCtx {
 /**
  * 资源根目录（含 jvm/ 与 js-lib/）。
  *
- * 三态覆盖：开发态 / NSIS 安装（--dir） / portable 单文件（★ 解压在随机 tmp 的 7z-out 下）。
+ * 三态覆盖：开发态 / NSIS 安装（--dir） / portable 单文件（解压在随机 tmp 的 7z-out 下）。
  * 详见 `resolveResources.ts` 顶部注释（那里记录了 portable 布局的实测证据）。
  */
 export function resourcesDir(): string {

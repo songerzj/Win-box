@@ -1,5 +1,5 @@
 // tests/preloadApiContract.spec.ts
-// ★★ 2026-09-24 事故回归（用户侧表现：「全源搜索搜不出来」）★★
+// 事故回归（表现：「全源搜索搜不出来」）
 //   真因：preload 把 `onSearchAllProgress` 错挂在 `api.config` 下，而渲染层调用的是
 //   `window.api.vod.onSearchAllProgress` → 调用即抛 TypeError，且该调用位于 doSearch 的
 //   `try` 之外 → `client.searchAll` 从未执行、`loading` 永久 true → 界面永远停在
@@ -29,7 +29,7 @@ const root = join(here, '..');
 function parsePreloadApi(src: string): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();
   let cur: string | null = null;
-  // ★ 按 \r?\n 切行：preload.ts 历史上被 PowerShell 写成过 CRLF，
+  // 按 \r?\n 切行：preload.ts 历史上被 PowerShell 写成过 CRLF，
   //   而 JS 的 `.` 与 `$` 都不吃 `\r` → 用 `$` 锚定的行正则会对 CRLF 文件整体失配。
   for (const raw of src.split(/\r?\n/)) {
     const gm = /^  (\w+):\s*\{(.*)$/.exec(raw);
@@ -76,7 +76,7 @@ const preloadSrc = readFileSync(join(root, 'src/main/preload.ts'), 'utf8');
 const api = parsePreloadApi(preloadSrc);
 const refs = collectRendererRefs(join(root, 'src/renderer'));
 
-describe('preload ↔ 渲染层 API 契约（★2026-09-24 全源搜索卡死事故回归）', () => {
+describe('preload ↔ 渲染层 API 契约（全源搜索卡死事故回归）', () => {
   it('解析出了 api 分组（解析器自身有效性）', () => {
     expect(api.size).toBeGreaterThanOrEqual(8);
     expect([...(api.get('vod') ?? [])]).toContain('searchAll');

@@ -11,7 +11,7 @@ import android.view.View;
  * 构造器 {@code (Context)}、{@code setText(CharSequence)}、{@code setOnClickListener}、
  * {@code setEnabled}、{@code setVisibility}。setXxx 由父类 View/TextView 提供。
  *
- * <p>★ 本类必须继承 TextView（不是直接继承 View）：内嵌 WebView 库把 Button
+ * <p>本类必须继承 TextView（不是直接继承 View）：内嵌 WebView 库把 Button
  * 当 TextView 用（{@code invokevirtual TextView.setText} 的接收者是 Button 实例），
  * 类型链断了会 VerifyError。
  */

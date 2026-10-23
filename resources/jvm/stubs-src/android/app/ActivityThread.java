@@ -57,8 +57,8 @@ public class ActivityThread {
     private Application mApplication;
 
     public ActivityThread() {
-        // ★ 放入一个 mock ActivityClientRecord，使 InitOrigin.getActivity() 反射遍历
-        //   mActivities 时能取到非 null Activity（fty 蛛 getan() 弹幕初始化会调
+        // 放入一个 mock ActivityClientRecord，使 InitOrigin.getActivity() 反射遍历
+        //   mActivities 时能取到非 null Activity（某第三方源蛛 getan() 弹幕初始化会调
         //   Activity.getWindow().getDecorView()）。桌面无 UI，但需要一个非 null 占位
         //   Activity，让 getWindow 返回空 Window、视图遍历安全返回空结果。
         ActivityClientRecord rec = new ActivityClientRecord();

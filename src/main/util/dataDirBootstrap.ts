@@ -1,7 +1,7 @@
 // src/main/util/dataDirBootstrap.ts
-// ★ 2026-09-30（用户要求）：启动最早期把数据目录切到**安装目录/data**并迁移老用户数据。
+// 启动最早期把数据目录切到**安装目录/data**并迁移老用户数据。
 //
-// ★★ 为什么是「import 即执行」：main/index.ts 里多个模块在**模块求值期**就解析了 userData 路径
+// 为什么是「import 即执行」：main/index.ts 里多个模块在**模块求值期**就解析了 userData 路径
 //   （例：`util/logger.ts` 在 import 时 mkdir + 固定日志文件路径；若干 Store 在构造时 join(userDataDir(), …)）。
 //   ES 模块的 import 先于 index.ts 自身语句执行，所以本模块必须作为 main/index.ts 的**第一条 import**，
 //   在其求值时完成迁移 + `app.setPath('userData')`，后续所有模块才会一致落到新目录。
@@ -77,5 +77,5 @@ function bootstrap(): DataDirReport {
   return { mode: 'activated', target: plan.target, planned: plan.target, legacy: plan.legacy, migration };
 }
 
-/** ★ 模块求值即执行（必须作为 main/index.ts 的第一条 import，理由见文件头） */
+/** 模块求值即执行（必须作为 main/index.ts 的第一条 import，理由见文件头） */
 export const dataDirReport: DataDirReport = bootstrap();

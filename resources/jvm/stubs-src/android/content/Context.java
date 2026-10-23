@@ -14,7 +14,7 @@ import java.io.File;
 /**
  * Context stub —— Android 应用上下文。
  *
- * ★ 2026-09-10 第四轮修复（二次）：
+ * 修复（二次）
  *   1) 此前 `getSystemService(String)` 直接 `return null`，混淆工具库拿到 null 后
  *      做 Kotlin 风格非空转换（`null cannot be cast to non-null type ...`）而崩溃。
  *      现在按名称返回**真实的桩实例**（ActivityManager/AlarmManager/...），
@@ -57,10 +57,10 @@ public class Context {
     private static final ClipboardManager CLIPBOARD = new ClipboardManager();
     private static final Resources RES = new Resources();
     private static final ApplicationInfo APP_INFO = new ApplicationInfo();
-    /** ★ 2026-09-27：网络族服务桩（调用方带 checkcast，必须是真实类型；见 getSystemService） */
+    /** 网络族服务桩（调用方带 checkcast，必须是真实类型；见 getSystemService） */
     private static final android.net.wifi.WifiManager WIFI = new android.net.wifi.WifiManager();
     private static final android.net.ConnectivityManager CONNECTIVITY = new android.net.ConnectivityManager();
-    /** Assets 句柄（★ 2026-09-27 壳通解）：壳 native 拿它做 AAssetManager_fromJava */
+    /** Assets 句柄（壳通解）：壳 native 拿它做 AAssetManager_fromJava */
     private static final AssetManager ASSETS = new AssetManager();
 
     public Context() {
@@ -176,7 +176,7 @@ public class Context {
     }
 
     /**
-     * ★ 2026-09-26 新增（壳类取证）：加固壳/混淆库会反射探测
+     * 新增（壳类实测）：加固壳/混淆库会反射探测
      *   `Context.checkSelfPermission(String)int`（API 23+）来判断存储/网络权限；
      *   缺失时反射链拿不到 Method，部分实现会退化为「无权限」分支（表现为壳内准备失败）。
      *   桌面版无沙箱权限模型 → 一律 GRANTED（与 checkCallingOrSelfPermission 同口径）。
@@ -186,7 +186,7 @@ public class Context {
     }
 
     /**
-     * ★ 关键修复：按名称返回**非 null** 的服务桩实例。
+     * 关键修复：按名称返回**非 null** 的服务桩实例。
      * 此前返回 null → 调用方做非空转换即崩（`null cannot be cast to non-null type`）。
      */
     public Object getSystemService(String name) {
@@ -200,8 +200,8 @@ public class Context {
                 return ALARM;
             case CLIPBOARD_SERVICE:
                 return CLIPBOARD;
-            // ★ 2026-09-27：这两族必须返回**真实类型**的桩 —— 调用方普遍带 checkcast
-            //   （实测 wex 仓的指纹/DNS 助手：`(WifiManager) getSystemService("wifi")`、
+            // 这两族必须返回**真实类型**的桩 —— 调用方普遍带 checkcast
+            //   （实测 某第三方源仓的指纹/DNS 助手：`(WifiManager) getSystemService("wifi")`、
             //   `(ConnectivityManager) getSystemService("connectivity")`），返 Object 占位会 ClassCastException。
             case WIFI_SERVICE:
                 return WIFI;
@@ -222,7 +222,7 @@ public class Context {
     }
 
     /**
-     * ★ 2026-09-16 修复：瓜子（Appgz）等蜘蛛在 init 阶段调用 getContentResolver()
+     * 修复：瓜子（Appgz）等蜘蛛在 init 阶段调用 getContentResolver()
      *   做账号/数据库探测。缺失 → NoSuchMethodError 导致整源不可用。返回非 null 桩。
      */
     public ContentResolver getContentResolver() {

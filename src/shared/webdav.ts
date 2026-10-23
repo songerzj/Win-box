@@ -1,6 +1,6 @@
 // src/shared/webdav.ts
 // WebDAV 存储（OpenList / AList / Nextcloud / 群晖 / 坚果云 …）的契约与工具 —— 主/渲染层共用。
-// ★ 2026-09-29 口径（用户拍板）：只做 **WebDAV 直连**（PROPFIND 列目录 + GET 取流），**只读**
+// 口径：只做 **WebDAV 直连**（PROPFIND 列目录 + GET 取流），**只读**
 //   （不做上传/转存）；服务器凭据与网盘 Cookie 同机制加密落盘（`<userData>/webdav-servers.json`）。
 import { LOCAL_PROXY_BASE } from './constants';
 

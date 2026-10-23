@@ -56,7 +56,7 @@ public final class NativePatcher {
     }
 
     /**
-     * ★ 2026-09-27（壳通解·载荷层）：给「运行时 dex 产物」打补丁 —— 与壳jar的区别：
+     * （壳通解·载荷层）：给「运行时 dex 产物」打补丁 —— 与壳jar的区别
      *   ① 计划不是预先算好的（载荷 .so 还没被 System.load 载入，native 表无从查），
      *      因此**全量改写**：凡声明为 native 的方法一律转发到 {@code NativeBridge.invokePayload}，
      *      由载荷桥在 32 位模拟器里按「RegisterNatives 表 → Java_ 导出符号」两级解析（unidbg 内建）；
@@ -144,7 +144,7 @@ public final class NativePatcher {
                     continue;
                 }
                 Map<String, Boolean> methods = plan.get(internalName);
-                // ★ 只跳过「不在计划里」的类：空表 = 只做库加载钩子（载荷层）
+                // 只跳过「不在计划里」的类：空表 = 只做库加载钩子（载荷层）
                 if (methods == null) continue;
                 int[] done = new int[1];
                 byte[] out = patchClass(data, methods, resolver, done, hookLoads, dynamic);
@@ -216,13 +216,13 @@ public final class NativePatcher {
             public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
                 final Boolean noop = methods.get(name + descriptor);
                 final boolean payloadNative = methods.containsKey(PAYLOAD_METHOD + name + descriptor);
-                // ★★ 非目标方法必须**转交 writer**：ASM 里 visitMethod 返回 null 表示
+                // 非目标方法必须**转交 writer**：ASM 里 visitMethod 返回 null 表示
                 //    「本访问者不关心该方法」，ClassReader 会整段跳过 → 改写后的类会丢掉
                 //    构造器 / <clinit> / 全部真实方法（实测：改写后 getMethod("plain") 直接
                 //    NoSuchMethodException）。必须 super.visitMethod(...) 才会逐条复制。
-                //    ★ 但即使是非目标方法，也要经过「库加载中性化」过滤器（见下）。
+                //    但即使是非目标方法，也要经过「库加载中性化」过滤器（见下）。
                 if (noop == null && !payloadNative) {
-                    // ★★ 载荷模式：把 <clinit> 改名为 tvboxClinit，并在类尾合成一个新的 <clinit>
+                    // 载荷模式：把 <clinit> 改名为 tvboxClinit，并在类尾合成一个新的 <clinit>
                     //    经 NativeBridge.clinitRun(...) 反射调用它 —— 失败在 **Java 侧**被捕获成一条
                     //    中文日志（见 ClinitGuard 注释：缺库不该炸掉整条线程）。
                     boolean clinit = hookLoads && "<clinit>".equals(name) && "()V".equals(descriptor);
@@ -261,7 +261,7 @@ public final class NativePatcher {
     static int skipped;
 
     /**
-     * ★★ 库加载中性化（2026-09-26 真机取证后新增，勿删）：
+     * 库加载中性化（实测后新增，勿删）
      *   壳 jar 的 `FishNative.loadAndRegister(path)` = `load(path)`（内部 `System.load(path)`）→ `register()`。
      *   `register()` 是 native、**已由本桥实现**；唯独 `System.load` 在 x64 上必然抛
      *   `UnsatisfiedLinkError`（ARM .so 无法被宿主加载）→ 整条加密路径被判定不可用
@@ -269,10 +269,10 @@ public final class NativePatcher {
      *   因此：**被改写的类里，凡 `System.load/loadLibrary`、`Runtime.load/loadLibrary` 调用一律视为已加载**
      *   （弹出参数、继续执行）。只动这些调用点，其余字节码逐条保留。
      *
-     * ★★ 2026-09-27（壳通解·载荷层）：`hookLoads=true` 时改口径 —— **壳 jar 与运行时 dex 不是一回事**：
+     * （壳通解·载荷层）：`hookLoads=true` 时改口径 —— **壳 jar 与运行时 dex 不是一回事**
      *   壳的 .so 由桥自己从 jar 里提取装载（调用点确实该丢），但**解密 dex 里的 native 库**是
      *   `<clinit>` 自己 copy 出来再 `System.load(绝对路径)` 的，路径只有在调用点才拿得到；
-     *   丢掉它 = 32 位模拟器永远不知道要装哪个 .so（现象：wex 玩偶 `ExceptionInInitializerError`）。
+     *   丢掉它 = 32 位模拟器永远不知道要装哪个 .so（现象：某第三方源 `ExceptionInInitializerError`）。
      *   所以载荷层把 `System.load(String)` 换成 `NativeBridge.bridgeLoad(path)`（记录 + 装载）；
      *   `Runtime.load(String)` 用 SWAP+POP 去掉接收者后同样转成 bridgeLoad；其余形态照旧弹出。
      */
@@ -282,7 +282,7 @@ public final class NativePatcher {
             @Override
             public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                 if (isLibLoad(owner, name)) {
-                    // ★ 只钩 `load(String)`（路径）；`loadLibrary(String)` 传的是库名，取不到文件 → 照旧弹出
+                    // 只钩 `load(String)`（路径）；`loadLibrary(String)` 传的是库名，取不到文件 → 照旧弹出
                     if ("load".equals(name) && "(Ljava/lang/String;)V".equals(desc)) {
                         // Embedded guard libraries are already loaded by prepare(), but
                         // a later System.load can refer to a completely different sidecar.
@@ -321,10 +321,10 @@ public final class NativePatcher {
     }
 
     /**
-     * ★★ 2026-09-27（载荷层补完）：**把载荷类 `<clinit>` 的失败从「JVM 级异常」降级为「可读日志 + 首次调用报错」**。
+     * （载荷层补完）：**把载荷类 `<clinit>` 的失败从「JVM 级异常」降级为「可读日志 + 首次调用报错」**。
      *
-     * <p>为什么必须这么做（真机取证）：载荷类的 `<clinit>` 普遍是「把 .so 拷到临时名 → `System.load`」，
-     * 而这些 .so 有的**上游根本没随壳发布**（实测 wex：`GoProxy` 要的 `libwexproxy.so` 不在任何 jar /
+     * <p>为什么必须这么做（实测）：载荷类的 `<clinit>` 普遍是「把 .so 拷到临时名 → `System.load`」，
+     * 而这些 .so 有的**上游根本没随壳发布**（实测 某第三方源：`GoProxy` 要的 `libwexproxy.so` 不在任何 jar /
      * 沙箱里，全库也无下载 URL）。原样跑 → `FileNotFoundException` → `ExceptionInInitializerError`
      * 把整个后台线程打死并刷一屏堆栈，且该类被 JVM 标记为 erroneous（后续引用都变成 `NoClassDefFoundError`，
      * 指向完全无关的地方）。
@@ -350,7 +350,7 @@ public final class NativePatcher {
             mv.visitMaxs(0, 0);
             return;
         }
-        // ★★ 参数顺序必须与 invoke 的描述符一致：owner, name, desc, args
+        // 参数顺序必须与 invoke 的描述符一致：owner, name, desc, args
         //    （INVOKE_DESC = (String;String;String;[Object)Object）。把数组压在最后 ——
         //    早期版本先压数组再压三个字符串，栈上是 [Object,String,String,String]，
         //    与描述符不匹配 → 改写后的类一加载就 VerifyError（实测：Bad type on operand stack）。

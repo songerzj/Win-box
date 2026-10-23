@@ -3,7 +3,7 @@
 //   由主进程用 `new Worker(代码, { eval: true, workerData })` 启动（见 PluginSandbox.ts）——
 //   eval 方式不依赖模块路径解析，打包态 asar 内也能跑（同引擎侧 js-worker 口径）。
 //
-// ★ 安全边界：第三方代码**只在这里**跑；本线程除本协议暴露的能力外，**没有任何**宿主能力。
+// 安全边界：第三方代码**只在这里**跑；本线程除本协议暴露的能力外，**没有任何**宿主能力。
 //   （`require`/`process`/`fs`/`child_process` 在 vm 上下文里**不存在** —— 见 buildWinbox.ts。）
 //
 // 事实源：docs/spec/R10-l4-sandbox-api/spec.md §6.1。
@@ -53,7 +53,7 @@ port.on('message', (msg: HostReply) => {
 
 /**
  * 读 `main` 并在 vm 上下文内执行。
- * ★ 包成 **async IIFE** 以支持顶层 `await`（作者可直接 `await winbox.http(...)`）。
+ * 包成 **async IIFE** 以支持顶层 `await`（作者可直接 `await winbox.http(...)`）。
  */
 async function boot(): Promise<void> {
   wg = buildWinbox(Array.isArray(cfg.permissions) ? cfg.permissions : [], call);

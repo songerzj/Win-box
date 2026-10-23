@@ -1,14 +1,14 @@
 // src/main/util/playDiag.ts
-// ★ 2026-09-28：播放 / 网盘落盘链路的**结构化诊断**（先取证，再定向修）。
+// 播放 / 网盘落盘链路的**结构化诊断**（先量化，再定向修）。
 //
-// 背景（用户第 6 项）：「部分源应该正常，但资源无法正确落盘、无法播放，成功率可能只有 50%」。
+// 背景：「部分源应该正常，但资源无法正确落盘、无法播放，成功率可能只有 50%」。
 // 这类问题跨「蜘蛛解析 → 夸克转存 → 直链 → /play 中继 → 播放器」五段，靠猜很容易修错地方。
 // 因此先把每一步的「阶段 / 耗时 / 结果 / 原因」按行落盘（JSONL，便于脚本统计），跑一轮真实数据后再动手。
 //
 // 输出：`<userData>/logs/play-diag-YYYYMMDD.jsonl`（每行一个 JSON）+ 主日志一行 `[play-diag] …`。
 // 隐私：URL 只留 host + 末段，id 只留短哈希 —— 诊断不需要原始串。
 //
-// ★ 依赖纪律：本模块**不静态依赖 electron 相关模块**（`userDataDir` / `fileLogger`），
+// 依赖纪律：本模块**不静态依赖 electron 相关模块**（`userDataDir` / `fileLogger`），
 //   改由主进程启动时 `initPlayDiag()` 注入（见 src/main/index.ts）——
 //   否则任何 import 到 quarkTransfer / LocalProxyServer 的单测都会连带加载 electron 而崩。
 import { appendFileSync, mkdirSync } from 'node:fs';

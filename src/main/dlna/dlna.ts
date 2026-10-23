@@ -201,7 +201,7 @@ function soapBody(action: string, args: string): string {
 
 /**
  * `SetAVTransportURI` 请求体。
- * ★ DIDL 必须**再整体转义一层**（它是字符串实参，不是内联 XML）—— 漏这层是「投屏没反应」最常见的根因。
+ * DIDL 必须**再整体转义一层**（它是字符串实参，不是内联 XML）—— 漏这层是「投屏没反应」最常见的根因。
  */
 export function buildSetUriBody(uri: string, didl: string): string {
   return soapBody(

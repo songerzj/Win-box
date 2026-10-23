@@ -1,5 +1,5 @@
-// tests/torrentMagnet.spec.ts — 磁力（BT）播放纯函数层（★ 2026-09-29 方案 B：aria2c sidecar + 外部播放器接力）
-// 约定：只用离线数据；涉及 aria2 真机行为的点（bitfield 位序、followedBy 数组）都有真机取证，见注释。
+// tests/torrentMagnet.spec.ts — 磁力（BT）播放纯函数层（方案 B：aria2c sidecar + 外部播放器接力）
+// 约定：只用离线数据；涉及 aria2 真机行为的点（bitfield 位序、followedBy 数组）都有实测，见注释。
 import { describe, it, expect } from 'vitest';
 import {
   parseMagnet,
@@ -22,7 +22,7 @@ import {
   BT_HEAD_GATE_BYTES,
 } from '../src/engine/torrent/magnet';
 
-// 真机取证的种子（webtorrent 的 Sintel 测试种子）
+// 实测的种子（webtorrent 的 Sintel 测试种子）
 const HASH_HEX = '08ada5a7a6183aae1e09d831df6748d566095a10';
 const HASH_B32 = 'BCW2LJ5GDA5K4HQJ3AY56Z2I2VTASWQQ';
 
@@ -220,7 +220,7 @@ describe('bitfield — piece 覆盖判定（位序按 aria2 源码：MSB-first�
   });
 
   it('真机数据：Sintel 首段 hex 33 94 52 21 0x… 的解析（与真机 first40 集合一致）', () => {
-    // 真机实测：这段位串下已下载 piece = 2,3,6,7,8,11,13,17,19,22,26,31,36,39
+    // 实测：这段位串下已下载 piece = 2,3,6,7,8,11,13,17,19,22,26,31,36,39
     const hex = '3394522109e74b2080000000';
     expect([0, 1, 2, 3, 4, 5, 6, 7].map((i) => isPieceSet(hex, i))).toEqual([false, false, true, true, false, false, true, true]);
     expect(isPieceSet(hex, 8)).toBe(true); // 0x94 高半字节 9 = 1001 → piece8 置位

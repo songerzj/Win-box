@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { client } from '../api/client';
-// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+// 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
 import PluginSlot from '../components/PluginSlot';
 import type { LiveGroup, LiveBean, LiveEpgEntry, EpgChannelRef } from '../../shared/types';
 import type { LiveTemplateView } from '../../shared/plugin';
@@ -31,12 +31,12 @@ export default function LivePage() {
   const [playUrl, setPlayUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
-  /** ★ 2026-10-18 导出：当前线路名 + 输出模板（内置 2 个 + 插件）+ 选中模板 + 结果提示 */
+  /** 导出：当前线路名 + 输出模板（内置 2 个 + 插件）+ 选中模板 + 结果提示 */
   const [liveName, setLiveName] = useState('');
   const [exportTpls, setExportTpls] = useState<LiveTemplateView[]>([]);
   const [exportTplId, setExportTplId] = useState('');
   const [exportMsg, setExportMsg] = useState('');
-  /** ★ 2026-09-29 EPG：键（tvg-id / tvg-name / 频道名）→ 当前 / 下一档 */
+  /** EPG：键（tvg-id / tvg-name / 频道名）→ 当前 / 下一档 */
   const [epg, setEpg] = useState<Record<string, LiveEpgEntry>>({});
   const epgTimer = useRef<number | null>(null);
 
@@ -76,8 +76,8 @@ export default function LivePage() {
   }
 
   /**
-   * ★ 2026-10-18 导出当前线路：把**已加载**的分组按模板渲染 → 主进程保存对话框 → 写文件。
-   * ★ 只做输出侧格式化（不重新拉源、不发请求、不解析）。
+   * 导出当前线路：把**已加载**的分组按模板渲染 → 主进程保存对话框 → 写文件。
+   * 只做输出侧格式化（不重新拉源、不发请求、不解析）。
    */
   async function doExport(): Promise<void> {
     const tpl = exportTpls.find((t) => t.id === exportTplId) ?? exportTpls[0];
@@ -144,7 +144,7 @@ export default function LivePage() {
   const curEpg = curChannel ? (epg[curChannel['tvg-id']] || epg[curChannel['tvg-name']] || epg[curChannel.name]) : undefined;
   const lines = curChannel ? curChannel.urls.map((u, i) => splitLine(u, i + 1)) : [];
 
-  // ★ 2026-09-29 EPG：换线路 / 分组变化后拉一次节目单（主进程负责 XMLTV 拉取、缓存与频道匹配）
+  // EPG：换线路 / 分组变化后拉一次节目单（主进程负责 XMLTV 拉取、缓存与频道匹配）
   async function refreshEpg(index: number, gs: LiveGroup[]) {
     const refs: EpgChannelRef[] = gs
       .flatMap((g) => g.channels)
@@ -166,7 +166,7 @@ export default function LivePage() {
   }, [liveIdx, groups]);
 
   /**
-   * ★ 2026-09-29 EPG：只在「当前节目结束 / 下一档开始」的时刻再拉一次（不做轮询）。
+   * EPG：只在「当前节目结束 / 下一档开始」的时刻再拉一次（不做轮询）。
    * 到点后重新计算，就能无缝从「当前」滑到「下一档」。
    */
   useEffect(() => {
@@ -189,7 +189,7 @@ export default function LivePage() {
         <select value={liveIdx} onChange={(e) => pickLive(Number(e.target.value))} disabled={loading}>
           {lives.map((l, i) => <option key={i} value={i}>{l.name}</option>)}
         </select>
-        {/* ★ 2026-10-18 导出当前线路（输出格式由模板决定：内置 2 个 + 插件 `live.template`） */}
+        {/* 导出当前线路（输出格式由模板决定：内置 2 个 + 插件 `live.template`） */}
         <select value={exportTplId} onChange={(e) => setExportTplId(e.target.value)} disabled={loading || !exportTpls.length} title="导出格式">
           {exportTpls.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
         </select>
@@ -197,7 +197,7 @@ export default function LivePage() {
         <span className="status" style={{ marginLeft: 'auto' }}>{loading ? '加载中…' : `${groups.length} 组`}</span>
         {exportMsg && <span className="muted" style={{ fontSize: 12 }}>{exportMsg}</span>}
       </div>
-      {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+      {/* 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
       <PluginSlot slot="live" />
       <div className="layout-2 content" style={{ padding: 12 }}>
         <div className="left">
@@ -228,7 +228,7 @@ export default function LivePage() {
                   ))}
                 </div>
               )}
-              {/* ★ 2026-09-29 EPG：当前 / 下一档（仅有节目单时才显示，避免占位空格） */}
+              {/* EPG：当前 / 下一档（仅有节目单时才显示，避免占位空格） */}
               {curEpg && (curEpg.current || curEpg.next) && (
                 <div className="live-epg">
                   {curEpg.current && (
@@ -243,8 +243,8 @@ export default function LivePage() {
                   )}
                 </div>
               )}
-              {/* ★ 2026-09-27：播放器必须有「有高度」的 flex 宿主 —— `.vplayer` 的高度只来自 flex（flex:1），
-                  直接放进 block 容器 `.right` 会折成 0 高度（用户报「直播界面播放器消失」）。 */}
+              {/* 播放器必须有「有高度」的 flex 宿主 —— `.vplayer` 的高度只来自 flex（flex:1），
+                  直接放进 block 容器 `.right` 会折成 0 高度。 */}
               {playUrl ? (
                 <div className="live-player">
                   <VideoPlayer url={playUrl} />

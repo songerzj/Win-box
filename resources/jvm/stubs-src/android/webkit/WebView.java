@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * WebView stub —— 内嵌浏览器控件（超集重写）。
  *
- * <p>★ 基线 jar 已有本类（构造器 + getSettings/loadUrl/setWebViewClient/
+ * <p>基线 jar 已有本类（构造器 + getSettings/loadUrl/setWebViewClient/
  * evaluateJavascript），但内嵌 WebView 库还会调 {@code addJavascriptInterface} /
  * {@code setWebChromeClient} / {@code loadDataWithBaseURL} / {@code stopLoading} 等，
  * 缺一个就是 NoSuchMethodError。这里补齐安卓 API 28 的常用方法面。

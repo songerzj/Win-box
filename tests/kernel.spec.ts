@@ -1,5 +1,5 @@
 // tests/kernel.spec.ts
-// ★ 2026-10-08（用户拍板「内置官方构建」）：播放内核选择纯函数回归（HTML5 默认 / MPV 自动与一键切换）。
+// 播放内核选择纯函数回归（HTML5 默认 / MPV 自动与一键切换）。
 import { describe, it, expect } from 'vitest';
 import { isEngineKernel, preferMpvKernel, resolveKernel } from '../src/renderer/lib/kernel';
 
@@ -55,7 +55,7 @@ describe('resolveKernel · 偏好 × 可用性 × 资源形态', () => {
     expect(resolveKernel('auto', mp4, withMpv)).toBe('html5');
   });
 
-  // ★ 2026-10-18（R11）：内核从「双选」扩为「内置 2 + 插件 N」
+  // （R11）：内核从「双选」扩为「内置 2 + 插件 N」
   describe('插件内核（`engine:<id>`）', () => {
     const opts = { mpvAvailable: true, engines: ['engine:a'] };
     const noMpv = { mpvAvailable: false, engines: ['engine:a'] };

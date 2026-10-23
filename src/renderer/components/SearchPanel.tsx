@@ -1,9 +1,9 @@
 // src/renderer/components/SearchPanel.tsx
-// ★ 2026-09-24（用户定稿）：TopNav 皮肤（Netflix / 哔哩哔哩）把搜索改成**右上角搜索按钮** ——
+// TopNav 皮肤（Netflix / 哔哩哔哩）把搜索改成**右上角搜索按钮** ——
 //   点击展开面板：默认展示百度电影热搜（独立榜单，保留排名和指数），
 //   输入时 250ms 防抖查**自动联想**（TMDB / 豆瓣，随「元数据来源策略」），
 //   回车或点击任一条 → 跳 /search?agg=<关键词>（复用 HomePage 的全源搜索入口）。
-// ★ 2026-09-29（用户要求）：搜索框做大；热搜做成**右侧排名榜**；左侧下方为**搜索历史**
+// 搜索框做大；热搜做成**右侧排名榜**；左侧下方为**搜索历史**
 //   （逐条可删 ✕、下方「清空搜索记录」、上限 10 条，第 11 条顶掉第 1 条）。
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ const DEBOUNCE_MS = 250;
 const HOT_RANK_MAX = 10;
 
 /**
- * ★ 2026-10-08（用户要求「豆风要大改布局」）：`bar` 变体 —— 豆风皮肤顶栏把搜索做成
+ * `bar` 变体 —— 豆风皮肤顶栏把搜索做成
  *   **M3 搜索条**（宽胶囊 + 占位文案），其余皮肤保持原来的「🔍 搜索」小胶囊（零影响）。
  */
 export default function SearchPanel({ bar = false }: { bar?: boolean }) {
@@ -36,7 +36,7 @@ export default function SearchPanel({ bar = false }: { bar?: boolean }) {
   const [hotAttempt, setHotAttempt] = useState(0);
   const [sug, setSug] = useState<MetaSuggestion[]>([]);
   const [busy, setBusy] = useState(false);
-  /** ★ 2026-09-29：搜索历史（localStorage，最多 10 条） */
+  /** 搜索历史（localStorage，最多 10 条） */
   const [hist, setHist] = useState<string[]>([]);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -108,7 +108,7 @@ export default function SearchPanel({ bar = false }: { bar?: boolean }) {
   const go = (kw: string): void => {
     const t = (kw || '').trim();
     if (!t) return;
-    // ★ 2026-09-29：任何入口（回车/联想/热搜/历史）都记入搜索历史（上限 10，FIFO）
+    // 任何入口（回车/联想/热搜/历史）都记入搜索历史（上限 10，FIFO）
     const next = pushSearchTerm(loadSearchHistory(), t);
     saveSearchHistory(next);
     setHist(next);
@@ -162,7 +162,7 @@ export default function SearchPanel({ bar = false }: { bar?: boolean }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => {
-                // ★ 2026-09-26（用户反馈「搜奥特曼却按迪迦奥特曼搜」）：回车**永远搜输入的词** ——
+                // 回车**永远搜输入的词** ——
                 //   此前是 `go(sug[0]?.title || q)`，联想列表首条会**悄悄替掉**用户输入
                 //   （输「奥特曼」→ TMDB 首条是「迪迦奥特曼」→ 实际搜的是迪迦）。
                 //   想用联想词请直接点该条。
@@ -185,7 +185,7 @@ export default function SearchPanel({ bar = false }: { bar?: boolean }) {
               ))}
             </div>
           ) : (
-            /* ★ 2026-09-29（用户要求）：左列 = 搜索历史（可逐条删 + 清空），右列 = 热搜排名榜 */
+            /* 左列 = 搜索历史（可逐条删 + 清空），右列 = 热搜排名榜 */
             <div className="sp-cols">
               <div className="sp-hist">
                 <div className="sp-hot-tip muted">搜索历史{hist.length ? `（${hist.length}/${10}）` : ''}</div>

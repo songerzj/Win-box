@@ -10,11 +10,11 @@ import type { DanmakuItem, DanmakuRegion } from '../../shared/danmaku';
 /** 弹幕字体串（测量与绘制必须同串，否则量出的宽度与实画不符）。 */
 const danmakuFont = (fontSize: number) => `${fontSize}px 'Microsoft YaHei', 'PingFang SC', sans-serif`;
 
-/** ★ 单帧弹幕绘制预算（ms）：超出则本帧丢弃剩余条目 —— 高密度时不拖垮播放帧率（仿 DFM ElapsedTimeFilter 思路）。 */
+/** 单帧弹幕绘制预算（ms）：超出则本帧丢弃剩余条目 —— 高密度时不拖垮播放帧率（仿 DFM ElapsedTimeFilter 思路）。 */
 const DRAW_BUDGET_MS = 12;
 
 /**
- * ★ 真实文本测量（canvas `measureText`）+ 小型 LRU，注入引擎（{@link setTextMeasurer}）。
+ * 真实文本测量（canvas `measureText`）+ 小型 LRU，注入引擎（{@link setTextMeasurer}）。
  *   旧实现按 charCode 估宽（ASCII 一律 0.6×字号）→ 英文/数字/标点判据偏差大；且逐帧重测。
  *   LRU：容量上限后淘汰最久未用；命中即移到队尾（Map 插入序）。
  */
@@ -52,7 +52,7 @@ const BITMAP_PAD = 4;
 const danmakuLineH = (fontSize: number) => Math.round(fontSize * 1.4);
 
 /**
- * ★ 文本位图栅格化（P1-①）：在离屏 canvas 上把「描边 + 填充」一次性画好，之后逐帧只 drawImage。
+ * 文本位图栅格化（P1-①）：在离屏 canvas 上把「描边 + 填充」一次性画好，之后逐帧只 drawImage。
  *   与绘制路径**同字体串 / 同描边参数 / 同 textBaseline** ⇒ 视觉与原来的逐帧 strokeText+fillText 一致。
  *   透明度**不烘进位图**（由逐帧 ctx.globalAlpha 施加）⇒ 调透明度不会失效缓存；DPR 放大后存，HiDPI 依然清晰。
  *   量不了宽 / 拿不到 2D 上下文 ⇒ 返回 null，调用方回退逐帧路径。
@@ -79,7 +79,7 @@ function rasterizeText(text: string, fontSize: number, color: string, dpr: numbe
   return { bitmap: off, w, h, pad: BITMAP_PAD, bytes: off.width * off.height * 4 };
 }
 
-/** 文本位图缓存：800 条 / 24MB 双阈值，单图超 3MB 不入缓存（★ 这笔内存计入「内存优化」专项预算）。 */
+/** 文本位图缓存：800 条 / 24MB 双阈值，单图超 3MB 不入缓存（这笔内存计入「内存优化」专项预算）。 */
 const bitmapCache = new DanmakuBitmapCache<HTMLCanvasElement>({
   rasterize: rasterizeText,
   release: (b) => {
@@ -91,7 +91,7 @@ const bitmapCache = new DanmakuBitmapCache<HTMLCanvasElement>({
 interface DanmakuOverlayProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   /**
-   * ★ 2026-10-08 MPV 内核：`<video>` 不再推进播放 —— 时间与画面尺寸改由主进程事件驱动
+   * MPV 内核：`<video>` 不再推进播放 —— 时间与画面尺寸改由主进程事件驱动
    *   （time = 当前播放秒；size = 画面物理像素）。缺省（html5 内核）走 videoRef。
    */
   mpv?: { time: React.RefObject<number>; size: React.RefObject<{ w: number; h: number }> } | null;
@@ -123,7 +123,7 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
       const w = parent.clientWidth;
       const h = parent.clientHeight;
       setSize((p) => (p.w === w && p.h === h ? p : { w, h }));
-      // ★ mpv 内核：画面尺寸来自主进程事件（mpv 子窗口按物理像素渲染）；无则按容器满幅
+      // mpv 内核：画面尺寸来自主进程事件（mpv 子窗口按物理像素渲染）；无则按容器满幅
       const videoW = mpv ? mpv.size.current.w : v?.videoWidth || 0;
       const videoH = mpv ? mpv.size.current.h || parent.clientHeight : v?.videoHeight || 0;
       const a = danmakuArea({ fit, canvasW: w, canvasH: h, videoW, videoH });
@@ -143,7 +143,7 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
     };
   }, [videoRef, mpv, fit]);
 
-  // ★ 卸载时释放位图缓存（避免 24MB 常驻）；独立空依赖 effect ⇒ 不会随布局重算被反复清空
+  // 卸载时释放位图缓存（避免 24MB 常驻）；独立空依赖 effect ⇒ 不会随布局重算被反复清空
   useEffect(() => () => bitmapCache.clear(), []);
 
   // 轨道布局：items/绘制区/偏好变化时重算（纯函数，渲染层只负责绘制）
@@ -157,7 +157,7 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
         density,
         region,
         offsetSec: offset,
-        mergeDuplicates: true, // ★ 同屏重复弹幕只留 1 条 + 「 ×N」
+        mergeDuplicates: true, // 同屏重复弹幕只留 1 条 + 「 ×N」
       }),
     [items, size.w, size.h, area.height, fontSize, speed, density, region, offset],
   );
@@ -168,7 +168,7 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    // ★ 2026-09-28 真 bug 修复（用户报「关闭弹幕只是卡住不消失」）：
+    // 真 bug 修复
     //   旧实现在 enabled=false 时直接 return（取消 rAF），**画布上最后一帧从未清除** →
     //   弹幕定格在屏幕上。这里关闭时先把画布清空再退出。
     if (!enabled) {
@@ -176,13 +176,13 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
-    // ★ mpv 内核：无 <video> 时间源，用主进程推送的 time（mpv.time.current）
+    // mpv 内核：无 <video> 时间源，用主进程推送的 time（mpv.time.current）
     if (!v && !mpv) return;
 
     let raf = 0;
     let lastT = -1;
     let si = 0; // 滚动弹幕绘制起点（只前移到"彻底出左界"处，见 scrollDrawStart）
-    // ★ D7：seek 前进/回退都重启扫描源点——时间回退或一次性跳变（>0.3s，非正常播放推进）时
+    // D7：seek 前进/回退都重启扫描源点——时间回退或一次性跳变（>0.3s，非正常播放推进）时
     //   重置 si=0，让跳过的弹幕从右缘按新时间轴重新进入（此前仅回退重置，前进会"中途冒出"）
     const SEEK_JUMP = 0.3;
 
@@ -210,7 +210,7 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
       ctx.lineJoin = 'round';
 
       const top = area.top; // 绘制区上边距（contain 时为黑边高度）
-      // ★ 逐帧只用位图 blit（P1-①，绕开 strokeText+fillText）；位图不可用时回退逐帧文字栅格化
+      // 逐帧只用位图 blit（P1-①，绕开 strokeText+fillText）；位图不可用时回退逐帧文字栅格化
       const drawText = (text: string, x: number, y: number, color: string) => {
         const e = bitmapCache.get(text, fontSize, color, dpr);
         if (!e) {
@@ -223,10 +223,10 @@ export default function DanmakuOverlay({ videoRef, mpv = null, items, enabled, r
         ctx.drawImage(e.bitmap, x - e.pad, top + y - e.pad, e.w, e.h);
       };
 
-      // ★ 2026-09-26 真 bug 修复：**每帧重绘所有在屏滚动弹幕**。
+      // 真 bug 修复：**每帧重绘所有在屏滚动弹幕**。
       //   旧实现在同一个循环里又画、又把扫描指针自增越过已画条目 → 每条只在"入界那一帧"被画到
       //   （x≈右缘、几乎在画布外）→ 屏幕上看不到弹幕，只有 seek 重扫时才"满屏"。
-      // ★ 零分配遍历（eachScrollDraw）+ 单帧预算：超预算即停，剩余条目留到下帧（不卡播放）。
+      // 零分配遍历（eachScrollDraw）+ 单帧预算：超预算即停，剩余条目留到下帧（不卡播放）。
       const t0 = performance.now();
       const overBudget = () => performance.now() - t0 > DRAW_BUDGET_MS;
       si = scrollDrawStart(layout.scroll, t, cw, fontSize, si);

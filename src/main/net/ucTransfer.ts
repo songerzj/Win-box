@@ -1,6 +1,6 @@
 // src/main/net/ucTransfer.ts — UC 分享取流（原生复刻，用于 UC 网盘源播放）。
 //
-// ★★ 2026-09-30 真机实测（探针 .tmp/r20-uc-*.cjs）：UC **支持免转存直链** ——
+// 实测：UC **支持免转存直链** ——
 //   `POST /file/download { fids, fid_token_list, pwd_id, stoken }` 直接返回分享内文件的下载直链
 //   （实测 206 + video/x-matroska 真实字节）。**不写你的网盘、不占空间、无需清理**。
 //   因此主路径=免转存；仅当直链取不到时才回退「转存到本人盘再取直链」（与夸克同构）。
@@ -87,10 +87,10 @@ export async function validateUcMediaUrl(
 }
 
 /**
- * ★ 2026-10-08：文本的「匹配候选」= 原文 + 逐层 percent-decode（≤2 轮）。
+ * 文本的「匹配候选」= 原文 + 逐层 percent-decode（≤2 轮）。
  * 与 baiduTransfer 同因同解：jar 把分享链接塞进 `do=pan` 代理地址的 **query 参数值**时会
  * percent-encode（`fileId=https%3A%2F%2Fdrive.uc.cn%2Fs%2F…`，部分 jar 还会二次编码），
- * 裸正则匹配不到 → 解链**静默**失败 → 用户侧「UC 线路黑屏」且日志无任何线索。
+ * 裸正则匹配不到 → 解链**静默**失败 → 「UC 线路黑屏」且日志无任何线索。
  */
 function shareTextCandidates(text: string): string[] {
   const out: string[] = [];
@@ -109,12 +109,12 @@ function shareTextCandidates(text: string): string[] {
   return out;
 }
 
-/** UC 分享标识：`drive.uc.cn/s/<id>`（常规）与 `fast.uc.cn/s/<id>`（分享短域名，★ 2026-10-09 扩） */
+/** UC 分享标识：`drive.uc.cn/s/<id>`（常规）与 `fast.uc.cn/s/<id>`（分享短域名） */
 const UC_SHARE_ID_RE = /(?:drive|fast)\.uc\.cn\/s\/([0-9a-zA-Z_-]+)/i;
 
 /** 该 episode id 是否是 UC 分享（兼容 percent-encoded 形态）；大小写不敏感 */
 export function isUcSharePlay(id: string): boolean {
-  // ★ 2026-10-14：`uc@<base64(JSON)>` 描述符（盘搜/免转存家族）
+  // `uc@<base64(JSON)>` 描述符（盘搜/免转存家族）
   const desc = parseDriveDescriptor(id);
   if (desc) return desc.provider === 'uc';
   return shareTextCandidates(id).some((s) => UC_SHARE_ID_RE.test(s));
@@ -124,10 +124,10 @@ export function isUcSharePlay(id: string): boolean {
  * 从分享链接里解析 pwd_id 与 4 位提取码。
  * 支持 `https://drive.uc.cn/s/<id>`、`https://fast.uc.cn/s/<id>`（短域名）、
  * `...?public=1`、`...?pwd=abcd`（提取码可选）。
- * ★ 兼容 query 值里的 percent-encoded 分享链接（见 shareTextCandidates）。
+ * 兼容 query 值里的 percent-encoded 分享链接（见 shareTextCandidates）。
  */
 export function extractUcShare(id: string, flag = ''): { pwdId: string; passcode: string } | null {
-  // ★ 2026-10-14：`uc@<base64(JSON)>` 描述符 → 直接取 shareId(=pwd_id)（与 quark 描述符同构）
+  // `uc@<base64(JSON)>` 描述符 → 直接取 shareId(=pwd_id)（与 quark 描述符同构）
   {
     const desc = parseDriveDescriptor(id);
     if (desc && desc.provider === 'uc') {
@@ -135,8 +135,8 @@ export function extractUcShare(id: string, flag = ''): { pwdId: string; passcode
       if (pwdId) return { pwdId, passcode: String(desc.data.passcode || '') };
     }
   }
-  // fty 的 UC/夸克描述都使用 sId/fid，sId 本身不能决定网盘。
-  // 仅在明确 UC 线路（优汐是 fty 的 UC 名称）下解释该描述；不凭通用字段猜提供商。
+  // 该壳类源的 UC/夸克描述都使用 sId/fid，sId 本身不能决定网盘。
+  // 仅在明确 UC 线路（该壳类源的 UC 线路名）下解释该描述；不凭通用字段猜提供商。
   if (/^(?:UC(?:\b|网盘)|优汐)/i.test(flag)) {
     const compound = extractCompoundPanEpisode(id);
     if (compound) return { pwdId: compound.shareId, passcode: '' };
@@ -200,7 +200,7 @@ async function jget(path: string, cookie: string): Promise<{ status: number; jso
   return { status: r.status, json, text };
 }
 
-/** ★ 全局串行锁：回退路径的转存是「服务端任务 + 落盘 fid」共享状态机，并发会互相污染（与夸克同理）。 */
+/** 全局串行锁：回退路径的转存是「服务端任务 + 落盘 fid」共享状态机，并发会互相污染（与夸克同理）。 */
 let transferChain: Promise<unknown> = Promise.resolve();
 
 /**
@@ -258,7 +258,7 @@ async function ucResolveInner(
   if (!file) return fail('分享内未定位到目标文件（可能已失效或集数不匹配）');
   if (!file.token) return fail(`目标文件 ${file.name || file.fid} 缺少分享令牌`);
 
-  // 3) ★ 主路径：免转存直链（带分享 token 直接 download，不写本人盘）
+  // 3) 主路径：免转存直链（带分享 token 直接 download，不写本人盘）
   const direct = await jpost('/file/download', cookie, {
     fids: [file.fid],
     fid_token_list: [file.token],

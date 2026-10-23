@@ -11,7 +11,7 @@
 #   - 正常：结果 json.dumps 到 stdout
 #   - 失败：`[SpiderRunner.ERROR] <type>: <msg>` + traceback 到 stderr，退出码 1
 #
-# ★ 嵌入式 Python（python-3.11.x-embed-amd64）的 python311._pth 是只读隔离的：
+# 嵌入式 Python（python-3.11.x-embed-amd64）的 python311._pth 是只读隔离的：
 #   不加载 site-packages、忽略 PYTHONPATH。因此这里**必须**用绝对路径手动注入 sys.path：
 #   [pythonDir/Lib, pythonDir/Lib/site-packages, runnerDir/base, 脚本所在目录]
 #   （pythonDir = runner.py 所在目录；embed 包结构为 python.exe + python311.zip + Lib/）。
@@ -40,8 +40,8 @@ for _p in [
     if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 
-# ★ stdout 专供「结果/信封」：蜘蛛自己的 print()（base.spider.log 等）会与结果/信封
-#   拼进同一行 → 宿主侧按行分帧解析失败 → 常驻池挂起到超时（用户侧「半天搜不出来」）。
+# stdout 专供「结果/信封」：蜘蛛自己的 print()（base.spider.log 等）会与结果/信封
+#  拼进同一行 → 宿主侧按行分帧解析失败 → 常驻池挂起到超时。
 #   这里先抓住真正的 stdout 句柄，main() 里再把 sys.stdout 换成 stderr。
 _REAL_OUT = sys.stdout
 
@@ -189,7 +189,7 @@ def _serialize(result, real_out=_REAL_OUT):
     real_out.flush()
 
 
-# ★ 蜘蛛实例缓存（2026-09-24）：键 = (类名, ext)。与 Java 侧 SpiderPool 同理 ——
+# 蜘蛛实例缓存：键 = (类名, ext)。与 Java 侧 SpiderPool 同理 ——
 #   源脚本的 init(ext) 可能要解析配置/建会话，每请求重建会让首次与后续都变慢；
 #   这里缓存实例复用；同一键并发时各自新建（Python 无锁，够用）。
 _INSTANCES = {}
@@ -241,7 +241,7 @@ def _serve(py_path, class_name):
             if not isinstance(args, list):
                 args = [args]
             rest = [str(a) for a in args]
-            # ★ 预热探针：脚本已在 _serve 入口编译完成；
+            # 预热探针：脚本已在 _serve 入口编译完成；
             #   __warm__ 进一步预建实例（含 init(ext)）进缓存，首次进源/搜索免付 init。
             if method == '__ping__':
                 ok = True
@@ -265,7 +265,7 @@ def _serve(py_path, class_name):
             data = 'SystemExit: %s' % e
         except Exception as e:
             data = '%s: %s' % (type(e).__name__, e)
-        # ★ 单行 JSON 信封（data 内嵌 \n 由 json.dumps 转义）
+        # 单行 JSON 信封（data 内嵌 \n 由 json.dumps 转义）
         _REAL_OUT.write(json.dumps({'id': req_id, 'ok': ok, 'data': data}, ensure_ascii=False) + '\n')
         _REAL_OUT.flush()
 
@@ -278,10 +278,10 @@ def _serialize_raw(result):
 
 
 def main():
-    # ★ 蜘蛛 print() → stderr（结果/信封走 _REAL_OUT，见其注释）：行协议不被日志碎片打穿
+    # 蜘蛛 print() → stderr（结果/信封走 _REAL_OUT，见其注释）：行协议不被日志碎片打穿
     sys.stdout = sys.stderr
     _windows_ca_bundle()
-    # ★ 常驻模式：runner.py -serve <pyPath> <className>
+    # 常驻模式：runner.py -serve <pyPath> <className>
     if len(sys.argv) >= 4 and sys.argv[1] == '-serve':
         _serve(sys.argv[2], sys.argv[3])
         return

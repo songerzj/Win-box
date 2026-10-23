@@ -1,20 +1,22 @@
-// src/renderer/pages/DiscoverPage.tsx — 发现页（★ 2026-09-24 起为**默认首页**，侧边栏第一个）
+// src/renderer/pages/DiscoverPage.tsx — 发现页（起为**默认首页**，侧边栏第一个）
 // 内容：
 //   ① 推荐（豆瓣榜单 + 国内热搜；主进程持久缓存，过期后台更新）
-//   ② 级联分类（★ 2026-10-15 用户要求，数据层走**豆瓣**）：分类 → 类型 → 地区 → 年代 → 排序，
+// ② 级联分类（数据层走**豆瓣**）：分类 → 类型 → 地区 → 年代 → 排序，
 //      **逐级点击才展开下级**；选项表直接用豆瓣自带的类型/地区词表（两页共用，永远一致，且不会空结果）。
 // 交互：点任意影片 → 走 `#/search?agg=<片名>` 用「源」做一次全源搜索（没源时提示去导入）。
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { client } from '../api/client';
-// ★ 2026-10-18 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
+// 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
 import PluginSlot from '../components/PluginSlot';
 import { openSearchWindow } from '../lib/searchWin';
 import { useSkinLayout } from '../lib/theme';
 import HScrollRow from '../components/HScrollRow';
-// ★ 2026-10-16（用户要求「四套皮肤绝对大改」）：首屏聚光卡（四皮肤共用结构，材质由各皮肤 CSS 决定）
+// 首屏聚光卡（四皮肤共用结构，材质由各皮肤 CSS 决定）
 import DiscoverSpotlight from '../components/DiscoverSpotlight';
 import CascadeBar, { type CascadeLevel, type CascadeOption } from '../components/CascadeBar';
 import { useCovers } from '../lib/useCovers';
+// （内存专项续 (b)：少解码）：豆瓣图按「显示框 × DPR」降到够用的一档（见该模块头注释）
+import { sizedImageUrl } from '../lib/imageSize';
 import { ALL_TAG, DISCOVER_MEDIA, type DiscoverMediaId, type ExploreVocabulary } from '../../shared/discover';
 import type { DiscoverItem, DiscoverSection } from '../../shared/types';
 
@@ -24,9 +26,9 @@ const PAGE_SIZE = 20;
 const MAX_TOTAL = 500;
 
 /** 影片卡（推荐区与分类区共用）：点击 → 全源搜索该片名。
-   *  playBadge ★ 2026-09-29：仅 Apple 皮肤渲染的「悬停播放徽标」—— 只在 Apple 下渲染元素，
+   * playBadge 仅 Apple 皮肤渲染的「悬停播放徽标」—— 只在 Apple 下渲染元素，
    *  其余皮肤零痕迹（不依赖别处补 `display:none`）。
-   *  dbPlay/dbYear ★ 2026-10-08（豆风）：海报墙卡 —— 悬停浮出圆形播放钮 + 左下角年份角标（豆瓣海报墙观感）。 */
+   * dbPlay/dbYear （豆风）：海报墙卡 —— 悬停浮出圆形播放钮 + 左下角年份角标（豆瓣海报墙观感）。 */
 function ItemCard({ it, poster, onError, onOpen, playBadge, dbPlay, dbYear }: { it: DiscoverItem; poster: string; onError: (url: string) => void; onOpen: () => void; playBadge?: boolean; dbPlay?: boolean; dbYear?: boolean }) {
   return (
     <div
@@ -77,10 +79,10 @@ export default function DiscoverPage() {
   const [sections, setSections] = useState<DiscoverSection[] | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
-  /** ★ 2026-10-08（豆风）：海报墙当前分区（顶部 pill 切换 —— 替代「一行行横滑」的堆叠布局） */
+  /** （豆风）：海报墙当前分区（顶部 pill 切换 —— 替代「一行行横滑」的堆叠布局） */
   const [wallSec, setWallSec] = useState(0);
 
-  // ---- 级联分类（★ 2026-10-15；选项表来自豆瓣自带的类型/地区词表）----
+  // ---- 级联分类（；选项表来自豆瓣自带的类型/地区词表）----
   const [vocab, setVocab] = useState<ExploreVocabulary | null>(null);
   /** 一级「分类」：null = 未选（此时展示榜单） */
   const [media, setMedia] = useState<DiscoverMediaId | null>(null);
@@ -96,7 +98,21 @@ export default function DiscoverPage() {
 
   const mediaOpt = DISCOVER_MEDIA.find(m => m.id === media) || null;
   const mediaType: 'movie' | 'tv' = mediaOpt?.mediaType || 'movie';
-  const coverItem = (it: DiscoverItem) => ({ id: String(it.doubanId || it.tmdbId || it.title), name: it.title, year: it.year ? String(it.year) : undefined, pic: it.poster });
+  /**
+   * （内存专项续 (b)：少解码）：发现页是**全页解码量最大**的一页 ——
+   *   实测（隔离实例 + 跑 dist）这里 90 张豆瓣海报**全部是 `m=540`、解码位图合计 146MB**，
+   *   而页内海报框最宽才 ~200 CSS px（DPR 1.5 ⇒ 只需 ~300 物理像素）。
+   *   ⇒ 交给 `useCovers` 之前就把豆瓣地址降到「够用的最小档」（**校验解码与显示用的是同一个 URL**，
+   *     所以必须在这里降，而不是在渲染 `<img>` 时降：`useCovers` 的封面校验会真的解码整列表）。
+   *   降到 `s`(270) 后同样 90 张只需约 38MB。其它图床（TMDB / 源站）原样不受影响。
+   */
+  const DISCOVER_BOX = 200;
+  const coverItem = (it: DiscoverItem) => ({
+    id: String(it.doubanId || it.tmdbId || it.title),
+    name: it.title,
+    year: it.year ? String(it.year) : undefined,
+    pic: sizedImageUrl(it.poster || '', DISCOVER_BOX),
+  });
   /** 预热封面：分类浏览有结果时用它，否则用（默认 / 回退）榜单 */
   const coverSource = media !== null && items.length > 0
     ? items
@@ -107,7 +123,7 @@ export default function DiscoverPage() {
 
   /**
    * 拉榜单（走主进程 6h 缓存）。
-   * ★ 2026-09-25（用户报「发现页经常加载不出来」）：跨境/偶发超时会让整页空 → 渲染层补两道：
+   * 跨境/偶发超时会让整页空 → 渲染层补两道：
    *   ① 首次结果为空 → 1.2s 后自动重试一次；② 仍为空 → 错误提示里给「重试」按钮。
    */
   const load = (): void => {
@@ -177,7 +193,7 @@ export default function DiscoverPage() {
       .finally(() => { if (id === reqRef.current) setBLoading(false); });
   };
 
-  /** 筛选变化 → 从第 1 页重取（★ 逐级点击才走到这里：每级选定都会即时出结果） */
+  /** 筛选变化 → 从第 1 页重取（逐级点击才走到这里：每级选定都会即时出结果） */
   useEffect(() => {
     if (!media) {
       ++reqRef.current;
@@ -293,14 +309,14 @@ export default function DiscoverPage() {
   return (
     <>
       <div className="content">
-        {/* ★ 2026-10-18 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
+        {/* 插件受限 UI 槽位（`contributes.ui.slot`；无插件声明时零影响） */}
         <PluginSlot slot="discover" />
-        {/* ---- ★ 2026-10-16 首屏聚光卡：只在「推荐榜」首页视图出现（选了分类就不再抢画面）----
+        {/* ---- 首屏聚光卡：只在「推荐榜」首页视图出现（选了分类就不再抢画面）----
              数据 = 第一个榜单的前 12 部（候选池，供 hero 挑「有横版剧照」的片子轮播）；
              四皮肤共用同一份结构，材质/配色由各自 CSS 决定。 ---- */}
         {media === null && sections && sections.length > 0 && (
           <DiscoverSpotlight
-            /* ★ 取 12 部当候选池：360 横版图链路对短名/带数字的片名召回率不高，
+            /* 取 12 部当候选池：360 横版图链路对短名/带数字的片名召回率不高，
                池子太小会出现「只有 1 部有图、hero 无法轮播」（实测 6 部时命中 1）。
                组件内部只会用**真拿到横版图**的那些来轮播（见 DiscoverSpotlight）。 */
             items={sections[0].items.slice(0, 12)}

@@ -1,6 +1,6 @@
 // src/engine/spider/JarSpider.ts
 // jar(dex) 蜘蛛的引擎适配器：把 Spider 接口调用转发到 JarSpiderBridge（JVM 子进程）。
-// 上游约定：site.api = "csp_Doll" → 类名 com.github.catvod.spider.Doll；
+// 上游约定：site.api = "csp_Xxx" → 类名 com.github.catvod.spider.Xxx；
 //           site.jar = "URL" 或 "URL;md5;xxx"（分号分隔，取第一段）。
 import { Spider, type SpiderInit } from './Spider';
 import { normalizeJarUrl, formatDuration, type JarSpiderBridge } from './JarSpiderBridge';
@@ -74,7 +74,7 @@ export class JarSpider extends Spider {
       return false;
     }
     try {
-      // ★ 2026-09-24：首次下载 + dex2jar 转换实测要 30~40s（用户点了「清理缓存」后尤其明显），
+      // 首次下载 + dex2jar 转换实测要 30~40s（用户点了「清理缓存」后尤其明显），
       //   而进源请求只有 20s / 搜索单源只有 10s 预算 —— 直接 await 会让请求超时被标成「加载失败」。
       //   这里最多等 PREPARE_WAIT_MS，超时即返回「正在准备运行时」的可读原因；
       //   转换本身在后台继续（ensureConverted 的 promise 是共享的），用户再点一次就是热的。
@@ -93,9 +93,9 @@ export class JarSpider extends Spider {
     } catch (e) {
       const msg = (e as Error).message || String(e);
       if (msg === '__PREPARING__') {
-        // ★ 2026-09-25：大 jar（10MB 级 dex）首次转换实测要**数分钟**（21 分钟前刚实测：摸鱼那只
-        //   11.3MB dex = 198 秒），文案不再只说「10~40 秒」，免得用户以为坏了。
-        // ★ 2026-09-27：带上**已等时长**（用户诉求「等待要有感知」）—— 首页每 20s 自动重试一次，
+        // 大 jar（10MB 级 dex）首次转换实测要**数分钟**（某源 11.3MB dex = 198 秒），
+        //   文案不再只说「10~40 秒」，免得用户以为坏了。
+        // 带上**已等时长**—— 首页每 20s 自动重试一次，
         //   文案里的时间会跟着走，用户能看出「在动、没死」；接管后台转换时额外说明。
         this.loadError = this.preparingMessage();
         this.host.logger.i(`jar-spider ${this.siteKey}: ${this.loadError}`);
@@ -103,7 +103,7 @@ export class JarSpider extends Spider {
       }
       // 把底层报错翻译成人话：配置路径问题 / 下载失败 / 转换失败 / 转换内存不足
       if (/后台转换仍在进行|仍在进行/.test(msg)) {
-        // ★ 2026-09-27：后台转换还在跑（不是失败）—— 不让用户看到「加载失败」，而是「还要等」，
+        // 后台转换还在跑（不是失败）—— 不让用户看到「加载失败」，而是「还要等」，
         //   HomePage 的自动重试正则会继续等它（见该处的 /首次使用该源|正在后台/）。
         this.loadError = this.preparingMessage();
       } else {
@@ -115,7 +115,7 @@ export class JarSpider extends Spider {
   }
 
   /**
-   * 「正在准备」类文案 —— 带上进度，让等待有感知（★ 2026-09-27）。
+   * 「正在准备」类文案 —— 带上进度，让等待有感知。
    *
    * 为什么带时长：大 jar 的 dex2jar 实测要 3~4 分钟，首页每 20s 自动重试一次（HomePage 的
    * `/首次使用该源|正在后台/` 分支），所以这段话术会被反复上屏 —— 每次重试都把「已等 X」刷新一遍，
@@ -145,7 +145,7 @@ export class JarSpider extends Spider {
       throw new SourceProblemError('SPIDER_ERROR', this.loadError, { sourceKey: this.siteKey });
     }
     let paths = this.bridge.resolvePaths(this.jarUrls());
-    // ★ 解析不到本地 jar 路径 → **就地重建一次**（重新下载+转换）再试：
+    // 解析不到本地 jar 路径 → **就地重建一次**（重新下载+转换）再试：
     //   `ready` 是进程内一次性标记，而转换产物随时可能被「清理缓存」按钮/杀软/外部清理删掉；
     //   不重置 ready 就会**永远**报「jar 本地路径不可用（缓存可能已被清理），请重试」——
     //   用户"重试"也没用，只能重启应用或重新导入配置（0.84.0 实机日志里出现过这一串）。
@@ -164,7 +164,7 @@ export class JarSpider extends Spider {
   }
 
   /**
-   * ★ 2026-10-09：本源蜘蛛 JVM 宿主代理端口（桥按加载器参数确定性分配，调用过一次后登记）。
+   * 本源蜘蛛 JVM 宿主代理端口（桥按加载器参数确定性分配，调用过一次后登记）。
    * 供宿主把 jar 产出的 `127.0.0.1:9978/proxy?…` 播放地址改写成 `/proxy/<port>` 进 JVM 自解链。
    */
   proxyPort(): number | null {
@@ -182,7 +182,7 @@ export class JarSpider extends Spider {
   }
 
   /**
-   * ★ 运行时就绪判定（同步、零网络、零转换）：全源搜索用它做「只搜现在就绪的源」闸门。
+   * 运行时就绪判定（同步、零网络、零转换）：全源搜索用它做「只搜现在就绪的源」闸门。
    * 未就绪时**顺手在后台启动**下载+转换（caller 不等），下次搜索即包含该源。
    * @returns 'ready' 就绪；'preparing' 正在后台准备（可等待）；'unavailable' 连 jar 地址都没有
    */
@@ -212,7 +212,7 @@ export class JarSpider extends Spider {
     return anyPreparing ? 'preparing' : 'ready';
   }
 
-  /** ★ 等待本轮正在进行的转换（供全源搜索「预备阶段」调用；返回 null 表示无需等待） */
+  /** 等待本次正在进行的转换（供全源搜索「预备阶段」调用；返回 null 表示无需等待） */
   pendingRuntime(): Promise<unknown> | null {
     const urls = this.jarUrls();
     const waiters = urls.map((u) => this.bridge.pendingConvert(u)).filter((p): p is Promise<string> => !!p);
@@ -234,7 +234,7 @@ export class JarSpider extends Spider {
     if (urls.length === 0) return 0;
     const paths = urls.map((u) => this.bridge.peekConverted(u)).filter((p) => !!p);
     if (paths.length !== urls.length) return 0; // 有 jar 还没转换过 → 跳过（不下载）
-    // ★ 深度预热：把 ext 一起传进去 → 子进程侧**加载蜘蛛类 + 预建实例（含 init(ext)）**，首次进源免付这两笔
+    // 深度预热：把 ext 一起传进去 → 子进程侧**加载蜘蛛类 + 预建实例（含 init(ext)）**，首次进源免付这两笔
     return this.bridge.prewarmJar(paths, this.clsName, count, this.enrichedExt());
   }
 
@@ -253,7 +253,7 @@ export class JarSpider extends Spider {
     return this.call('homeVideoContent');
   }
   categoryContent(tid: string, pg: string, _filter: boolean, extend: Record<string, string>): Promise<string> {
-    // ★ 对 key/value 做百分号编码再拼 `&`：筛选值里可能含 `&`/`=`/空格/中文，
+    // 对 key/value 做百分号编码再拼 `&`：筛选值里可能含 `&`/`=`/空格/中文，
     //   而 SpiderRunner 侧用 split("&") + indexOf('=') 还原 —— 不编码会在解析时被错切。
     const kv = Object.entries(extend || {})
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
@@ -265,7 +265,7 @@ export class JarSpider extends Spider {
   }
   /**
    * 搜索：timeoutMs 由调用方（聚合搜索/单源搜索）传入的更紧预算；缺省用源声明 timeout。
-   * ★ 全源搜索里死源会占满整个超时，收紧这个值直接决定「搜索结果多久出得来」。
+   * 全源搜索里死源会占满整个超时，收紧这个值直接决定「搜索结果多久出得来」。
    */
   searchContent(key: string, _quick: boolean, timeoutMs?: number): Promise<string> {
     return this.call('searchContent', [key], timeoutMs);

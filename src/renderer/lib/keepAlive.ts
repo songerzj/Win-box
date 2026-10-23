@@ -1,5 +1,5 @@
 // src/renderer/lib/keepAlive.ts
-// ★ 2026-10-15（用户要求「伪墓碑」）：主界面内跳转时**不真正关闭上一个页面** —— 保持挂载、仅隐藏，
+// 主界面内跳转时**不真正关闭上一个页面** —— 保持挂载、仅隐藏，
 //   新页面只替换可见内容，返回时零重载（不做「真墓碑」那套卸载后序列化/恢复状态）。
 //
 // 本文件放：① 缓存键 / 分组 / 上限 / LRU 淘汰（纯函数，可单测）；② 页面可见性上下文（供页面按「是否可见」少做重活）。
@@ -17,11 +17,19 @@ export function usePageActive(): boolean {
   return useContext(PageActiveContext);
 }
 
-/** 单页内跳转时保持挂载的页面（返回零重载） */
-const CACHEABLE = new Set(['/', '/home', '/search', '/history', '/favorites']);
+/**
+ * 单页内跳转时保持挂载的页面（返回零重载）。
+ * （内存专项续，伪墓碑收紧）：**5 页 → 2 页**。
+ *   只保留「返回时最值钱」的两页：`/home`（点播：分类/筛选/滚动/瀑布态）与 `/search`（全源结果 + 滚动）。
+ *   砍掉的三页里 **`/`（发现）本就是海报墙最重的一页**（实测其海报使 GPU +124MB）——
+ *   不缓存 ⇒ 离开即卸载、位图随之释放；`/history`、`/favorites` 重载成本低（列表小、按需拉）。
+ *   与之配套：隐藏页/离屏图片由 `lib/freezeImages` 的**离屏释放**兜底（宽限 1.5s 后释放位图）。
+ */
+const CACHEABLE = new Set(['/home', '/search']);
 
-/** 详情页按「一部片一个实例」缓存（详情A → 详情B → 返回 也能零重载）；同一组最多保留这么多 */
-export const DETAIL_CACHE_MAX = 4;
+/** 详情页按「一部片一个实例」缓存（详情A → 详情B → 返回 也能零重载）；同一组最多保留这么多
+ * **4 → 2**（详情页含 hero 横图 + 海报 + 豆瓣推荐封面，是第二重的页；2 个够「A→B→返回A」） */
+export const DETAIL_CACHE_MAX = 2;
 
 function isDetailPath(pathname: string): boolean {
   return /^\/detail(\/|$)/.test(pathname);

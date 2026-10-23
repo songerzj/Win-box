@@ -1,5 +1,5 @@
 // src/renderer/lib/favorites.ts
-// ★ 2026-10-17（用户要求「详情页加收藏按钮 + 收藏列表增删改查」）：收藏存储。
+// 收藏存储。
 //
 // 口径与「观看历史」保持一致：**同订阅同源同片一条**（键复用 `historyGroupKey`，换集不新增）。
 // 但**刻意不并入 lib/uiMemory.ts**，而是用独立 localStorage 键（`winbox-favorites`）：
@@ -174,7 +174,7 @@ function emit(): void {
 
 /**
  * 记一次动作标记（`+ts` 删除 / `-ts` 撤销）。
- * ★ 必须保证 |ts| **严格大于**该键已有标记、且（删除时）大于被删记录的 `updatedAt` ——
+ * 必须保证 |ts| **严格大于**该键已有标记、且（删除时）大于被删记录的 `updatedAt` ——
  *   否则同毫秒内的「收藏 → 移除」会因 `ts === updatedAt` 判不出删除（实测踩过）。
  */
 function markAction(key: string, kind: 'delete' | 'restore', afterUpdatedAt = 0): void {

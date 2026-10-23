@@ -1,7 +1,7 @@
 // src/engine/util/fetchWithDisguise.ts
-// ★ 2026-09-29：接口/订阅/jar 的「请求伪装阶梯」+ 响应嗅探（统一一处，勿再各写一份）。
+// 接口/订阅/jar 的「请求伪装阶梯」+ 响应嗅探（统一一处，勿再各写一份）。
 //
-// 背景（用户报「很多接口要 okhttp 或者更多限制」）：
+// 背景：
 //   本站已实测两类限制：① 按 UA 分流（浏览器 UA 给落地页/广告页，okhttp UA 才给真内容，
 //   如 y456y.com、lubin.php 的 jar）；② DNS 污染（系统 DNS 解到劫持 IP，换 UA 也没用 → 需 DoH）。
 //   还有一类很常见但此前没做：**Referer 校验**与**先种 Cookie 再取内容**（部分镜像站）。
@@ -38,7 +38,7 @@ export interface BodySniff {
 
 /**
  * 像不像「十六进制 dump 伪装体」：连续 ≥4 行都是 `16 组 hex + " | "`。
- * ★ 2026-10-15：`yc.wya6.cn/wykj.php` 的订阅就是这个形态（整段是一个 jar 的 hex dump，
+ * `yc.wya6.cn/wykj.php` 的订阅就是这个形态（整段是一个 jar 的 hex dump，
  *   真配置藏在**末行 ASCII 列**的 `=XXX**` 标记之后）。这里只负责**认出来**并把导入失败的原因
  *   说清楚（否则只会笼统报「纯文本」）；真正的提取在 `engine/config/disguiseConfig.ts`。
  */
@@ -67,7 +67,7 @@ export function sniffBody(buf: Buffer, headLen = 80): BodySniff {
   if (t.startsWith('<?xml') || /^<[a-z!?]/i.test(t)) return { kind: 'xml', head, size };
   if (looksLikeHexDump(t)) return { kind: 'dump', head, size };
   // 疑似加密/编码：长且**只含**对应字符集（配置被整体加密时就是这样一整串）
-  // ★ 顺序很重要：hex 的字符集是 base64 的子集，必须先判 hex，否则 hex 会被误判成 base64。
+  // 顺序很重要：hex 的字符集是 base64 的子集，必须先判 hex，否则 hex 会被误判成 base64。
   const compact = text.trim();
   if (compact.length >= 64 && !/\s/.test(compact)) {
     if (/^[0-9a-fA-F]+$/.test(compact) && compact.length % 2 === 0) return { kind: 'hex', head, size };

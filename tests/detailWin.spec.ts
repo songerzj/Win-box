@@ -1,5 +1,4 @@
 // tests/detailWin.spec.ts
-// ★ 2026-10-08（用户要求「设置-外观加开关：控制视频详情页是否单独窗口展示」）：
 //   详情窗口纯逻辑回归 —— 路由拼装与 `dw=1` 窗口标记识别（主进程/渲染层/更新门禁共用同一约定）。
 import { describe, it, expect } from 'vitest';
 import { detailRoute, detailWindowRoute, isDetailWinHash } from '../src/shared/detailWin';

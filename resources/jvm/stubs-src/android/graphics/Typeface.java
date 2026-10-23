@@ -8,7 +8,7 @@ package android.graphics;
  * {@code SERIF} / {@code MONOSPACE}，以及 {@code create(String,int)}、
  * {@code createFromFile(String)}、{@code setTypeface}/{@code getTypeface}。
  *
- * <p>★ 静态常量**必须非 null**：蜘蛛构造 Typeface 链时若拿到 null，
+ * <p>静态常量**必须非 null**：蜘蛛构造 Typeface 链时若拿到 null，
  * 部分实现会拿它当参数再调 {@code Typeface.create(null,...)} 触发 NPE。
  * 这里给一个稳定的单例，且各常量互相区分（同引用会让 equals 判断串味）。
  */

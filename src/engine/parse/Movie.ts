@@ -73,7 +73,7 @@ export function vodToVideo(vod: Record<string, unknown>): Video {
     }
   }
   return {
-    // ★ 空 id → 片名兜底；封面拆上游 `@Referer=…` 尾巴（见 vod/itemNormalize.ts）
+    // 空 id → 片名兜底；封面拆上游 `@Referer=…` 尾巴（见 vod/itemNormalize.ts）
     id: normalizeVodId(vod['vod_id'], vod['vod_name']),
     tid: toInt(vod['type_id'], 0),
     name: s(vod['vod_name']),
@@ -134,7 +134,7 @@ export interface SortClass {
 }
 
 /**
- * ★ 2026-10-15（用户报「有的源应该有分类，但点播页没有分类」）：`class` 字段的**形态兜底**。
+ * `class` 字段的**形态兜底**。
  *   原实现只认「数组」一种形态，其它形态会被整段丢弃且**不报错** —— UI 上就是「这个源没有分类」。
  *   这里统一归一成「对象数组」（元素仍是原始键值对，id/name 的取值交给各调用方），覆盖：
  *     · 标准数组：`[{type_id,type_name}]`（CMS JSON / 蜘蛛 homeContent）
@@ -157,7 +157,7 @@ export function normalizeClassList(raw: unknown): Record<string, unknown>[] {
 
 /**
  * 单个筛选组 → FilterGroup。`rawKey` = 对象 map 的键（数组形态下用条目自带的 `key`）。
- * ★ 2026-10-15：`filters[type_id]` 在真源里是**数组** `[{key,name,value:[{n,v}]}]` 而不是 `{key:{…}}`，
+ * `filters[type_id]` 在真源里是**数组** `[{key,name,value:[{n,v}]}]` 而不是 `{key:{…}}`，
  *   两种情况都归一成同一形状（`tab` 只在少数源出现，缺失即空串）。
  */
 function toFilterGroup(rawKey: string, f: unknown): FilterGroup {
@@ -171,7 +171,7 @@ function toFilterGroup(rawKey: string, f: unknown): FilterGroup {
     key: s(o['key'] ?? o['k']).trim() || rawKey,
     name: s(o['name'] ?? o['key'] ?? o['k'] ?? rawKey),
     // 选项字段多键兜底：主流是 {n,v}；部分源给 {name,value} / {tab,n,v}
-    // ★ 注意「显式空值」语义：`v: ''` 是源自己的「全部」档，**必须保留**（不能因为空串就回退成 n）
+    // 注意「显式空值」语义：`v: ''` 是源自己的「全部」档，**必须保留**（不能因为空串就回退成 n）
     value: valAr
       .map((it) => {
         const n = s(it['n'] ?? it['name'] ?? it['title'] ?? it['tab']);
@@ -183,7 +183,7 @@ function toFilterGroup(rawKey: string, f: unknown): FilterGroup {
 }
 
 /**
- * 筛选组归一成 FilterGroup[]；非法/空直接 []。★★ 2026-10-15（用户报「你还是没拿到源的分类」）★★：
+ * 筛选组归一成 FilterGroup[]；非法/空直接 []。
  * 真源（drpy / csp_ jar 的 `Result.filters()`）给的是**数组**：`filters[type_id] = [{key,name,value:[{n,v}]}]`；
  * 而部分源/历史 mock 用**对象 map**：`{key:{name,value:[…]}}`。此前只认后者 ⇒ 遇到数组直接 return []，
  * 真源的筛选组（类型/地区/年份/排序/资费/推荐…）**整段丢掉** ⇒ 点播页四维被判不可用而隐藏。
@@ -205,7 +205,7 @@ export function parseFilters(filtersRaw: unknown): FilterGroup[] {
   }
 }
 /**
- * ★★ 2026-10-15（用户报「你还是没拿到源的分类」）★★：**filters 的形态兜底** —— 本仓库此前的真 Bug。
+ * **filters 的形态兜底** —— 本仓库此前的真 Bug。
  *
  * TVBox / FongMi 蜘蛛协议里 `homeContent` 的筛选组有**两种写法**：
  *   · 内嵌：`class:[{type_id, type_name, filters:{ area:{name,value:[…]} }}]`（部分源 / 本仓库早期 mock 用）；
@@ -236,7 +236,7 @@ export function classFiltersFor(
     if (g.length > 0) return g;
   }
   // ③ 顶层本身就是「通用的组 map」（`{area:{name,value}}`，对该源所有分类生效）。
-  //    ★ 判定从严：**每个值都必须是组对象**（不是数组）才走这条 —— 否则会把「按分类键控」的那份
+  //    判定从严：**每个值都必须是组对象**（不是数组）才走这条 —— 否则会把「按分类键控」的那份
   //      （值 = 组数组）误当成通用组，把别的分类的筛选组混进来。
   const isFlatGroupMap = Object.values(map).every((v) => !!v && typeof v === 'object' && !Array.isArray(v));
   return isFlatGroupMap ? parseFilters(map) : [];

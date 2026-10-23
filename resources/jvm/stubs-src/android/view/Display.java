@@ -10,7 +10,7 @@ package android.view;
  * <p>桌面端给一个"横屏 1920x1080、密度 1.0"的稳定快照：不返回 null、
  * 不抛异常，让调用方的尺寸计算有确定的输入。
  *
- * <p>★ 这里的常量用**字面量**而非引用 android.view.Surface /
+ * <p>这里的常量用**字面量**而非引用 android.view.Surface /
  * android.content.res.Configuration：那两个类在本 stub 体系里没有，
  * 引用它们会把编译期的可选依赖变成硬依赖。
  */

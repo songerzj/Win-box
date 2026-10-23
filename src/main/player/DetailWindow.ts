@@ -4,7 +4,7 @@
 //   打开时加载 `#/detail/:key/:id?…&dw=1`；已开则**复用**（聚焦 + WIN_NAVIGATE 通知其换路由，
 //   不在点第二个片子时堆一串窗口）。
 //
-// ★ 为什么复用「整个应用外壳」而不做极简壳：详情页里的 演员/相关推荐 会跳到 `/search`（全源搜索）
+// 为什么复用「整个应用外壳」而不做极简壳：详情页里的 演员/相关推荐 会跳到 `/search`（全源搜索）
 //   与 `/home`，极简壳要逐个补路由且失去返回路径；直接复用主外壳（同 hash 路由）所有能力天然可用。
 //   渲染层用 hash 里的 `dw=1` 区分本窗口（只写历史/进度、返回键改为关窗、跳过更新门禁）。
 import { app, BrowserWindow, nativeTheme, shell } from 'electron';
@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { applyWindowCorner } from '../util/windowCorner';
 import { applyUiScale, registerUiWindow, scaledWindowFor } from '../ui/uiScale';
 import { IPC } from '../../shared/ipc-channels';
-// ★ 路由约定与渲染层共用（纯函数在 shared/detailWin.ts：/detail/… + dw=1 标记）
+// 路由约定与渲染层共用（纯函数在 shared/detailWin.ts：/detail/… + dw=1 标记）
 import { detailWindowRoute } from '../../shared/detailWin';
 
 let detailWin: BrowserWindow | null = null;
@@ -58,7 +58,7 @@ export function openDetailWindow(payload: { key?: string; id?: string; query?: s
     return { ok: true, reused: true };
   }
   ready = false;
-  // ★ 2026-10-16（界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
+  // （界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
   const size = scaledWindowFor({ width: 1100, height: 720, minWidth: 900, minHeight: 560 });
   detailWin = new BrowserWindow({
     width: size.width,
@@ -79,7 +79,7 @@ export function openDetailWindow(payload: { key?: string; id?: string; query?: s
     },
   });
   detailWin.on('ready-to-show', () => { detailWin?.show(); setTimeout(pushPendingRoute, 80).unref(); });
-  // ★ 2026-10-16：登记详情窗口 + 套用界面缩放
+  // 登记详情窗口 + 套用界面缩放
   registerUiWindow(detailWin);
   applyUiScale();
   // 最大化/还原：圆角偏好 + 强制重绘（与主/播放器窗口同款修复）

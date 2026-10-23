@@ -6,6 +6,8 @@ import { app, BrowserWindow, screen, shell } from 'electron';
 import { join } from 'node:path';
 import { applyWindowCorner } from '../util/windowCorner';
 import { applyUiScale, registerUiWindow, scaledWindowFor, uiScaleState } from '../ui/uiScale';
+// 播放器窗口的位置/尺寸/最大化态落盘并恢复
+import { watchWindowState, windowStateWriter } from '../ui/windowState';
 import { applyEpisodeSwitch, type PlayerEpisodeSwitch } from '../../shared/playerEpisode';
 import { isMac } from '../../shared/platform';
 
@@ -16,7 +18,7 @@ export interface PlayerInit {
   episodes: { name: string; url: string }[];
   epIndex: number;
   title: string; // 资源名（不含集）
-  subtitleTitle?: string; // ★ 供字幕检索的剧名副名（详情页主标题，独立于集名）
+  subtitleTitle?: string; // 供字幕检索的剧名副名（详情页主标题，独立于集名）
   lastUrl: string; // 当前集解析出的真实地址
   lastName: string; // 当前集展示名（资源名 - 集名）
   meta?: {
@@ -28,13 +30,13 @@ export interface PlayerInit {
     id?: string;
     profileId?: string;
   };
-  /** ★ 历史续播：上次播放进度（秒），交给播放器自动 seek（详情页正常播放不传） */
+  /** 历史续播：上次播放进度（秒），交给播放器自动 seek（详情页正常播放不传） */
   startTime?: number;
 }
 
 let playerWin: BrowserWindow | null = null;
 /**
- * ★ 2026-09-28：`player:init` 的**单调序号** + 待发送的那一份。
+ * `player:init` 的**单调序号** + 待发送的那一份。
  *
  * 解决两类竞态：
  *  ① 窗口还没加载完就先到的 init —— 直接 send 会丢，改为存下最新一份、`did-finish-load` 再发；
@@ -50,14 +52,14 @@ function stampInit(init: PlayerInit): PlayerInit & { initSeq: number } {
   return pendingInit;
 }
 
-/** ★ 播放器窗口关闭回调（index.ts 注册：触发夸克落盘文件清理等；每个回调只执行一次随窗口销毁） */
+/** 播放器窗口关闭回调（index.ts 注册：触发夸克落盘文件清理等；每个回调只执行一次随窗口销毁） */
 const closeHooks: Array<() => void> = [];
 export function onPlayerWindowClosed(cb: () => void): void {
   closeHooks.push(cb);
 }
 
 /**
- * ★★ 2026-10-08（用户报「b蓝光 / 自建 4K-2 有声音无图像」根因修复）★★
+ * 「有声音无图像」类问题的根因修复
  *   本窗口是**透明窗**（mpv 画面从播放区透明处透出），任何把它改回不透明底色的路径
  *   都会把 mpv 画面整块盖住（实测：`setBackgroundColor('#0a0c10')` 后透明失效、屏幕全黑）。
  *   已知来源：`THEME_SET` IPC 处理器会按暗/亮给**发起窗口**设置不透明底色，而播放器窗口
@@ -70,7 +72,7 @@ export function isPlayerWindow(w: BrowserWindow | null | undefined): boolean {
 // ---- 小窗口模式状态 ----
 // 小窗尺寸：宽 384 × 高 216（16:9，无标题栏 —— 渲染层 mini 态改用一条 18px 细拖拽条），
 // 远小于播放器默认 1040×640；用户还可继续拖到最小 240×135。
-// ★ 2026-10-16（界面缩放）：上面这些是 **100% 基准值**，实际用时按 `uiScaleState().scale` 等比放大
+// （界面缩放）：上面这些是 **100% 基准值**，实际用时按 `uiScaleState().scale` 等比放大
 //   （窗口内容已被 setZoomFactor 放大，窗口尺寸必须同步放大，否则小窗里控制条会被裁掉）。
 const MINI_W = 384;
 const MINI_H = 216;
@@ -280,7 +282,7 @@ export function playerSetMini(isMini: boolean): void {
     const b = w.getBounds();
     const disp = screen.getDisplayMatching(b);
     const { x: ax, y: ay, width: aw, height: ah } = disp.workArea;
-    // ★ 界面缩放：小窗与其最小尺寸都按当前倍率放大
+    // 界面缩放：小窗与其最小尺寸都按当前倍率放大
     const uiScale = uiScaleState().scale;
     const mw = Math.round(MINI_W * uiScale);
     const mh = Math.round(MINI_H * uiScale);
@@ -288,7 +290,7 @@ export function playerSetMini(isMini: boolean): void {
     const mb = miniBounds
       ? { x: Math.max(ax, Math.min(miniBounds.x, ax + aw - mw)), y: Math.max(ay, Math.min(miniBounds.y, ay + ah - mh)) }
       : { x: Math.round(ax + (aw - mw) / 2), y: Math.round(Math.max(ay, ay + (ah - mh) / 2)) };
-    mini = true; // ★ 先置位再改边界：move/resize 追踪器在 mini 态下只记 miniBounds，避免覆盖 normalBounds
+    mini = true; // 先置位再改边界：move/resize 追踪器在 mini 态下只记 miniBounds，避免覆盖 normalBounds
     w.setMinimumSize(Math.round(MINI_MIN_W * uiScale), Math.round(MINI_MIN_H * uiScale));
     w.setFullScreenable(false);
     w.setBounds({ ...mb, width: mw, height: mh });
@@ -296,7 +298,7 @@ export function playerSetMini(isMini: boolean): void {
   } else {
     const nb = normalBounds;
     const restore = scaledWindowFor(PLAYER_NORMAL);
-    mini = false; // ★ 先置位：恢复边界为正常尺寸，追踪器此时只会记录 normalBounds
+    mini = false; // 先置位：恢复边界为正常尺寸，追踪器此时只会记录 normalBounds
     w.setMinimumSize(restore.minWidth, restore.minHeight);
     w.setFullScreenable(true);
     if (nb) w.setBounds(nb);
@@ -312,13 +314,21 @@ export function openPlayerWindow(init: PlayerInit): void {
     playerWin.webContents.send('player:init', stampInit(init));
     return;
   }
-  // ★ 先盖章缓存：窗口加载完成前可能又来了新的 init，did-finish-load 时只发最新那份
+  // 先盖章缓存：窗口加载完成前可能又来了新的 init，did-finish-load 时只发最新那份
   const payload = stampInit(init);
-  // ★ 2026-10-16（界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
+  // （界面缩放）：窗口尺寸随屏幕分辨率放大（内容由 setZoomFactor 等比放大）
   const playerSize = scaledWindowFor(PLAYER_NORMAL);
+  /**
+   * 播放器窗口也有记忆（不光是主窗口）：
+   *   按上次的位置/尺寸开窗（已按当前显示器工作区与最小尺寸夹好，见 ui/windowState）；
+   *   没有记忆 / 脏数据 → 用按屏幕推出的大小（首启行为不变）。
+   */
+  const savedWin = windowStateWriter('player').load({ width: playerSize.minWidth, height: playerSize.minHeight });
   playerWin = new BrowserWindow({
-    width: playerSize.width,
-    height: playerSize.height,
+    width: savedWin?.width ?? playerSize.width,
+    height: savedWin?.height ?? playerSize.height,
+    // 位置也记（用户把播放器摆到哪，下次就还开在哪）；没记过则由系统决定
+    ...(savedWin?.x !== undefined && savedWin?.y !== undefined ? { x: savedWin.x, y: savedWin.y } : {}),
     minWidth: playerSize.minWidth,
     minHeight: playerSize.minHeight,
     title: init.title || 'Win-Box 播放',
@@ -326,7 +336,7 @@ export function openPlayerWindow(init: PlayerInit): void {
     autoHideMenuBar: true,
     show: false,
     /**
-     * ★★ 2026-10-08（MPV 内核硬前提，勿改回不透明）★★
+     * MPV 内核硬前提，勿改回不透明
      *
      * mpv 以 `--wid=<本窗口 HWND>` 把画面嵌成**子窗口**，而 Chromium 的渲染面在它之上 ——
      * 只有「窗口 transparent + 播放区页面透明」时，mpv 画面才能从透明处透出；
@@ -344,10 +354,10 @@ export function openPlayerWindow(init: PlayerInit): void {
     },
   });
   playerWin.on('ready-to-show', () => playerWin?.show());
-  // ★ 2026-10-16：登记播放器窗口 + 套用界面缩放（放在 ready-to-show 旁，webContents 已可用）
+  // 登记播放器窗口 + 套用界面缩放（放在 ready-to-show 旁，webContents 已可用）
   registerUiWindow(playerWin);
   applyUiScale();
-  // ★ 最大化/还原：按 Windows 圆角偏好调整避免右上角黑角；并强制重绘防止视口未铺满的"贴左+右侧补背景"
+  // 最大化/还原：按 Windows 圆角偏好调整避免右上角黑角；并强制重绘防止视口未铺满的"贴左+右侧补背景"
   playerWin.on('maximize', () => {
     if (playerWin) { applyWindowCorner(playerWin, false); playerWin.webContents.invalidate(); }
   });
@@ -375,7 +385,7 @@ export function openPlayerWindow(init: PlayerInit): void {
       playerWin.webContents.send('player:fullscreen', false);
     }
   });
-  // ★ 边界追踪：正常态记 normalBounds、小窗态记 miniBounds（进/出小窗时由 playerSetMini 先置位再改界，避免误写）
+  // 边界追踪：正常态记 normalBounds、小窗态记 miniBounds（进/出小窗时由 playerSetMini 先置位再改界，避免误写）
   const trackBounds = () => {
     const w = playerWin;
     if (!w || w.isDestroyed()) return;
@@ -384,6 +394,21 @@ export function openPlayerWindow(init: PlayerInit): void {
   };
   playerWin.on('move', trackBounds);
   playerWin.on('resize', trackBounds);
+  /**
+   * （窗口大小记忆）：把「用户真正调过的」正常态落盘（防抖 800ms，关闭时 flush）。
+   *   `shouldSave` 闸门 = **非小窗、非全屏**（小窗 384×216 与全屏的整屏框都不是用户想记的那个尺寸）。
+   *   防抖在这里也是护栏：进出全屏/小窗时 `mini`/`fullscreenActive` 会先置位，
+   *   800ms 后的落盘正好读到新状态 ⇒ 不会把全屏框误写进记忆。
+   */
+  watchWindowState('player', playerWin, () => !mini && !playerIsFullscreen());
+  // 上次退出时播放器是最大化 → 立刻最大化（放在上面的监听之后、加载内容之前，同主窗口口径）
+  if (savedWin?.maximized) {
+    try {
+      playerWin.maximize();
+    } catch {
+      /* 个别环境最大化失败：保持还原尺寸即可 */
+    }
+  }
   playerWin.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -392,7 +417,7 @@ export function openPlayerWindow(init: PlayerInit): void {
     fullscreenActive = false;
     fullscreenBounds = null;
     playerWin = null;
-    // ★ 关闭播放窗口 → 通知清理本次夸克落盘文件（观看进度保留在本地历史）
+    // 关闭播放窗口 → 通知清理本次夸克落盘文件（观看进度保留在本地历史）
     for (const h of closeHooks) {
       try { h(); } catch { /* ignore */ }
     }
@@ -423,7 +448,7 @@ export function playerSwitchEpisode(request: number | PlayerEpisodeSwitch): bool
 }
 
 /**
- * ★ 2026-09-30：渲染层订阅就绪 → 重发缓存的最新 init。
+ * 渲染层订阅就绪 → 重发缓存的最新 init。
  *
  * 真根因：新窗口的 `did-finish-load` 可能**早于** React 挂载后 `ipcRenderer.on('player:init')` 的订阅，
  *   那一发 init 直接丢掉 → 播放器窗口永远停在「等待播放…」（生产产物必现，dev 因页面加载慢反而侥幸不中）。

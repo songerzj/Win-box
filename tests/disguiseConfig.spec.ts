@@ -1,4 +1,4 @@
-// tests/disguiseConfig.spec.ts — 订阅「伪装体」提取（2026-10-15，用户报 `https://yc.wya6.cn/wykj.php` 无法识别）。
+// tests/disguiseConfig.spec.ts — 订阅「伪装体」提取（`https://yc.wya6.cn/wykj.php` 无法识别）。
 // 形态（对真实站点实测）：真体 = 一个 jar 的十六进制 dump（每行 `16 字节 hex | ASCII`），
 //   真配置以 base64 形式挂在**末行 ASCII 列**的分隔标记 `=WUYIwuyi**` 之后。
 import { describe, it, expect } from 'vitest';
@@ -26,7 +26,7 @@ const CONFIG = {
 const CONFIG_TEXT = JSON.stringify(CONFIG);
 
 describe('disguiseConfig — 伪装体提取', () => {
-  it('★ 站点真实形态：dump 若干行 + 末行 `=WUYIwuyi**` 之后的 base64 → 解出完整配置', () => {
+  it('站点真实形态：dump 若干行 + 末行 `=WUYIwuyi**` 之后的 base64 → 解出完整配置', () => {
     const payload = wrap(Buffer.from(CONFIG_TEXT, 'utf-8').toString('base64'));
     const head = [
       dumpLine([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x08, 0x08, 0x00, 0x88, 0xb1, 0x32, 0x59, 0x63, 0x47], 'PK          2YcG'),

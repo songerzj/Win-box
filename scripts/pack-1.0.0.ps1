@@ -1,9 +1,9 @@
-param([string]$Root = 'E:\WorkBuddy\tvbox2\tvbox-win')
+param([string]$Root = (Split-Path -Parent $PSScriptRoot))
 # pack-1.0.0.ps1 -- Win-Box 1.0.0 / release1.0.0 one-shot packaging helper (MAJOR bump: 0.100.0 -> 1.0.0)
 #   pre-flight -> quality gate -> build-main -> vite build -> electron-builder -> incremental -> copy to Desktop -> self-check
 #
 # Usage:
-#   powershell -ExecutionPolicy Bypass -File "E:\WorkBuddy\tvbox2\tvbox-win\scripts\pack-1.0.0.ps1"
+#   powershell -ExecutionPolicy Bypass -File "<repo>\scripts\pack-1.0.0.ps1"
 #
 # Scope (project rules):
 #   * nsis Setup only -- portable is on-demand and was NOT requested, so it is not built
@@ -87,10 +87,9 @@ node scripts\make-incremental.mjs --old $oldDir --new $newDir --out $incrName
 if ($LASTEXITCODE -ne 0) { Fail "make-incremental failed (exit $LASTEXITCODE)" }
 
 Step 8 'copy artifacts to Desktop (docs 2.2 rule)'
-$desk = 'C:\Users\WXJ2\Desktop'
+$desk = Join-Path $env:USERPROFILE 'Desktop'
 if (-not (Test-Path $desk)) {
-  $desk = Join-Path $env:USERPROFILE 'Desktop'
-  Write-Host "  C:\Users\WXJ2\Desktop not found, using $desk" -ForegroundColor Yellow
+  Write-Host "  Desktop not found, using $desk" -ForegroundColor Yellow
 }
 foreach ($f in @($setup, $incrExe, $incrZip)) {
   if (Test-Path $f) {

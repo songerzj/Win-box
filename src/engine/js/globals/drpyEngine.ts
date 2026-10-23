@@ -1,11 +1,11 @@
 // src/engine/js/globals/drpyEngine.ts
-// ★ 2026-09-30（用户自用本地包实测取证）：drpy2 引擎（脚本头 `lang:'ds'`）在安卓宿主里会把一批
+// drpy2 引擎（脚本头 `lang:'ds'`）在安卓宿主里会把一批
 //   **引擎级全局**注入脚本上下文，包内脚本直接使用它们、从不 import：
 //     · safeJSONParse —— 15/16 个 open/*.js 用（`JSON.parse` 的"安全"版）
-//     · batchFetch     —— 97_search.js / wpzy_search.js（并发抓一批 URL，回内容数组）
-//     · md5            —— baidu_dj.js / duanju_juhe.js（签名）
+//     · batchFetch     —— 部分源的 search 脚本（并发抓一批 URL，回内容数组）
+//     · md5            —— 部分源脚本（签名）
 //   桌面沙箱此前没有这些名字 → 源在 search 阶段直接抛 `ReferenceError: xxx is not defined`，
-//   永远出不了结果（日志实证：Cat_97 / Cat_wpzy）。这里按 drpy2 语义补齐；实现取**宽松版**
+//   永远出不了结果（实测确认）。这里按 drpy2 语义补齐；实现取**宽松版**
 //   （失败不抛、返回空串/兜底值），与"脚本细节问题不该炸整源"的既有取向一致。
 //   （包内脚本的 `log` 一律自带本地定义，故不补。）
 import { createHash } from 'node:crypto';

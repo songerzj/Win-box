@@ -2,7 +2,7 @@ package android.net;
 
 /**
  * NetworkCapabilities stub —— 「能力位」全部按「有网」应答。
- * wex 助手会问 `hasCapability(12)`（= NET_CAPABILITY_INTERNET），答 false 会让它跳过整段逻辑。
+ * 某第三方源助手会问 `hasCapability(12)`（= NET_CAPABILITY_INTERNET），答 false 会让它跳过整段逻辑。
  */
 public class NetworkCapabilities {
 

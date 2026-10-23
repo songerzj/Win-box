@@ -1,5 +1,5 @@
 // tests/appProxyStub.spec.ts — 补全蜘蛛 jar 自带的极简 `com.github.catvod.spider.Proxy`（补 getProxyUrlDo）。
-// 实测来源：用户日志 `app-2026-10-14.log` 的
+// 实测来源：`运行日志` 的
 //   `NoSuchMethodError: 'java.lang.String com.github.catvod.spider.Proxy.getProxyUrlDo(java.lang.String)'`
 //   （jar 自带极简 Proxy 只有 proxy(Map)→Init.proxyInvoke；安卓端由 App dex 同名完整类兜住）。
 import { describe, it, expect } from 'vitest';
@@ -50,7 +50,7 @@ describe('appProxyStub — 补全极简 spider/Proxy', () => {
     expect(patchSpiderProxyInJar(jar).patched).toBe(false);
   });
 
-  it('真实异形变体（foni-spider.jar 的 21KB Proxy）→ 不动（绝不误伤其它壳）', () => {
+  it('真实异形变体（某壳源-spider.jar 的 21KB Proxy）→ 不动（绝不误伤其它壳）', () => {
     const p = 'resources/jvm/shell-shim/real/foni-spider.jar';
     if (!existsSync(p)) return; // 产物缺失则跳过（CI 里该 jar 随包存在）
     const r = patchSpiderProxyInJar(readFileSync(p));
