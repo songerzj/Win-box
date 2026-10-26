@@ -132,6 +132,17 @@ pnpm run dist             # 打包安装版
 
 运行时依赖（**不入库**，按需自行准备）：JDK / JRE、`stubs.jar` 桥、嵌入式 CPython、shell-shim、unidbg 运行时等。
 
+**媒体兼容组件（ffmpeg / ffprobe）随包分发**：正式 Windows 安装包**已内置**；但二进制被 `.gitignore` 排除，
+源码仓库里没有 ⇒ **从源码自行打包前必须手动放好**，否则打出来的包不带它们（运行时会退回系统 PATH 查找）。
+做法：下载 avbuild 的 `ffmpeg-8.0-windows-desktop-vs2022-gpl-lite.7z`
+（<https://sourceforge.net/projects/avbuild/files/windows-desktop/>），把 `bin/` 下的 `*.exe` 与 `*.dll`
+复制到 `resources/ffmpeg/`（**`.pdb` 不要拷**，那是调试符号，约 90MB）。
+
+- 该构建是 **GPL v2+**（configure 带 `--enable-gpl --enable-libx264 --enable-libx265`），
+  许可证全文与 configure 行已随仓入库（`COPYING.GPLv2.1` / `config.txt`），分发时保持同目录即可。
+- 它是**静态 CRT**：导入表只依赖 Windows 自带的 `ucrtbase.dll` / `msvcp_win.dll`，**不需要 VC++ Redist**。
+  `README.txt` 里提到的 `vcruntime140*.dll` 属于 default 包，本 lite 包没有、也不需要。
+
 MPV 内核另需 `resources/mpv/cacert.pem`（Mozilla CA 根证书，**PEM** 格式）：自编译的 FFmpeg 走 OpenSSL
 且没有可用 CA 路径，缺了它 **https 源会全部播不了**（启动日志里 mpv 会 warn「未找到随包 CA 包」）。
 官方 mpv 构建若走系统证书库，则不需要这个文件。

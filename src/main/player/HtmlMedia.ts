@@ -50,8 +50,11 @@ export interface ResolveFfmpegOptions {
  * 顺序（与全项目 `probeTool` 口径一致）：用户覆盖 → 随包内置 `resources/ffmpeg/<exe>` → 本机探测
  * （darwin：Homebrew `/opt/homebrew/bin` → `/usr/local/bin` → `/usr/bin` → PATH）。
  *
- * 仓库里 `resources/ffmpeg/` **只有一个 README.txt**（二进制未入库）→ macOS 上必然落到本机探测，
- * 缺失时给 `brew install ffmpeg` 人话提示；**win32 缺失时保持原有文案「缺少随包媒体兼容组件」逐字不变**。
+ * 二进制**不入库**（`.gitignore` 排除 `resources/ffmpeg/*.exe|*.dll`）：正式 Windows 包由构建机预先放入
+ * （avbuild 8.0 gpl-lite，约 60MB；见 `docs/jvm-notes.md` 的「ffmpeg 随包裁定」）⇒ **打包态第二档有效**。
+ * 源码 clone 后忘了放，则退回本机探测（启动日志 `依赖: ffmpeg=none` 即此情形，功能退化但不崩）。
+ * macOS 包不含 exe → 必然落到本机探测，缺失时给 `brew install ffmpeg` 人话提示；
+ * **win32 缺失时保持原有文案「缺少随包媒体兼容组件」逐字不变**。
  */
 export function resolveFfmpeg(o: ResolveFfmpegOptions): FfmpegBins {
   const p = o.platform ?? platformName();

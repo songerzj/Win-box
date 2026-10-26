@@ -771,3 +771,34 @@ const proc = spawn(st.path, args, {
 
 注：本仓**不随包分发 mpv**（用户自备），所以影响面 = 「装了自编译/OpenSSL 版内核的用户」；
 官方 mpv 构建走系统证书库，不读这个变量。
+
+#### 裁定：ffmpeg / ffprobe 改为**随包分发**（1.22.2 起）
+
+上游 1.22.1 把 `resources/ffmpeg/` 当作「随包组件」来写（放了 `COPYING.GPLv2.1` / `config.txt` /
+`README.txt`，README 里明确列了 `ffmpeg.exe`、`ffprobe.exe` 与 8 个 dll），但二进制本身被 `.gitignore`
+排除（`resources/ffmpeg/*.exe`、`*.dll`）⇒ 只拿到源码的人打出来的包**不含**它们。本仓从 1.22.2 起补齐。
+
+**取哪一份**：必须用 `README.txt` 里写的那一份，否则文档与二进制对不上（「文案半真」老坑）：
+
+```
+ffmpeg-8.0-windows-desktop-vs2022-gpl-lite.7z
+https://sourceforge.net/projects/avbuild/files/windows-desktop/
+→ 解出 bin/*.exe + bin/*.dll（约 60MB），拷进 resources/ffmpeg/
+验证：resources/ffmpeg/ffmpeg.exe -version  →  `ffmpeg version 894da5c-avbuild`
+```
+
+- **只拷 `.exe` + `.dll`**：`bin/` 里还有同名的 `.pdb`（合计约 90MB 调试符号），**千万别一起拷**。
+- 这套是**静态 CRT**：`ldd` 实测只依赖系统 `ucrtbase.dll` / `msvcp_win.dll` + 同目录 dll，
+  **不需要 VC++ Redist**。⚠ `README.txt` 里写的 `vcruntime140*.dll` / `msvcp140.dll` 属于 **default** 包，
+  本 lite 包既没有也不需要 —— 照它找会误判「缺文件」。
+- 二进制**不入库**（`.gitignore` 保持排除）⇒ 换机器 / 重新 clone 后打包**必须再放一次**；
+  忘了放的表现是启动日志 `依赖: ffmpeg=none`，应用退回 PATH 探测，功能退化但不崩。
+
+**为什么放进去就能生效**（无需改代码）：`HtmlMedia.ts` 的 `resolveFfmpeg()` 解析顺序是
+「用户覆盖 → `join(resourcesRoot,'ffmpeg',exeName)` → 系统 PATH」，打包态 `resourcesRoot` 就是
+`resources/app.asar.unpacked/resources`（`files` 里 `resources/**` 全量带上、`asarUnpack` 也含 `resources/**`），
+所以直接把文件放到 `resources/ffmpeg/` 即可。
+
+**下载坑（下次重装/换机必踩）**：sourceforge 的 `/download` 端点对 aria2 直接请求返回 **403**，
+必须先让 curl 跟随重定向拿到 `master.dl.sourceforge.net` 的**签名地址**再交给 aria2；
+且单连接被限速到约 **10KB/s**，`-x 16 -s 16` 多连接可到 **~370KB/s**（27MB 约 4 分钟 vs 45 分钟）。
