@@ -802,3 +802,38 @@ https://sourceforge.net/projects/avbuild/files/windows-desktop/
 **下载坑（下次重装/换机必踩）**：sourceforge 的 `/download` 端点对 aria2 直接请求返回 **403**，
 必须先让 curl 跟随重定向拿到 `master.dl.sourceforge.net` 的**签名地址**再交给 aria2；
 且单连接被限速到约 **10KB/s**，`-x 16 -s 16` 多连接可到 **~370KB/s**（27MB 约 4 分钟 vs 45 分钟）。
+
+### 7.9 合并上游 `b721e1a`（README 换新项目地址）+ 账号封禁期的拉取方式
+
+**改动内容**：上游只有 1 个提交、改 `README.md` 1 行 —— 停更声明里的新项目链接
+`yagami-hue/Kniephos` → `yagami-hue/MisaTV`（`d78ece4..b721e1a`，1 file / +1 / -1）。
+本仓未动过该行，`ort` 干净自动合并，无冲突。上文 §7.8 的 graft 手法**这次不需要**：
+`merge-base` 仍等于上次合并点 `d78ece4`，历史没有被再次重写。
+
+⇒ 口径：**每次上游拉取后先看 `git merge-base HEAD upstream/main` 是否还等于上次合并点**，
+是则普通 `--no-ff` 合并即可，只在「`merge-base` 为空 / 明显倒退」时才启用 graft。
+`master` 之外上游已无活跃分支；上游停更确认（新框架项目改名 MisaTV 而非早前的 Kniephos）。
+
+**★★ 账号被封时的上游拉取**（2026-10-26 起 `491772510` 被 suspend）：
+
+- `ssh -T git@github.com` 仍回 `Hi 491772510!` ⇒ **别据此认为能 fetch**。
+  `git fetch` / `git push` 走 SSH 都在 upload-pack 阶段被拒：`ERROR: Your account is suspended.`
+- 但**上游是公开仓库**，匿名 HTTPS 可以正常读 —— 这是封禁期唯一能拿到上游更新的通道：
+
+```bash
+GIT_TERMINAL_PROMPT=0 git -c credential.helper= \
+  -c http.proxy="$https_proxy" \
+  fetch https://github.com/yagami-hue/Win-box.git \
+  '+refs/heads/*:refs/remotes/upstream/*' --tags
+```
+
+要点：`-c credential.helper=` 清空凭据助手、`GIT_TERMINAL_PROMPT=0` 防弹窗，
+两者缺一会走本机存储的 GitHub 凭据 → 照样被 suspend 拒。代理端口每次变，用 `$https_proxy`。
+（早前「HTTPS fetch 撞代理 502」是旧代理端口的偶发，换端口后 HTTPS 可通。）
+- 反向不成立：**自己的仓库匿名访问一律 404**（连已发布的 release 也 404），
+  所以「匿名能 fetch 上游」不等于「账号恢复了」。判据永远是 `git push` 能否成功 / `gh api user` 是否 200。
+- 封禁期仍可**本地合并、本地打包、本地跑全量测试**，只是无法推送与发 Release。
+
+**本次验证**：`node scripts/build-main.mjs` 通过、`tsc --noEmit` 0 错、
+全量 **194 文件 / 2586 用例 → 2581 passed / 5 skipped / 0 failed**（与 1.22.1 基线逐项一致）；
+合并前后差异 `git diff 4564866..HEAD --numstat` = 仅 `README.md 1/1`（零丢失）。
