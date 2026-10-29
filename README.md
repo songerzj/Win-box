@@ -11,7 +11,7 @@
 
 注：
 
-由于Electron高占用的原因，本项目将不会继续更新，新项目将更换框架，[点此前往](https://github.com/yagami-hue/Kniephos)\
+由于Electron高占用的原因，本项目将不会继续更新，新项目将更换框架，[点此前往](https://github.com/yagami-hue/MisaTV)\
 如果您觉得项目不错，欢迎加入交流群：[点此加群](https://t.me/kniephos)
 
 如果喜欢该作品，也愿意帮助作者创作更好的作品：[点此赞助](https://afdian.com/a/WinBox)
