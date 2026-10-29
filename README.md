@@ -60,9 +60,9 @@
 
 ## 下载
 
-通过本页面 [Releases](https://github.com/yagami-hue/Win-box/releases/latest) 选项卡下载：
+通过本页面 [Releases](https://github.com/songerzj/Win-box/releases/latest) 选项卡下载：
 
-<a href="https://github.com/yagami-hue/Win-box/releases">
+<a href="https://github.com/songerzj/Win-box/releases">
   <img src="https://img.shields.io/badge/Download-Latest_Release-2E9629?style=for-the-badge&logo=github" alt="Get it on Github" height="40"/>
 </a>
 
@@ -215,7 +215,7 @@ tvbox-win/
 2. **不提供内容**：本项目**不内置任何资源索引、不运营任何内容服务器**。你自行配置 / 导入的播放源、直播源、弹幕与字幕接口、网盘凭据与内容，全部来自**第三方**，与本软件及作者无关；软件内的本地代理（`127.0.0.1`）仅用于你自己设备上的本机播放转发。
 3. **无隶属关系**：与任何影视平台、内容站点、网盘服务、TVBox / CatVod 及其发行方**均无隶属、合作、代理或授权关系**；相关名称与商标归各自权利人所有。
 4. **使用者责任**：请确保你导入的第三方源与使用行为**符合所在地法律法规**，不得用于传播、观看任何违法或侵权内容；因使用第三方来源引发的一切后果（含版权、侵权、内容合法性）由用户与第三方自行承担，作者免责。
-5. **权利通知**：本软件不对任何第三方内容主张权利，也未从第三方内容中获利。若权利人认为本项目某项行为可能侵权，请通过 [Issues](https://github.com/yagami-hue/Win-box/issues) 联系，作者将及时核实并配合处理。
+5. **权利通知**：本软件不对任何第三方内容主张权利，也未从第三方内容中获利。若权利人认为本项目某项行为可能侵权，请通过 [Issues](https://github.com/songerzj/Win-box/issues) 联系，作者将及时核实并配合处理。
 6. **无担保**：软件按**「现状」**提供，不附带任何明示或默示担保；作者不对使用或无法使用本软件造成的任何直接或间接损失负责。不接受上述约定请立即停止使用并删除本软件。
 
 > 应用内「说明」页提供同一份声明的完整版。

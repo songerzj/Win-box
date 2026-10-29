@@ -16,8 +16,12 @@ import { archTag, isMac, type ArchTag, type InstallerPlatform } from './platform
 /** 发布资产挑选的目标平台（win32 = 既有 Setup 语义；darwin = dmg / zip）—— 真源在 platform.ts，此处转出便于调用方单点引用 */
 export type { InstallerPlatform };
 
-/** 发布仓库（唯一来源） */
-export const UPDATE_REPO = 'yagami-hue/Win-box';
+/**
+ * 发布仓库（唯一来源）。
+ * ★ 2026-10-29：本仓已迁到当前维护者账号 —— 桌面版安装包只在这个仓库发，
+ *   指向上游会让「检查更新」永远查不到本仓发的新版（上游停更在 1.22.1）。
+ */
+export const UPDATE_REPO = 'songerzj/Win-box';
 
 /** 最新 Release 接口（GitHub REST API 的 latest 端点） */
 export const UPDATE_RELEASES_API = `https://api.github.com/repos/${UPDATE_REPO}/releases/latest`;

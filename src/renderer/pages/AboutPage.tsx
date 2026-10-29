@@ -4,8 +4,8 @@ import { MODIFIED_BUILD_DISCLAIMER } from '../lib/disclaimerText';
 // ★ macOS 适配：win32 上不显示第九节（见下方说明）
 import { isMacRenderer } from '../lib/platform';
 
-/** 项目主页（源码 / 更新发布） */
-const GITHUB_URL = 'https://github.com/yagami-hue/Win-box';
+/** 项目主页（源码 / 更新发布）—— 2026-10-29 起为本仓维护地址，与 update.ts 的 UPDATE_REPO 保持一致 */
+const GITHUB_URL = 'https://github.com/songerzj/Win-box';
 
 function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
