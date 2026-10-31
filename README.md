@@ -11,7 +11,10 @@
 
 注：
 
-由于Electron高占用的原因，本项目将不会继续更新，新项目将更换框架，[点此前往](https://github.com/yagami-hue/MisaTV)\
+本项目是上游 [Win-Box](https://github.com/yagami-hue/Win-box) 的**桌面移植版**，由社区接手**继续维护**。
+上游因 Electron 资源占用问题已停止更新、转向新框架重写（[MisaTV](https://github.com/yagami-hue/MisaTV)，与本仓无关）。
+本仓专注 Windows 桌面端适配与问题修复，当前版本见 [Releases](https://github.com/songerzj/Win-box/releases/latest)，
+应用内「检查更新」可直接发现新版本。\
 如果您觉得项目不错，欢迎加入交流群：[点此加群](https://t.me/kniephos)
 
 如果喜欢该作品，也愿意帮助作者创作更好的作品：[点此赞助](https://afdian.com/a/WinBox)
