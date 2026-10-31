@@ -7,6 +7,12 @@
 <p>把安卓 TVBox移植到 Windows 的桌面播放器：导入你自备的站源 / 直播源，即可在电脑上搜索、浏览与播放。
 原生支持 <code>jar</code> / <code>.js</code> / <code>.py</code> 三类蜘蛛、网盘播放与磁力 BT、弹幕、MPV 与 HTML5 双内核、四套皮肤。</p>
 
+<p>
+  <a href="https://github.com/songerzj/Win-box/releases/latest"><img src="https://img.shields.io/github/v/release/songerzj/Win-box?style=flat-square&label=latest&color=2E9629" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2B-0078D6?style=flat-square" alt="Platform: Windows 10+">
+  <img src="https://img.shields.io/github/stars/songerzj/Win-box?style=flat-square&color=f5c518" alt="Stars">
+</p>
+
 </div>
 
 注：
@@ -14,10 +20,13 @@
 本项目是上游 [Win-Box](https://github.com/yagami-hue/Win-box) 的**桌面移植版**，由社区接手**继续维护**。
 上游因 Electron 资源占用问题已停止更新、转向新框架重写（[MisaTV](https://github.com/yagami-hue/MisaTV)，与本仓无关）。
 本仓专注 Windows 桌面端适配与问题修复，当前版本见 [Releases](https://github.com/songerzj/Win-box/releases/latest)，
-应用内「检查更新」可直接发现新版本。\
-如果您觉得项目不错，欢迎加入交流群：[点此加群](https://t.me/kniephos)
+应用内「检查更新」可直接发现新版本。
 
-如果喜欢该作品，也愿意帮助作者创作更好的作品：[点此赞助](https://afdian.com/a/WinBox)
+> **关于下面两个入口**：它们都属于**上游原作者** —— 交流群是他建的，赞赏也直接打给他。本仓只是接手维护桌面端，在此感谢原作者。
+>
+> 如果您觉得项目不错，欢迎加入交流群（**原作者维护**）：[点此加群](https://t.me/kniephos)
+>
+> 如果喜欢该作品，也愿意帮助作者创作更好的作品（**赞赏归原作者**）：[点此赞助](https://afdian.com/a/WinBox)
 
 ## 支持平台
 
