@@ -9,6 +9,7 @@ import { formatBytes, type UpdateCheckResult, type UpdateProgress, DISK_UPDATE_U
 import { isDetailWinHash } from '../../shared/detailWin';
 import { isSearchWindow } from '../lib/searchWin';
 import { isMacRenderer } from '../lib/platform';
+import MiniMarkdown from './MiniMarkdown';
 
 /** 独立播放器窗口（`#/player`）不参与启动提示：更新由主窗口统一触发 */
 function isPlayerWindow(): boolean {
@@ -111,7 +112,7 @@ export default function UpdateGate({ children }: { children: ReactNode }) {
   const publishedAt = date && Number.isFinite(date.getTime())
     ? date.toLocaleDateString('zh-CN')
     : '';
-  const notes = info?.releaseNotes?.trim() || '本次版本暂无详细更新说明。';
+  const notes = info?.releaseNotes?.trim() || '';
 
   return (
     <>
@@ -131,7 +132,11 @@ export default function UpdateGate({ children }: { children: ReactNode }) {
           {!busy && !error && (
             <>
               <div className="upd-notes-title">更新说明</div>
-              <div className="upd-notes">{notes}</div>
+              {/* Release notes 是 Markdown（含标题/表格/加粗），原样塞进弹窗会漏出 `##`、`**`、
+                  表格竖线 —— 这里过一遍极简渲染器；解析不出内容时回退到一句话。 */}
+              <div className="upd-notes">
+                <MiniMarkdown source={notes} fallback="本次版本暂无详细更新说明。" />
+              </div>
             </>
           )}
 

@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm';
 import { transformSync } from 'esbuild';
 import { formatBytes, type UpdateCheckResult, type UpdateProgress } from '../src/shared/update';
 import { isDetailWinHash } from '../src/shared/detailWin';
+import { parseMarkdown } from '../src/renderer/lib/miniMarkdown';
 
 interface Node {
   type: unknown;
@@ -15,6 +16,14 @@ const source = readFileSync(new URL('../src/renderer/components/UpdateGate.tsx',
   .replace(/^import .*;\r?$/gm, '')
   .replace('export default function UpdateGate', 'function UpdateGate');
 const compiled = transformSync(source + '\nglobalThis.component = UpdateGate;', {
+  loader: 'tsx', jsxFactory: 'h', jsxFragment: 'Fragment', target: 'es2022',
+}).code;
+
+/** 更新说明已改由 MiniMarkdown 渲染 —— 同样剥 import 后在同一个 VM 里跑真实组件 */
+const mdSource = readFileSync(new URL('../src/renderer/components/MiniMarkdown.tsx', import.meta.url), 'utf8')
+  .replace(/^import .*;\r?$/gm, '')
+  .replace('export default function MiniMarkdown', 'function MiniMarkdown');
+const mdCompiled = transformSync(mdSource + '\nglobalThis.MiniMarkdown = MiniMarkdown;', {
   loader: 'tsx', jsxFactory: 'h', jsxFragment: 'Fragment', target: 'es2022',
 }).code;
 const available: UpdateCheckResult = {
@@ -38,6 +47,9 @@ function host(hash = '#/', search = false) {
   const context: any = {
     client, formatBytes, isDetailWinHash, isSearchWindow: () => search,
     window: { location: { hash } }, Fragment: 'fragment',
+    parseMarkdown,
+    // MiniMarkdown 只用 useMemo 做解析缓存；这里直接求值即可（组件本身无状态）
+    useMemo: (fn: () => unknown) => fn(),
     h: (type: unknown, props: Record<string, any> | null, ...children: any[]): Node => ({ type, props: props || {}, children }),
     useState: (initial: unknown) => {
       const i = cursor++;
@@ -59,6 +71,7 @@ function host(hash = '#/', search = false) {
       });
     },
   };
+  runInNewContext(mdCompiled, context);
   runInNewContext(compiled, context);
   const child = { type: 'page', props: {}, children: ['正常页面'] };
   return {
@@ -73,16 +86,35 @@ function host(hash = '#/', search = false) {
     progress: (p: UpdateProgress) => onProgress(p),
   };
 }
+/**
+ * 遍历宿主树 → 扁平节点表（对象节点 + 叶子文本）。
+ * ★ 遇到 `type` 是函数的节点（如 `<MiniMarkdown/>`）就**按 props 调用并展开**其返回值 ——
+ *   这个宿主只有一层 `h()`，不会自己渲染函数组件；不展开就会把组件当成空节点。
+ */
+function collect(tree: any, acc: any[] = []): any[] {
+  if (tree == null || tree === false) return acc;
+  if (Array.isArray(tree)) {
+    tree.forEach(t => collect(t, acc));
+    return acc;
+  }
+  if (typeof tree !== 'object') {
+    acc.push(tree);
+    return acc;
+  }
+  if (typeof tree.type === 'function') {
+    return collect(tree.type({ ...tree.props, children: tree.children }), acc);
+  }
+  acc.push(tree);
+  tree.children.forEach((c: any) => collect(c, acc));
+  return acc;
+}
 function nodes(tree: any): Node[] {
-  if (!tree || typeof tree !== 'object') return [];
-  if (Array.isArray(tree)) return tree.flatMap(nodes);
-  return [tree, ...tree.children.flatMap(nodes)];
+  return collect(tree).filter(n => n && typeof n === 'object');
 }
 function text(tree: any): string {
-  if (tree == null || tree === false) return '';
-  if (Array.isArray(tree)) return tree.map(text).join('');
-  if (typeof tree === 'object') return text(tree.children);
-  return String(tree);
+  return collect(tree)
+    .map(n => (n && typeof n === 'object' ? '' : n === false || n == null ? '' : String(n)))
+    .join('');
 }
 function button(tree: Node, label: string): Node {
   const found = nodes(tree).find(node => node.type === 'button' && text(node) === label);
@@ -100,7 +132,11 @@ describe('启动更新提示（真实 TSX 组件行为）', () => {
     await settle();
     const tree = h.render();
     expect(text(tree)).toContain('1.21.1 → 1.21.2');
-    expect(text(tree)).toContain(available.releaseNotes);
+    // 说明是 Markdown（`详细更新说明\n- 支持纯 Python 包`）→ 现在渲染成段落 + 列表，
+    // 断言从「原文一字不差」改为「内容都在、且 `- ` 标记没漏出来」。
+    expect(text(tree)).toContain('详细更新说明');
+    expect(text(tree)).toContain('支持纯 Python 包');
+    expect(text(tree)).not.toContain('- 支持');
     button(tree, '立即更新');
     button(tree, '暂不更新');
     expect(h.client.updateDownload).not.toHaveBeenCalled();
@@ -167,6 +203,25 @@ describe('启动更新提示（真实 TSX 组件行为）', () => {
     const h = host(hash, search); h.render();
     expect(h.client.updateCheck).not.toHaveBeenCalled();
     expect(h.client.onUpdateProgress).not.toHaveBeenCalled();
+  });
+
+  it('更新说明按 Markdown 渲染：标题/加粗/表格不漏出标记符号', async () => {
+    const md = '## 修了什么\n\n这是**重点**。\n\n| 指标 | 旧 | 新 |\n|---|---|---|\n| 内存 | 1442 | 1015 |';
+    const h = host();
+    h.client.updateCheck.mockResolvedValueOnce({ ...available, releaseNotes: md });
+    h.render(); await settle();
+    const tree = h.render();
+    const t = text(tree);
+    expect(t).toContain('修了什么');
+    expect(t).toContain('重点');
+    expect(t).toContain('1015');
+    expect(t).not.toContain('##');
+    expect(t).not.toContain('**');
+    expect(t).not.toContain('|');
+    // 表格真的成了 table 节点（不是把竖线当文本吐出来）
+    expect(nodes(tree).some(n => n.type === 'table')).toBe(true);
+    // 依然不拼 HTML 字符串
+    expect(nodes(tree).some(n => n.props.dangerouslySetInnerHTML)).toBe(false);
   });
 
   it('无说明/非法发布日期容错，不注入 HTML', async () => {
