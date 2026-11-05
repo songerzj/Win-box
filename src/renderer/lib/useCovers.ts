@@ -4,6 +4,18 @@ import { wrapImageUrlForRelay } from '../../shared/driveProvider';
 import { preloadImage, resolveCover, type CoverRequest } from './coverPick';
 
 export interface CoverItem extends CoverRequest { id: string }
+/**
+ * 单次挂载允许解析的封面条数上限（默认）。
+ *
+ * 为什么必须设上限：`resolveCover` 的 `validate` 是 `preloadImage(url)` —— 它会**真实解码**一张图。
+ * 之前对 `items` **全量**入队（并发 4 lane 只限制了速度，没限制总量）⇒
+ * 500 条历史 / 收藏就解码 500 张封面，解码位图常驻数百 MB。
+ * 而虚拟滚动只让 **DOM** 只挂 ~20 张卡，`useCovers` 在 DOM 之外，完全不受虚拟化约束。
+ *
+ * 有上限也**不会出空白**：`picOf` 对未解析项返回 `item.pic`（源封面）兜底，
+ * 只是少了「换成 TMDB 更优图 / 中继」这一层增强。列表按时间倒序，前 N 条覆盖绝大多数使用场景。
+ */
+export const COVER_PARSE_CAP = 120;
 // 同一窗口中的重复片名共享请求；队列限制主进程查询和图片预加载的并发。
 const queries = new Map<string, Promise<string>>();
 const lanes: Promise<unknown>[] = Array.from({ length: 4 }, () => Promise.resolve());
@@ -16,7 +28,7 @@ function enqueue<T>(job: () => Promise<T>): Promise<T> {
 }
 
 /** 所有页面共用封面链路，始终保留原始源图，不把补图写回来源或历史。 */
-export function useCovers(items: CoverItem[], enabled = true) {
+export function useCovers(items: CoverItem[], enabled = true, cap: number = COVER_PARSE_CAP) {
   const [settings, setSettings] = useState<{ key: string; hasTmdb: boolean } | null>(null);
   const [covers, setCovers] = useState<Record<string, string>>({});
   const [failed, setFailed] = useState<Record<string, string[]>>({});
@@ -49,7 +61,8 @@ export function useCovers(items: CoverItem[], enabled = true) {
   useEffect(() => {
     if (!enabled || !settings) return;
     let alive = true;
-    for (const item of stableItems) {
+    // 只解析前 cap 条（见 COVER_PARSE_CAP 注释）：超出部分由 picOf 的源封面兜底
+    for (const item of stableItems.slice(0, cap)) {
       const key = JSON.stringify([settings.key, item.id, item.name, item.year, item.pic]);
       if (covers[key] !== undefined) continue;
       void enqueue(async () => {
@@ -76,7 +89,7 @@ export function useCovers(items: CoverItem[], enabled = true) {
     return () => { alive = false; };
     // 完成结果不重启批次，避免仍在处理的队列被取消。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stableItems, settings, enabled, failed]);
+  }, [stableItems, settings, enabled, failed, cap]);
   return {
     picOf: (item: CoverItem): string => {
       const key = itemKey(item);

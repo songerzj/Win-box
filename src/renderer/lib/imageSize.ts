@@ -27,6 +27,15 @@ export const DOUBAN_IMG_SIZES: ReadonlyArray<{ token: string; width: number }> =
 
 /** 需要的最小物理像素（盒宽 × DPR）允许 10% 欠采样 —— 肉眼不可辨，但能把 `192×1.5=288` 落到 `s(270)` */
 const SLACK = 0.9;
+
+/**
+ * 列表页海报卡（`.grid` / `.card-media`）的**显示宽度上限** CSS px。
+ *
+ * `.grid` 是 `repeat(auto-fill, minmax(var(--card-w), 1fr))`，`--card-w` 基准 132px 但会被 `1fr` 拉宽，
+ * 各皮肤下最宽约 200（与发现页 `DISCOVER_BOX` 实测同值）。取**上限**是为了「只降不升」时不至于欠采样过度。
+ * 用于首页 / 收藏 / 历史这类海报墙：这些页动辄几十上百张，逐张降档的收益远大于详情页单张。
+ */
+export const GRID_COVER_CSS_PX = 200;
 /** 当前窗口的 DPR（多显示器拖动后会变 ⇒ 每次现读；用 `globalThis` 而非 `window`：
  *  本模块被单测直接 import，而主进程那套 tsconfig 不含 DOM lib —— 走 globalThis 两边都能编译） */
 export function currentDpr(): number {

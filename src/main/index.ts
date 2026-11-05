@@ -362,6 +362,19 @@ app.on('child-process-gone', (_event, details) => {
   fileLogger.w(`child-process-gone type=${details.type} reason=${details.reason} exitCode=${details.exitCode}${suffix}`);
 });
 
+/**
+ * 是否给主窗口启用 Win11 **Mica 磨砂背景**（无边框窗口特有的系统材质）。
+ *
+ * 为什么做成开关而不是写死：Mica 由 DWM 合成，会让 GPU 进程额外持有窗口尺寸的纹理。
+ * 低端核显 / 远程桌面 / 虚拟机里这层材质收益趋于零、却照样吃显存，用户可用环境变量关掉：
+ *   `WINBOX_NO_MICA=1 ./Win-Box.exe`
+ * 关掉后窗口回落到 `backgroundColor` 的纯色底，而 `--surface-glass` 本身约 90% 不透明，
+ * 视觉差异很小（见下方 winOpts 里 `backgroundColor` 的注释）。
+ */
+function useMica(): boolean {
+  return process.platform === 'win32' && process.env.WINBOX_NO_MICA !== '1';
+}
+
 function createWindow(): void {
   /**
    *   默认窗口尺寸与最小尺寸都按**当前显示器工作区**推出来的倍率等比放大（见 `ui/uiScale`），
@@ -391,7 +404,7 @@ function createWindow(): void {
     frame: false,
     autoHideMenuBar: true,
     icon: app.isPackaged ? undefined : join(__dirname, '..', '..', 'build', 'icon.png'),
-    ...(process.platform === 'win32' ? { backgroundMaterial: 'mica' as const } : {}),
+    ...(useMica() ? { backgroundMaterial: 'mica' as const } : {}),
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,

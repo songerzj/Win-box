@@ -9,7 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { client } from '../api/client';
 // 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
 import PluginSlot from '../components/PluginSlot';
+import VirtualGrid from '../components/VirtualGrid';
 import { useCovers } from '../lib/useCovers';
+import { sizedImageUrl, GRID_COVER_CSS_PX } from '../lib/imageSize';
 import { openDetailRoute } from '../lib/detailWin';
 import { restoreHistorySource } from '../lib/historySource';
 import { historyCategories } from '../lib/historyCategories';
@@ -90,7 +92,7 @@ export default function FavoritesPage() {
   const activeCategory = groups.some((g) => g.key === category) ? category : '';
   const visibleGroups = activeCategory ? groups.filter((g) => g.key === activeCategory) : groups;
 
-  const coverItem = (it: FavoriteItem) => ({ id: `${it.sourceKey || ''}\u0000${it.vodId || ''}`, name: favoriteTitle(it), pic: it.pic });
+  const coverItem = (it: FavoriteItem) => ({ id: `${it.sourceKey || ''}\u0000${it.vodId || ''}`, name: favoriteTitle(it), pic: sizedImageUrl(it.pic || '', GRID_COVER_CSS_PX) });
   const covers = useCovers(sorted.map(coverItem));
   const picOf = (it: FavoriteItem) => covers.picOf(coverItem(it));
   const picErr = (it: FavoriteItem) => (e: React.SyntheticEvent<HTMLImageElement>) =>
@@ -214,12 +216,18 @@ export default function FavoritesPage() {
               visibleGroups.map((group) => (
                 <section className="hist-group" key={group.key}>
                   <h3>{group.label}<span className="muted"> · {group.items.length} 条</span></h3>
-                  <div className="grid">
-                    {group.items.map((it) => {
+                  {/* 收藏无条数上限（历史页有 recentWatch(100) 的硬上限，这里没有）⇒ 走 DOM 虚拟化：
+                      只挂滚动视窗内的卡片，离屏卡片换成等高占位块。编辑态存活在页面级 `editing`，
+                      离屏卸载不丢输入，滚回来会按 `editing?.key` 原样恢复。 */}
+                  <VirtualGrid
+                    className="grid"
+                    items={group.items}
+                    keyOf={(it) => it.key}
+                    renderItem={(it) => {
                       const cover = picOf(it);
                       const editingThis = editing?.key === it.key;
                       return (
-                        <div className="card-media hist-media" key={it.key} onClick={() => openDetail(it)}>
+                        <div className="card-media hist-media" onClick={() => openDetail(it)}>
                           <div className="card">
                             <div style={{ position: 'relative' }}>
                               {cover ? (
@@ -314,8 +322,8 @@ export default function FavoritesPage() {
                           </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    }}
+                  />
                 </section>
               ))
             )}

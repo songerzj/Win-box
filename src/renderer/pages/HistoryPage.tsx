@@ -12,6 +12,7 @@ import { client } from '../api/client';
 // 受限 UI 槽位（`contributes.ui.slot`）：宿主页面的槽位落点
 import PluginSlot from '../components/PluginSlot';
 import { useCovers } from '../lib/useCovers';
+import { sizedImageUrl, GRID_COVER_CSS_PX } from '../lib/imageSize';
 // 显式绑定第三方播放器时，从历史直接由它续播（起播位置作为启动参数）
 import { playVodExternal } from '../lib/externalPlay';
 // 所有详情统一由独立窗口展示。
@@ -53,7 +54,7 @@ export default function HistoryPage() {
   const groups = historyCategories(items, profileView);
   const activeCategory = groups.some((g) => g.key === category) ? category : '';
   const visibleGroups = activeCategory ? groups.filter((g) => g.key === activeCategory) : groups;
-  const coverItem = (it: WatchHistory) => ({ id: it.url, name: baseNameOf(it.name), pic: it.pic });
+  const coverItem = (it: WatchHistory) => ({ id: it.url, name: baseNameOf(it.name), pic: sizedImageUrl(it.pic || '', GRID_COVER_CSS_PX) });
   const covers = useCovers(items.map(coverItem));
   const picOf = (it: WatchHistory) => covers.picOf(coverItem(it));
   const picErr = (it: WatchHistory) => (e: React.SyntheticEvent<HTMLImageElement>) =>

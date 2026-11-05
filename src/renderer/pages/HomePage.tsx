@@ -14,6 +14,7 @@ import { appendUniqueItems, pageSignature } from '../lib/listAppend';
 import { useWaterfall, useHomeFilters, setHomeFilters } from '../lib/uiPrefs';
 import { usePageActive } from '../lib/keepAlive';
 import { useCovers } from '../lib/useCovers';
+import { sizedImageUrl, GRID_COVER_CSS_PX } from '../lib/imageSize';
 import CascadeBar, { type CascadeLevel } from '../components/CascadeBar';
 import { isSearchWindow, openSearchWindow } from '../lib/searchWin';
 // （DOM 真虚拟化）：海报墙只挂「视窗内」的卡，离屏卡从 DOM 移除 + 等高占位
@@ -156,7 +157,7 @@ export default function HomePage({ onOpenDetail }: { onOpenDetail: (key: string,
   } | null>(null);
   const coverItem = (it: VodItem, sourceKey = key) => ({
     id: `${sourceKey}\u0000${it.id}`, name: (it.name || '').split(' - ')[0].trim(),
-    year: /((?:19|20)\d{2})/.exec(`${it.name} ${it.remarks || ''}`)?.[1], pic: it.pic,
+    year: /((?:19|20)\d{2})/.exec(`${it.name} ${it.remarks || ''}`)?.[1], pic: sizedImageUrl(it.pic || '', GRID_COVER_CSS_PX),
   });
   const covers = useCovers(items.map(it => coverItem(it)), !loading && !aggMode);
   const aggCovers = useCovers((agg?.items || []).filter(it => !aggSrc || it.sourceKey === aggSrc).slice(0, aggCap).map(it => coverItem(it, it.sourceKey)), !loading && aggMode);
