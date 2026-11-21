@@ -22,6 +22,7 @@ import { createDohAgent } from '../net/DnsResolver';
 import { dispatchChain } from '../net/proxy';
 import { mergeSetCookies, setCookieList, cookiePairOf } from '../net/cookieMerge';
 import { purifyVodM3u8 } from '../../engine/util/m3u8Purify';
+import { withoutBrowserHeaders } from '../../engine/util/relayAccess';
 import { parseBtRoute } from '../../engine/torrent/magnet';
 import { resolvePkgFile } from '../../engine/config/localPkg';
 import { HtmlMedia } from '../player/HtmlMedia';
@@ -717,10 +718,15 @@ private imgProxy(u: URL, res: ServerResponse): void {
       res.writeHead(400);
       res.end('missing url'); return;
     }
-    const headers: Record<string, string> = {};
-    Object.assign(headers, relayHeaders);
-    if (ua) headers['User-Agent'] = ua;
-    if (referer) headers['Referer'] = referer;
+    // ★ 2026-11-18：回源头在这里定型 —— 给上游之前剥离 Origin / Sec-Fetch-*。
+    //   选这个「最终注入点」而非 decode/URL 生成处：所有 /play 与 do=m3u8 路径都汇聚于此，
+    //   一处覆盖全部漏点；同时不改动 headers 查询参数的解码语义（兼容既有蜘蛛协议）。
+    //   U-A / Referer / Cookie / Authorization 全部保留，只删浏览器专属头。
+    const headers: Record<string, string> = withoutBrowserHeaders({
+      ...relayHeaders,
+      ...(ua ? { 'User-Agent': ua } : {}),
+      ...(referer ? { Referer: referer } : {}),
+    });
     // WebDAV：凭据从主进程加密存储取（`dav=<id>`），只注入 Authorization
     if (dav) {
       const auth = this.davAuth ? this.davAuth(dav) : '';

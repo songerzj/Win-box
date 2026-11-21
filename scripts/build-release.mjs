@@ -4,12 +4,73 @@
 //   （src/build/supportImage.ts、vite 别名、关于页弹窗），本仓随之移除
 //   `--allow-placeholder` 与「产物里含原图」的 SHA256 校验。
 //   副作用（好的那种）：现在打包**不再需要任何私有素材**，从零 clone 的仓库可直接出包。
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+// ★ 2026-11-18：出包后的机器门禁 —— 发布包里绝不能混进本地跑出来的 userdata。
+//   以前只靠 docs/memory-notes.md 的人工提醒「测完删 win-unpacked/data」，忘了就漏。
+//   现在打包成功后扫描产出目录，命中 data 用户数据目录就 exit 1。
+//   扫描时整棵跳过随包工具树（jvm / mpv / ffmpeg / jre / ...），避免把它们自带的
+//   同名目录误判成用户数据 —— 源码 resources/jvm/... 的正常目录绝不能被拦。
+const BUNDLED_TOOL_TREE = /(?:^|[\\/])(?:jvm|mpv|ffmpeg|aria2|native-bridge|python-runner|d2j|libs|stubs|stubs-src|shell-shim|tools|okhttp4-compat|prefs-shim|jre|locales|node_modules)(?:[\\/]|$)/i;
+
+/** electron-builder 的产出目录取自 package.json 的 build.directories.output。 */
+function packagedOutputDir() {
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  const output = pkg?.build?.directories?.output;
+  if (typeof output !== 'string' || !output.trim()) {
+    console.warn('[userdata-gate] package.json 缺少 build.directories.output，跳过 userdata 检查。');
+    return '';
+  }
+  return resolve(root, output.trim());
+}
+
+/** 递归找出产出目录里疑似用户数据的 data 目录（不含随包工具树内的同名目录）。 */
+function findPackagedUserData(outputDir) {
+  const hits = [];
+  const walk = (dir, depth) => {
+    if (depth > 12) return;
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const full = join(dir, entry.name);
+      const rel = full.slice(outputDir.length + 1);
+      if (BUNDLED_TOOL_TREE.test(rel)) continue;
+      if (entry.name.toLowerCase() === 'data') {
+        hits.push(full);
+        continue;
+      }
+      walk(full, depth + 1);
+    }
+  };
+  walk(outputDir, 0);
+  return hits;
+}
+
+/** 命中即列出路径并 exit 1；通过则打一行 PASS。 */
+function assertNoPackagedUserData() {
+  const outputDir = packagedOutputDir();
+  if (!outputDir || !existsSync(outputDir)) return;
+  const hits = findPackagedUserData(outputDir);
+  if (hits.length) {
+    console.error('[userdata-gate] 发布包内检测到用户数据目录 —— 这些是本地跑出来的订阅/历史/凭据，绝不能进发布包：');
+    for (const p of hits) console.error(`  · ${p}`);
+    console.error('[userdata-gate] 请删除上述目录后重新打包。');
+    process.exit(1);
+  }
+  console.log('[userdata-gate] 发布包内无用户数据目录，PASS');
+}
+
+// 维护/自测入口：只跑产物门禁、不触发打包（CI 与日常构建完全不受影响）。
+if (process.env.WINBOX_CHECK_USERDATA_ONLY === '1') {
+  assertNoPackagedUserData();
+  process.exit(0);
+}
 
 // ★ 2026-10-12（macOS 适配 · T04）：目标平台开关。
 //   --mac  → electron-builder `--mac dmg zip`（产出 arm64 + x64 的 dmg 与 zip）
@@ -94,3 +155,6 @@ if (dryRun) {
   process.exit(0);
 }
 run(builderCmd);
+
+// ★ 2026-11-18：产物已生成 —— 机器断言包内无用户数据（订阅/历史/凭据），命中直接 exit 1。
+assertNoPackagedUserData();

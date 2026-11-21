@@ -1,0 +1,77 @@
+name: CI
+
+# 本仓此前无任何 CI（1.22.5 首次引入）。只跑纯 Node 的 typecheck + vitest，不打包、不签名。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: typecheck + vitest (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # package.json 没有 packageManager 字段，显式钉大版本，避免 runner 上默认 pnpm 与 lockfile 9.0 不匹配。
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node 20 (cache pnpm)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # JAVA_HOME 必须由 setup-java 注入。绝不能硬编码 C:/Program Files/Java/jdk-17 ——
+      # 那是作者本机路径，GitHub runner 上不存在，会让需要 JDK 的用例静默走降级分支。
+      # 这一只是 **可选环境**，不是 JVM 用例的硬前置：依赖真实 JRE / resources/jvm 私有资产的
+      # 用例自带 describe.skipIf 门控，纯净 clone 上会诚实跳过（详见下方 Vitest 步骤注释）。
+      - name: Setup JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 0 重试（硬约束）：MisaTV 的「整套件 3 次重试」会把真回归洗成绿色、让 bug 混进主线。
+      # 本仓先靠固定环境（temurin 17 + windows-latest）+ 串行执行消抖，不靠重跑掩盖失败。
+      # 将来若确需重试，只允许「具名白名单 + 仅 Hook timed out 且无 AssertionError + 不超过 2 次」，
+      # 永远不许对整套件无条件重跑。
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # ★ 关于「JVM 用例没全跑」：本仓约 12+ 个用例依赖真实 JVM / resources/jvm 私有资产，
+      #   而这些资产按设计**不入库**（逆向自第三方 app，见 .gitignore）。它们自带 describe.skipIf：
+      #   jvmAssets.spec.ts 用 [stubs.jar, native-bridge.jar].every(existsSync) 判定；
+      #   jvmKeyStore.spec.ts 还要求 process.platform === 'win32'；
+      #   prefsShim.spec.ts / jvmLoader.spec.ts 同款。纯净 clone 上这些用例**诚实跳过**，CI 不会红一片。
+      #   这些 skipIf 是有意设计 —— **不要**为了「让测试都跑起来」而删门控，也不要改成在 CI 里
+      #   强制下载 / 生成私有资产（既有许可风险，又会让 CI 依赖不可控的外部产物）。
+      #   setup-java 只是给 JCE/JVM 相关用例提供可选环境，不是这些用例的硬前置。
+      #
+      # Windows 上 GitHub 默认 shell 是 PowerShell；这里显式用 bash 以便 tee 落日志。
+      # pipefail 必须开：否则管道退出码取 tee 的 0，vitest 失败会被误判为成功。
+      # .tmp/ 已被 .gitignore 排除，日志只作为失败时的排查产物上传。
+      - name: Vitest (serial)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .tmp
+          pnpm exec vitest run --testTimeout=20000 --hookTimeout=30000 --maxWorkers=1 2>&1 | tee .tmp/ci-vitest.log
+
+      - name: Upload vitest log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-log
+          path: .tmp/ci-vitest.log
+          if-no-files-found: warn

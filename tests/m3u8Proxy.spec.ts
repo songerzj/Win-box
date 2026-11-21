@@ -29,7 +29,10 @@ const headers = {
   'X-Test': 'space + : ; / = %',
 };
 const expectedHeaders = {
-  'user-agent': headers['user-agent'], referer: headers.referer, origin: headers.Origin,
+  // ★ 2026-11-18：故意不把 origin 列为上游必需头 —— 蜘蛛塞进来的 Origin 属于浏览器专属头，
+  //   中继在回源前会剥离它（见下方「回源前剥离」用例的正向断言）。输入 headers 仍保留 Origin，
+  //   这样「输入有、转发时被剥掉」才是可证明的，而不是把断言删弱了事。
+  'user-agent': headers['user-agent'], referer: headers.referer,
   cookie: headers.cookie, authorization: headers.authorization, 'x-test': headers['X-Test'],
 };
 const tokenQuery = '?token=a%2Bb%2Fc%3D&part=1';
@@ -265,6 +268,44 @@ describe('CatVod do=m3u8', () => {
     expect(response.status).toBe(200);
     await response.text();
     expect(seen[0].headers).toMatchObject(expectedHeaders);
+  });
+
+  it('回源前剥离 Origin / Sec-Fetch-*，但保留 UA / Referer / Cookie / Authorization（/play 与 do=m3u8 两条路径）', async () => {
+    // 模拟蜘蛛把浏览器专属头塞进播放头：输入必须带 Origin 与 Sec-Fetch-*，
+    // 下面的断言才能证明它们是在转发到上游时被剥掉的，而不是一开始就缺席。
+    const spiderHeaders = {
+      ...headers,
+      'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Site': 'cross-site',
+    };
+
+    // 路径一：/play 直接取流 —— 播放器把蜘蛛 header 原样转发到本机中继。
+    const wrapped = new URL(wrapPlayUrlWithHeaders(upstreamBase + '/hls/media/seg-01.ts', spiderHeaders));
+    const playResponse = await fetch(proxyBase + wrapped.pathname + wrapped.search);
+    expect(playResponse.status).toBe(200);
+    await playResponse.text();
+    const playUpstream = seen[0].headers;
+    expect(playUpstream.origin).toBeUndefined();
+    expect(playUpstream['sec-fetch-mode']).toBeUndefined();
+    expect(playUpstream['sec-fetch-site']).toBeUndefined();
+    expect(playUpstream).toMatchObject({
+      'user-agent': headers['user-agent'], referer: headers.referer,
+      cookie: headers.cookie, authorization: headers.authorization,
+    });
+
+    // 路径二：do=m3u8 清单入口 —— 另一条独立的回源链，必须同样剥干净，不能只改一处留漏。
+    seen.length = 0;
+    const playlistResponse = await fetch(proxyUrl('/hls/media/seg-01.ts', spiderHeaders));
+    expect(playlistResponse.status).toBe(200);
+    await playlistResponse.text();
+    const m3u8Upstream = seen[0].headers;
+    expect(m3u8Upstream.origin).toBeUndefined();
+    expect(m3u8Upstream['sec-fetch-mode']).toBeUndefined();
+    expect(m3u8Upstream['sec-fetch-site']).toBeUndefined();
+    expect(m3u8Upstream).toMatchObject({
+      'user-agent': headers['user-agent'], referer: headers.referer,
+      cookie: headers.cookie, authorization: headers.authorization,
+    });
   });
 
   it('额外请求头会沿清单 URI 进入分片 /play URL', () => {

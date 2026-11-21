@@ -50,6 +50,9 @@ docs/**
 # 渲染层内存专项（★ 2026-11-05：海报墙虚拟化 / 封面解码上限 / 豆瓣图降档的**实测数据与取舍**，
 #   与 VirtualGrid.tsx、useCovers.ts、imageSize.ts 的注释互为索引；改内存相关代码前先读它）
 !docs/memory-notes.md
+# 设计原则红线（★ 2026-11-18：MIT 本仓借鉴 GPL MisaTV 的边界 / 不做假开关 / 不内置源的裁决依据，
+#   后续所有改动都要对齐它，必须随源码可见 → 开白名单，否则 git status 看不见、漏提交）
+!docs/design-principles.md
 
 # --- 专有 / 运行时 / 编译产物：不随源码分发 ---
 # mpv 播放内核（官方 v0.41.0 构建，约 100MB；GPL/LGPL，随安装包分发，不入源码库）

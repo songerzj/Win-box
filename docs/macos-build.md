@@ -483,6 +483,25 @@ pnpm dist:mac
 > 更简单省事的顺序其实是：**第 4 步构建完 → 先签名 `.app` → 再让 electron-builder 重打 dmg**。
 > 上面的脚本默认你已经在 `release*/` 里有 `.app` 了。
 
+### 5.5 为什么不开 App Sandbox（别加沙盒 entitlement）
+
+`build/entitlements.mac.plist` 里的 `com.apple.security.network.client`、
+`com.apple.security.network.server`、`com.apple.security.files.user-selected.read-write`
+都是 **App Sandbox 的授权项**。本仓**没有**打开沙盒总开关 `com.apple.security.app-sandbox`，
+所以这些条目是**惰性、加了也不生效**的 —— 这正是本仓明确反对的「假开关」（见 `docs/design-principles.md`）：
+开关必须真实改变行为且有测试证明，这里两者都没有。
+
+真开沙盒会直接打破本仓的交付与使用方式：
+
+- 随包的 mpv / ffmpeg / JRE / aria2c 子进程、以及 unidbg `.dylib` 的 `dlopen` 会被拦；
+- `安装目录/data` 的持久化读写被禁；
+- 外部播放器子进程的启动、DLNA 组播 / 局域网发现都会失效。
+
+所以**不要**为了「看起来更安全」去给 `build/entitlements.mac.plist` 开沙盒。
+真遇到 macOS 上「全源空白 / 什么都加载不出来」，按顺序查：签名与公证（§5、§7）、
+Gatekeeper 隔离属性（§6）、随包二进制是否齐（§2.1–§2.5）、DNS / DoH 解析、
+以及本地中继 9978 端口是否在监听 —— **不是** entitlement 的问题。
+
 ---
 
 ## 6. 去隔离属性（每台机器第一次打开前都该做）

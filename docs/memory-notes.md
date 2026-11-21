@@ -19,8 +19,10 @@ Electron 的**运行时基线约 390MB 私有内存**（空载、CPU 0.3%）是�
 | 网络服务 | 14MB | 固定开销 |
 | **合计** | **392MB**（工作集 481MB） | 空闲 CPU **0.31%**，10 秒零增长 ⇒ 无泄漏 |
 
-⇒ **别把「Electron 占 400MB」当 bug 修**；也不要据此换框架（上游 `MisaTV` 是 `基于C#的Win-box重构版`，
-仓库 0KB、建库后无提交，跟随等于从零重写）。
+⇒ **别把「Electron 占 400MB」当 bug 修**；也不要据此换框架（上游 `MisaTV`（`6ed8070`，2026-11-18）
+经核实是 **Flutter/Dart 1.2.0 的完整重写**：321 个 Dart 文件 / 984 个单测 / 完整 CI / **GPL-3.0**，
+早已不是早先记录的「基于 C# 的 0KB 空仓」。跟随它等于**换栈重写**，不是本仓这种增量优化；
+本仓 MIT、只搬规则不搬代码，README 中「转向新框架重写、与本仓无关」的口径保留不变）。
 
 ## 2. 真正的瓶颈：`useCovers` 全量解码
 
@@ -88,7 +90,8 @@ localStorage.setItem('winbox-favorites', JSON.stringify({
 
 4. 测 `document.querySelectorAll('.card-media').length`、`document.images` 中 `complete && naturalWidth>0`
    的像素总量（×4 字节 = 解码位图），再配合 `Get-Process` 读各进程 `PrivateMemorySize64`。
-5. ★ 测完**必须删 `win-unpacked/data`**，否则下次打包会把测试配置带进去。
+5. ★ 测完 `win-unpacked/data` 必须清掉 —— 现已由 `scripts/build-release.mjs` 出包后的**机器断言**强制把关：
+   产物里一旦出现用户数据目录就直接 `exit 1`，不再依赖人工记得删。
 
 ## 7. 已知取舍 / 后续
 
